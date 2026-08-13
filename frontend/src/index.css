@@ -1,0 +1,90 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 210 17% 98%;
+        --foreground: 0 0% 20%;
+        --card: 0 0% 100%;
+        --card-foreground: 0 0% 20%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 0 0% 20%;
+        --primary: 345 100% 25%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 219 100% 19%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 210 17% 95%;
+        --muted-foreground: 215 12% 45%;
+        --accent: 34 45% 92%;
+        --accent-foreground: 219 100% 19%;
+        --destructive: 0 72% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 214 15% 89%;
+        --input: 214 15% 89%;
+        --ring: 345 100% 25%;
+        --radius: 0.65rem;
+        --bordeaux: #800020;
+        --marine: #002060;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        margin: 0;
+        font-family: "DM Sans", "Plus Jakarta Sans", sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3, h4, .font-display {
+        font-family: "Plus Jakarta Sans", sans-serif;
+        letter-spacing: -0.02em;
+    }
+    :focus-visible {
+        outline: 2px solid var(--bordeaux);
+        outline-offset: 2px;
+    }
+    ::selection {
+        background: #800020;
+        color: #fff;
+    }
+}
+
+@layer components {
+    .vdc-sidebar {
+        background: linear-gradient(180deg, #002060 0%, #001740 100%);
+    }
+    .vdc-kpi {
+        @apply relative bg-card rounded-xl border p-4 transition-all duration-200;
+    }
+    .vdc-kpi:hover {
+        @apply -translate-y-0.5 shadow-lg;
+        border-color: rgba(128, 0, 32, 0.35);
+    }
+    .vdc-grain::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.05;
+        background-image: radial-gradient(#fff 1px, transparent 1px);
+        background-size: 14px 14px;
+    }
+    .vdc-reveal {
+        animation: vdc-fade 0.5s ease both;
+    }
+    @keyframes vdc-fade {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: none; }
+    }
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+}

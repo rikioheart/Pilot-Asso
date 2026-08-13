@@ -1,0 +1,214 @@
+{
+  "project_name": "La Voix du Chien - Cockpit Opérationnel Associatif",
+  "archetype": "ORGANIC_PRECISION_AND_COMMAND",
+  "theme_strategy": {
+    "default_mode": "light",
+    "support_dark_toggle": true,
+    "vibe_summary": "Noble, loyal, chaleureux, sérieux et coopératif (Inspiré par le Berger Allemand). Un cockpit de pilotage moderne (ClickUp / Asana) avec la chaleur d'une grande association de protection canine."
+  },
+  "colors": {
+    "brand": {
+      "bordeaux": "#800020",
+      "bordeaux_hover": "#600018",
+      "bordeaux_light": "#FDF2F4",
+      "bleu_marine": "#002060",
+      "bleu_marine_hover": "#001848",
+      "bleu_marine_light": "#EEF3FC",
+      "white": "#FFFFFF",
+      "beige_chaud": "#F8F9FA",
+      "beige_hover": "#F0F2F5",
+      "text_main": "#333333",
+      "text_muted": "#666666",
+      "border": "#E2E8F0"
+    },
+    "semantic": {
+      "success": "#16A34A",
+      "warning": "#D97706",
+      "error": "#DC2626",
+      "info": "#2563EB"
+    },
+    "tailwind_css_vars": {
+      "--background": "0 0% 98%",
+      "--foreground": "0 0% 20%",
+      "--card": "0 0% 100%",
+      "--card-foreground": "0 0% 20%",
+      "--popover": "0 0% 100%",
+      "--popover-foreground": "0 0% 20%",
+      "--primary": "345 100% 25%",
+      "--primary-foreground": "0 0% 100%",
+      "--secondary": "220 100% 19%",
+      "--secondary-foreground": "0 0% 100%",
+      "--muted": "220 14% 96%",
+      "--muted-foreground": "0 0% 40%",
+      "--accent": "345 60% 96%",
+      "--accent-foreground": "345 100% 25%",
+      "--border": "220 13% 91%",
+      "--input": "220 13% 91%",
+      "--ring": "345 100% 25%",
+      "--radius": "0.625rem"
+    }
+  },
+  "typography": {
+    "heading_font": "'Plus Jakarta Sans', 'Outfit', sans-serif",
+    "body_font": "'DM Sans', 'Inter', sans-serif",
+    "mono_font": "'JetBrains Mono', monospace",
+    "font_imports": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+    "hierarchy": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#002060]",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight text-[#002060]",
+      "h3": "text-xl sm:text-2xl font-semibold text-[#800020]",
+      "h4": "text-lg font-semibold text-[#333333]",
+      "body": "text-sm sm:text-base leading-relaxed text-[#333333]",
+      "caption": "text-xs font-medium text-[#666666] uppercase tracking-wider",
+      "kpi_value": "text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#002060]"
+    }
+  },
+  "layout_and_navigation": {
+    "header_desktop": {
+      "background": "bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm",
+      "height": "h-16",
+      "elements": [
+        "Logo Berger Allemand / La Voix du Chien emblem",
+        "Titre de l'application 'LA VOIX DU CHIEN'",
+        "Barre de recherche globale (input data-testid='global-search-input')",
+        "Cloche de notifications temps réel avec badge (button data-testid='notifications-bell')",
+        "Sélecteur de mode / rôle (Bureau, Professionnel, Particulier)",
+        "Profil utilisateur avec menu déroulant (avatar, nom, rôle, bouton déconnexion)"
+      ]
+    },
+    "sidebar_bureau": {
+      "background": "bg-[#002060] text-white w-64 min-h-screen flex flex-col justify-between p-4 shadow-xl",
+      "active_item": "bg-[#800020] text-white font-medium rounded-lg shadow-sm transition-all",
+      "hover_item": "hover:bg-white/10 text-slate-200 transition-colors rounded-lg",
+      "navigation_sections": [
+        {
+          "title": "PILOTAGE PRINCIPAL",
+          "items": [
+            { "label": "Accueil (Cockpit)", "icon": "LayoutDashboard", "route": "/" },
+            { "label": "Mindmap Associative", "icon": "Network", "route": "/mindmap" },
+            { "label": "Projets & Initiatives", "icon": "FolderKanban", "route": "/projets" },
+            { "label": "Tâches & Misions", "icon": "CheckSquare", "route": "/taches" },
+            { "label": "Calendrier & Remplacements", "icon": "Calendar", "route": "/calendrier" }
+          ]
+        },
+        {
+          "title": "ACTIVITÉS & COMMUNAUTÉ",
+          "items": [
+            { "label": "Activités Canines", "icon": "Activity", "route": "/activites" },
+            { "label": "Événements & Sensibilisation", "icon": "PartyPopper", "route": "/evenements" },
+            { "label": "Chiens & Adoptions", "icon": "Dog", "route": "/chiens" },
+            { "label": "Membres Associatifs", "icon": "Users", "route": "/membres" },
+            { "label": "Professionnels Santé & Éducation", "icon": "Stethoscope", "route": "/professionnels" },
+            { "label": "Partenaires & Sponsors", "icon": "Handshake", "route": "/partenaires" },
+            { "label": "Bénévolat & Plannings", "icon": "HeartHandshake", "route": "/benevolat" }
+          ]
+        },
+        {
+          "title": "GESTION & LOGISTIQUE",
+          "items": [
+            { "label": "Finances Opérationnelles", "icon": "Wallet", "route": "/finances" },
+            { "label": "Terrain & Carte QR Fidélité", "icon": "QrCode", "route": "/terrain" },
+            { "label": "Stocks & Équipements", "icon": "Package", "route": "/stocks" },
+            { "label": "Campagnes & Appels aux Dons", "icon": "Megaphone", "route": "/campagnes" },
+            { "label": "Communication & Social", "icon": "MessageSquare", "route": "/communication" },
+            { "label": "Blog & Actualités", "icon": "FileText", "route": "/blog" },
+            { "label": "Coffre-Fort Documents", "icon": "FolderArchive", "route": "/documents" }
+          ]
+        },
+        {
+          "title": "SYSTÈME & CONTRÔLE",
+          "items": [
+            { "label": "Statistiques & Impact", "icon": "BarChart3", "route": "/statistiques" },
+            { "label": "Administration (Validations & RBAC)", "icon": "ShieldCheck", "route": "/administration" },
+            { "label": "Journal d'Audit", "icon": "History", "route": "/audit" }
+          ]
+        }
+      ]
+    },
+    "prominent_widget": {
+      "name": "PROGRESSION CETTE SEMAINE",
+      "style": "bg-gradient-to-br from-[#800020] to-[#5A0016] text-white p-6 rounded-2xl shadow-lg border border-red-900/30 relative overflow-hidden",
+      "required_elements": [
+        "Titre 'Progression cette semaine' avec icône de cible/trophée",
+        "Barre de progression visuelle avec pourcentage (ex: 78%)",
+        "KPIs résumés : Objectifs validés, Tâches terrain complétées, Adhésions traitées",
+        "Indicateur de tendance (+12% vs semaine dernière)",
+        "Bouton d'action rapide 'Détails des objectifs'"
+      ]
+    }
+  },
+  "view_specific_strategies": {
+    "login_page": {
+      "layout": "Double panel : panneau gauche avec grande photo héroïque de Berger Allemand et logo gravé, panneau droit avec formulaire de connexion épuré et sécurisé",
+      "features": "Identifiants de démo rapide par rôle (Bureau / Professionnel / Particulier), connexion sécurisée, réinitialisation de mot de passe"
+    },
+    "dashboard_bureau": {
+      "layout": "Grid asymétrique Mode B (High Density Dashboard)",
+      "widgets": [
+        "Banner de bienvenue chaleureuse avec statut de garde canine",
+        "Widget Très Visible 'PROGRESSION CETTE SEMAINE'",
+        "4 KPI Cards (Chiens pris en charge, Adhésions en attente, Dons collectés ce mois, Projets actifs)",
+        "Mindmap / Vue d'ensemble interactive",
+        "Fil d'activité en temps réel avec filtres par type d'événement",
+        "Planning des maraudes terrain & interventions vétéreinaire"
+      ]
+    },
+    "dashboard_professionnel": {
+      "focus": "Interventions vétérinaires, éducation canine, fiches de suivi comportemental, planning de rendez-vous"
+    },
+    "dashboard_particulier": {
+      "focus": "Carte de fidélité QR associative, suivi du chien adopté/parrainé, évènements à venir, espace cotisations"
+    },
+    "terrain_qr_view": {
+      "focus": "Module responsive mobile-first pour vérification rapide sur le terrain, scanner/générateur de QR code fidélité et validation des avantages membres"
+    },
+    "admin_validation_view": {
+      "focus": "Tableau interactif des nouvelles adhésions à valider avec filtres RBAC, attribution des rôles et enregistrement d'audit"
+    }
+  },
+  "curated_media_assets": {
+    "images": [
+      {
+        "category": "hero_dog",
+        "url": "https://images.unsplash.com/photo-1649571069618-99a265749d5b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwxfHxnZXJtYW4lMjBzaGVwaGVyZCUyMGRvZyUyMG5vYmxlJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzg2NjM2ODU5fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Berger Allemand majestueux - La Voix du Chien"
+      },
+      {
+        "category": "noble_german_shepherd",
+        "url": "https://images.unsplash.com/photo-1613656741959-70b2eaeb6db8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHw0fHxnZXJtYW4lMjBzaGVwaGVyZCUyMGRvZyUyMG5vYmxlJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzg2NjM2ODU5fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Berger Allemand au repos attentif"
+      },
+      {
+        "category": "rescue_shelter_dog",
+        "url": "https://images.unsplash.com/photo-1649923625793-af1cbd33c8bd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY6NzN8MHwxfHNlYXJjaHw0fHxkb2clMjByZXNjdWUlMjBzaGVsdGVyJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzg2NjM2ODY4fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Chien secouru en attente d'adoption"
+      },
+      {
+        "category": "volunteer_team",
+        "url": "https://images.unsplash.com/photo-1700665537604-412e89a285c3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwxfHxhbmltYWwlMjB3ZWxmYXJlJTIwdm9sdW50ZWVyJTIwcmVzY3VlJTIwdGVhbXxlbnwwfHx8fDE3ODY2MzY4Njh8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Équipe de bénévoles et soignants en intervention"
+      },
+      {
+        "category": "vet_care",
+        "url": "https://images.unsplash.com/photo-1700665537650-1bf37979aae0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTZ8MHwxfHNlYXJjaHwyfHxhbmltYWwlMjB3ZWxmYXJlJTIwdm9sdW50ZWVyJTIwcmVzY3VlJTIwdGVhbXxlbnwwfHx8fDE3ODY2MzY4Njh8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Soin vétérinaire associatif"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Créer une interface complète, réactive et francophone pour la plateforme 'LA VOIX DU CHIEN'.",
+    "S'assurer que les couleurs officielles (#800020 Bordeaux, #002060 Bleu Marine, #F8F9FA Beige chaud, #FFFFFF Blanc) sont scrupuleusement appliquées dans Tailwind et index.css.",
+    "Intégrer le widget 'PROGRESSION CETTE SEMAINE' de manière très visible dans le Dashboard Bureau avec un dégradé Bordeaux élégant.",
+    "Développer le système complet de navigation dans la Sidebar Bureau avec toutes les rubriques demandées (Mindmap, Projets, Tâches, Calendrier, Activités, Événements, Membres, Professionnels, Partenaires, Bénévolat, Finances, Terrain/QR, Stocks, Campagnes, Communication, Blog, Documents, Statistiques, Administration, Audit).",
+    "Ajouter la possibilité de basculer facilement entre les 3 vues principales : Dashboard Bureau, Dashboard Professionnel et Dashboard Particulier.",
+    "Fournir des jeux de données fictifs réalistes (Membres en attente de validation, Chiens à l'adoption, Projets en cours, Financements, Journal d'audit) avec fonctions de filtre, recherche et validation interactive.",
+    "Appliquer rigoureusement les attributs `data-testid` sur tous les boutons, inputs, liens et conteneurs d'information stratégiques."
+  ],
+  "universal_guidelines": [
+    "Toujours maintenir un niveau de contraste élevé (WCAG AA compliant) pour le texte sur fond bordeaux ou bleu marine.",
+    "Éviter les icônes émojis enfantines (🤖, 🧠, 🎯, etc.) dans l'UI pro. Utiliser Lucide React icons.",
+    "Fournir un effet de glassmorphism propre pour le header fixe sans laisser les éléments du fond se superposer de façon illisible.",
+    "Chaque action utilisateur (Validation adhésion, Sauvegarde tâche, Scan QR code) doit déclencher une notification Toast via `sonner`.",
+    "Inclure les attributs data-testid sur tous les éléments interactifs pour assurer des tests automatisés fiables."
+  ]
+}
