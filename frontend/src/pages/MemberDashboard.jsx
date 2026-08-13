@@ -1,35 +1,94 @@
-import { useEffect, useState } from "react";
-import { CalendarDays, ListChecks, Dog as DogIcon, Star, Gift, Bell } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { CalendarDays, ListChecks, Dog as DogIcon, Star, Gift, HandHeart } from "lucide-react";
+import { api, apiError } from "@/lib/api";
 import { PageHeader, KpiCard, EmptyState } from "@/components/Ui";
+import { StatusBadge, DeadlineChip } from "@/components/Badges";
+import { Button } from "@/components/ui/button";
 
 export default function MemberDashboard() {
   const [data, setData] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api.get("/dashboard/member").then((r) => setData(r.data)).catch(() => setData(false));
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
   if (!data) return <p className="text-muted-foreground">Chargement…</p>;
   const k = data.kpis;
+
+  const claim = async (taskId) => {
+    try {
+      await api.post(`/tasks/${taskId}/claim`);
+      toast.success("Merci ! La tâche vous est attribuée.");
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
 
   return (
     <div data-testid="member-dashboard">
       <PageHeader breadcrumb="Espace adhérent"
         title={`Bonjour ${data.profile?.first_name || ""}`}
-        subtitle="Vos activités, vos chiens, votre carte de fidélité et vos avantages." />
+        subtitle="Vos tâches bénévoles, vos chiens, vos activités et vos avantages." />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
         <KpiCard testId="member-kpi-activities" label="Mes activités" value={k.activities} icon={CalendarDays} />
         <KpiCard testId="member-kpi-registrations" label="Inscriptions" value={k.registrations} icon={CalendarDays} />
-        <KpiCard testId="member-kpi-tasks" label="Tâches bénévoles" value={k.volunteer_tasks} icon={ListChecks} />
+        <KpiCard testId="member-kpi-tasks" label="Tâches bénévoles" value={k.volunteer_tasks} icon={ListChecks}
+          tone="bordeaux" />
         <KpiCard testId="member-kpi-dogs" label="Mes chiens" value={k.dogs} icon={DogIcon} tone="bordeaux" />
-        <KpiCard testId="member-kpi-loyalty" label="Points fidélité" value={k.loyalty_points} icon={Star} tone="bordeaux" />
+        <KpiCard testId="member-kpi-loyalty" label="Points fidélité" value={k.loyalty_points} icon={Star} />
         <KpiCard testId="member-kpi-advantages" label="Avantages" value={k.advantages} icon={Gift} />
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border bg-card p-5" data-testid="member-my-tasks">
+          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mes tâches</h2>
+          <div className="mt-4 space-y-2">
+            {data.my_tasks.length === 0 && (
+              <EmptyState testId="member-tasks-empty" title="Aucune tâche en cours"
+                description="Prenez une mission bénévole ouverte ci-contre : chaque coup de main compte." />
+            )}
+            {data.my_tasks.map((t) => (
+              <Link key={t.task_id} to={`/projects/${t.project_id}`} data-testid={`member-task-${t.task_id}`}
+                className="block rounded-lg border px-4 py-3 transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
+                <p className="text-sm font-semibold text-[#002060]">{t.title}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <StatusBadge status={t.status} />
+                  <DeadlineChip deadline={t.deadline} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-card p-5" data-testid="member-volunteer-tasks">
+          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Missions bénévoles ouvertes</h2>
+          <div className="mt-4 space-y-2">
+            {data.open_volunteer_tasks.length === 0 && (
+              <EmptyState testId="member-volunteer-empty" title="Aucune mission ouverte"
+                description="Le Bureau publiera bientôt de nouvelles missions." />
+            )}
+            {data.open_volunteer_tasks.map((t) => (
+              <div key={t.task_id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3"
+                data-testid={`member-volunteer-${t.task_id}`}>
+                <div>
+                  <p className="text-sm font-semibold text-[#002060]">{t.title}</p>
+                  <DeadlineChip deadline={t.deadline} />
+                </div>
+                <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  data-testid={`member-claim-${t.task_id}`} onClick={() => claim(t.task_id)}>
+                  <HandHeart className="mr-2 h-4 w-4" /> Je m'en occupe
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="rounded-xl border bg-card p-5" data-testid="member-dogs">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mes chiens</h2>
@@ -49,6 +108,7 @@ export default function MemberDashboard() {
             ))}
           </div>
         </div>
+
         <div className="rounded-xl border bg-card p-5">
           <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Prochaines étapes</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -56,7 +116,7 @@ export default function MemberDashboard() {
           </p>
           <Link to="/notifications" data-testid="member-notifications-link"
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#002060] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#001740]">
-            <Bell className="h-4 w-4" /> {data.unread_notifications} notification(s) non lue(s)
+            {data.unread_notifications} notification(s) non lue(s)
           </Link>
         </div>
       </section>

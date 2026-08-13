@@ -1,0 +1,45 @@
+{
+  "summary": "Phase 2 tested end-to-end. Backend: 30/30 new pytest cases PASS + 36/36 Phase 1 regression PASS (66/66 total). Frontend: 12/12 core Playwright checks PASS on desktop and mobile.",
+  "coverage": [
+    "Task full workflow (create from template, assign, start, submit with proof/comment -> PENDING_VALIDATION, admin sees on /tasks/pending-validation with submitter name + timestamp, validate ACCEPT -> COMPLETED, notifications on both sides, history CREATE+SUBMIT+VALIDATE)",
+    "Request changes workflow (400 without comment, rejection_reason set, task returns to IN_PROGRESS, WARNING notification)",
+    "Permissions: PRO_STANDARD 403 on tasks.create/validate/delete; PARTICULIER_STANDARD 403 on tasks.view and projects.view; BENEVOLE_VALIDE can view/submit",
+    "Volunteer claim: BENEVOLE_VALIDE claims volunteer task, PARTICULIER 403, non-volunteer task 403",
+    "Subtasks: parent_task_id correctly stored and returned in project detail",
+    "Project visibility BUREAU: hidden from pro/particulier list, 403 on direct GET",
+    "Kanban PUT /api/projects/{id} works for admin, 403 for non-owned by PRO_STANDARD",
+    "Team: add duplicate -> 400, remove OWNER -> 400, non-coordinator pro 403 on POST team",
+    "Help requests: create NEEDS_HELP, admin sees all, non-admin only own, admin resolves + notifies, non-admin PUT 403, task-level /tasks/{id}/help creates history + help_request",
+    "Directory: 2 DEMO pros listed, filters (category, department) work, partnership_percentage/contract_reference/contract_url stripped for non-admin, PUT /professionals/{uid} 403 for pro, PUT /professionals/me updates category/specialties/departments, 403 for PARTICULIER",
+    "CSV import: analyze detects columns/mapping/duplicates/missing-email, execute creates new members, skips existing without overwrite, skips missing email, 403 for non-admin on both endpoints",
+    "Dashboard admin: Phase-2 KPIs present (active_projects, tasks_to_validate, overdue_tasks, help_requests, open_volunteer_tasks, blocked_tasks confirmed)",
+    "Global search returns grouped results",
+    "Phase 1 regression: full 36 tests still green"
+  ],
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_phase2.py",
+    "/app/backend/tests/test_phase1.py",
+    "/app/test_reports/pytest/phase2_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "projects.py (~700 lines) mixes projects, tasks, help_requests, task_history — split into modules (projects.py, tasks.py, help.py) once it grows further",
+    "list_projects builds an $and around visible_project_filter's own $or; works but nested filters could be simplified. Also 'overdue' adds a duplicate 'status' key that gets overwritten by the earlier status filter — low impact but worth simplifying",
+    "professionals.get_professional pops 3 admin-only keys but forgets 'documents' and 'promo_codes' which may contain contract-related info; consider a whitelist rather than blacklist for non-admin fields",
+    "imports_csv.execute reads file.read() twice implicitly (analyze then execute) — client uploads twice, which is fine, but ensure large-file handling is documented. Also file.read() has no size limit → risk of DoS on very large CSVs",
+    "help-requests PUT accepts a raw dict payload instead of a Pydantic model — inconsistent with the rest of the API and skips validation",
+    "notify_bureau() iterates all admins per action; fine at low volume but O(admins) per event; consider a broadcast collection or a single 'BUREAU' recipient",
+    "Same Phase-1 comment still applies: CORS allow_origins='*' with credentials, server.py still >700 lines"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase2.py (new)"
+  ],
+  "success_rate": {"backend": "100% (66/66: 36 phase1 + 30 phase2)", "frontend": "100% (12/12 checks)"},
+  "test_credentials": "See /app/memory/test_credentials.md — all credentials validated during tests.",
+  "seed_data_creation": "Tests use only 'TEST_' prefixed projects/tasks/help_requests and always cascade-delete their parent project at end. CSV import creates one new user test_new_import@example.com (ACTIVE, imported=true) — safe to keep or archive.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2 is stable. Reusable suite: /app/backend/tests/test_phase2.py (uses fixtures from conftest.py). Auth via Bearer from POST /api/auth/login access_token. Remember: PRO_STANDARD lacks tasks.create AND tasks.validate; PRO_COORDINATEUR has both. PARTICULIER_STANDARD has neither tasks.view nor projects.view; BENEVOLE_VALIDE has tasks.view+tasks.submit. Import CSV endpoints are multipart/form-data. Frontend testids verified: help-button, help-dialog, help-type-*, directory-card-*, directory-detail-partnership (admin-only), directory-category/department/specialty filters."
+}

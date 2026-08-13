@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
-  Bell, Dog, FileText, History, Home, LogOut, Menu, Network, Settings, ShieldCheck,
-  Sparkles, Users, X, CalendarDays, FolderKanban, HeartHandshake, UserCircle,
+  Bell, Dog, History, Home, LogOut, Menu, Network, Settings, ShieldCheck, Sparkles, Users, X,
+  CalendarDays, FolderKanban, HeartHandshake, UserCircle, ListChecks, CheckCircle2, LifeBuoy,
+  BookUser, Upload, FileText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { HelpButton } from "@/components/HelpButton";
 import { Button } from "@/components/ui/button";
-
-const SOON = " (phase suivante)";
 
 const BUREAU_NAV = [
   { to: "/admin/dashboard", label: "Accueil", icon: Home },
+  { to: "/projects", label: "Projets", icon: FolderKanban },
+  { to: "/tasks", label: "Tâches", icon: ListChecks },
+  { to: "/admin/validation", label: "Validation", icon: CheckCircle2 },
+  { to: "/directory", label: "Professionnels", icon: BookUser },
   { to: "/admin/members", label: "Membres", icon: Users },
+  { to: "/admin/help", label: "Aide", icon: LifeBuoy },
   { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/admin/import", label: "Import CSV", icon: Upload },
   { to: "/admin/audit", label: "Journal d'audit", icon: History },
   { to: "/admin/settings", label: "Administration", icon: Settings },
   { to: "/profile", label: "Mon profil", icon: UserCircle },
@@ -22,19 +28,26 @@ const BUREAU_NAV = [
 
 const PRO_NAV = [
   { to: "/pro/dashboard", label: "Accueil", icon: Home },
+  { to: "/projects", label: "Projets", icon: FolderKanban },
+  { to: "/tasks", label: "Mes tâches", icon: ListChecks },
+  { to: "/directory", label: "Annuaire", icon: BookUser },
+  { to: "/help", label: "Aide", icon: LifeBuoy },
   { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/profile", label: "Mon profil", icon: UserCircle },
 ];
 
 const MEMBER_NAV = [
   { to: "/member/dashboard", label: "Accueil", icon: Home },
+  { to: "/tasks", label: "Mes tâches", icon: ListChecks },
+  { to: "/projects", label: "Projets", icon: FolderKanban },
+  { to: "/directory", label: "Professionnels", icon: BookUser },
+  { to: "/help", label: "Aide", icon: LifeBuoy },
   { to: "/notifications", label: "Notifications", icon: Bell },
   { to: "/profile", label: "Mon profil", icon: UserCircle },
 ];
 
 const PLANNED = [
   { label: "Mindmap", icon: Network },
-  { label: "Projets", icon: FolderKanban },
   { label: "Calendrier", icon: CalendarDays },
   { label: "Partenaires", icon: HeartHandshake },
   { label: "Documents", icon: FileText },
@@ -72,7 +85,7 @@ export const AppShell = ({ children }) => {
         ))}
         <p className="px-3 pt-6 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/35">À venir</p>
         {PLANNED.map(({ label, icon: Icon }) => (
-          <span key={label} title={label + SOON}
+          <span key={label} title={`${label} (phase suivante)`}
             className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/30">
             <Icon className="h-4 w-4" /> {label}
           </span>
@@ -102,15 +115,17 @@ export const AppShell = ({ children }) => {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex items-center gap-3 border-b bg-card/90 px-4 py-3 backdrop-blur">
+        <header className="sticky top-0 z-40 flex items-center gap-2 border-b bg-card/90 px-4 py-3 backdrop-blur">
           <button className="lg:hidden" onClick={() => setOpen(true)} data-testid="mobile-menu-button"
             aria-label="Ouvrir le menu">
             <Menu className="h-6 w-6 text-[#002060]" />
           </button>
           <div className="flex-1"><GlobalSearch /></div>
+          <div className="hidden sm:block"><HelpButton /></div>
+          <div className="sm:hidden"><HelpButton compact /></div>
           <NotificationBell />
           <Link to="/profile" data-testid="header-profile-link"
-            className="grid h-10 w-10 place-items-center rounded-full bg-[#002060] text-sm font-bold text-white">
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#002060] text-sm font-bold text-white">
             {(profile?.display_name || user?.email || "?").slice(0, 1).toUpperCase()}
           </Link>
         </header>

@@ -12,6 +12,13 @@ import Notifications from "@/pages/Notifications";
 import Profile from "@/pages/Profile";
 import Audit from "@/pages/Audit";
 import AdminSettings from "@/pages/AdminSettings";
+import Projects from "@/pages/Projects";
+import ProjectDetail from "@/pages/ProjectDetail";
+import Tasks from "@/pages/Tasks";
+import Validation from "@/pages/Validation";
+import Directory from "@/pages/Directory";
+import ImportCsv from "@/pages/ImportCsv";
+import HelpRequests from "@/pages/HelpRequests";
 import "@/App.css";
 
 const HOME_BY_ROLE = {
@@ -59,10 +66,18 @@ function AppRouter() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/admin/dashboard" element={<Protected adminOnly><AdminDashboard /></Protected>} />
       <Route path="/admin/members" element={<Protected adminOnly><Members /></Protected>} />
+      <Route path="/admin/validation" element={<Protected adminOnly><Validation /></Protected>} />
+      <Route path="/admin/help" element={<Protected adminOnly><HelpRequests /></Protected>} />
+      <Route path="/admin/import" element={<Protected adminOnly><ImportCsv /></Protected>} />
       <Route path="/admin/audit" element={<Protected adminOnly><Audit /></Protected>} />
       <Route path="/admin/settings" element={<Protected adminOnly><AdminSettings /></Protected>} />
       <Route path="/pro/dashboard" element={<Protected><ProDashboard /></Protected>} />
       <Route path="/member/dashboard" element={<Protected><MemberDashboard /></Protected>} />
+      <Route path="/projects" element={<Protected><Projects /></Protected>} />
+      <Route path="/projects/:projectId" element={<Protected><ProjectDetail /></Protected>} />
+      <Route path="/tasks" element={<Protected><Tasks /></Protected>} />
+      <Route path="/directory" element={<Protected><Directory /></Protected>} />
+      <Route path="/help" element={<Protected><HelpRequests /></Protected>} />
       <Route path="/notifications" element={<Protected><Notifications /></Protected>} />
       <Route path="/profile" element={<Protected><Profile /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />

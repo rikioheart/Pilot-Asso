@@ -9,12 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const toList = (value) => (value || "").split(",").map((s) => s.trim()).filter(Boolean);
 
 export default function Profile() {
   const { user, profile, setProfile } = useAuth();
   const [form, setForm] = useState({});
   const [dogs, setDogs] = useState([]);
   const [newDog, setNewDog] = useState({ name: "", breed: "", character: "" });
+  const [pro, setPro] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  const isPro = user?.role === "PROFESSIONNEL" || user?.role === "ADMIN_BUREAU";
 
   useEffect(() => {
     if (profile) {
@@ -27,8 +34,19 @@ export default function Profile() {
   }, [profile]);
 
   useEffect(() => {
-    if (user?.status === "ACTIVE") api.get("/dogs").then((r) => setDogs(r.data)).catch(() => {});
-  }, [user]);
+    if (user?.status !== "ACTIVE") return;
+    if (user.role === "PARTICULIER") api.get("/dogs").then((r) => setDogs(r.data)).catch(() => {});
+    if (isPro) {
+      api.get("/professionals/me").then((r) => setPro({
+        ...r.data,
+        specialties_text: (r.data.specialties || []).join(", "),
+        services_text: (r.data.services || []).join(", "),
+        departments_text: (r.data.departments || []).join(", "),
+        secondary_text: (r.data.secondary_categories || []).join(", "),
+      })).catch(() => {});
+      api.get("/professionals/meta/categories").then((r) => setCategories(r.data.categories)).catch(() => {});
+    }
+  }, [user, isPro]);
 
   const save = async (e) => {
     e.preventDefault();
@@ -36,6 +54,33 @@ export default function Profile() {
       const { data } = await api.put("/profiles/me", form);
       setProfile(data);
       toast.success("Profil mis à jour");
+    } catch (err) {
+      toast.error(apiError(err));
+    }
+  };
+
+  const savePro = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        company_name: pro.company_name || null,
+        professional_category: pro.professional_category || null,
+        secondary_categories: toList(pro.secondary_text),
+        description: pro.description || null,
+        specialties: toList(pro.specialties_text),
+        services: toList(pro.services_text),
+        service_area: pro.service_area || null,
+        departments: toList(pro.departments_text),
+        website: pro.website || null,
+        social_links: pro.social_links || {},
+        phone: pro.phone || null,
+        email: pro.email || null,
+        member_advantages: pro.member_advantages || null,
+        public_visibility: pro.public_visibility || "MEMBERS",
+      };
+      const { data } = await api.put("/professionals/me", payload);
+      setPro({ ...pro, ...data });
+      toast.success("Fiche professionnelle enregistrée");
     } catch (err) {
       toast.error(apiError(err));
     }
@@ -69,8 +114,9 @@ export default function Profile() {
         subtitle={`${user?.role} · ${user?.access_level} · statut ${user?.status}`} />
 
       <Tabs defaultValue="infos" className="max-w-3xl">
-        <TabsList data-testid="profile-tabs">
+        <TabsList data-testid="profile-tabs" className="flex-wrap">
           <TabsTrigger value="infos" data-testid="profile-tab-infos">Informations</TabsTrigger>
+          {isPro && <TabsTrigger value="pro" data-testid="profile-tab-pro">Ma fiche pro</TabsTrigger>}
           {user?.role === "PARTICULIER" && <TabsTrigger value="dogs" data-testid="profile-tab-dogs">Mes chiens</TabsTrigger>}
           <TabsTrigger value="rights" data-testid="profile-tab-rights">Mes droits</TabsTrigger>
         </TabsList>
@@ -114,6 +160,114 @@ export default function Profile() {
             </Button>
           </form>
         </TabsContent>
+
+        {isPro && (
+          <TabsContent value="pro" className="mt-6">
+            {!pro ? <p className="text-muted-foreground">Chargement de la fiche…</p> : (
+              <form onSubmit={savePro} className="space-y-4 rounded-xl border bg-card p-5" data-testid="pro-details-form">
+                <p className="text-sm text-muted-foreground">
+                  Cette fiche alimente l'annuaire des professionnels. Séparez les listes par des virgules.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Nom de la structure</Label>
+                    <Input value={pro.company_name || ""} data-testid="pro-company-input"
+                      onChange={(e) => setPro({ ...pro, company_name: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Catégorie principale</Label>
+                    <Select value={pro.professional_category || "NONE"}
+                      onValueChange={(v) => setPro({ ...pro, professional_category: v === "NONE" ? null : v })}>
+                      <SelectTrigger data-testid="pro-category-select"><SelectValue placeholder="Choisir" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">Non précisée</SelectItem>
+                        {categories.map((c) => (
+                          <SelectItem key={c} value={c} data-testid={`pro-category-${c}`}>{c.replaceAll("_", " ")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Catégories secondaires</Label>
+                    <Input value={pro.secondary_text || ""} data-testid="pro-secondary-input"
+                      placeholder="TOILETTEUR, PET_SITTER"
+                      onChange={(e) => setPro({ ...pro, secondary_text: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Zone d'intervention</Label>
+                    <Input value={pro.service_area || ""} data-testid="pro-area-input"
+                      onChange={(e) => setPro({ ...pro, service_area: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Départements</Label>
+                    <Input value={pro.departments_text || ""} data-testid="pro-departments-input" placeholder="45, 77, 89, 91"
+                      onChange={(e) => setPro({ ...pro, departments_text: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Site internet</Label>
+                    <Input value={pro.website || ""} data-testid="pro-website-input"
+                      onChange={(e) => setPro({ ...pro, website: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Téléphone professionnel</Label>
+                    <Input value={pro.phone || ""} data-testid="pro-phone-input"
+                      onChange={(e) => setPro({ ...pro, phone: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>E-mail professionnel</Label>
+                    <Input value={pro.email || ""} data-testid="pro-email-input"
+                      onChange={(e) => setPro({ ...pro, email: e.target.value })} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea rows={3} value={pro.description || ""} data-testid="pro-description-input"
+                    onChange={(e) => setPro({ ...pro, description: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Spécialités</Label>
+                  <Input value={pro.specialties_text || ""} data-testid="pro-specialties-input"
+                    placeholder="Chiots, marche en laisse, chiens sportifs"
+                    onChange={(e) => setPro({ ...pro, specialties_text: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Services proposés</Label>
+                  <Input value={pro.services_text || ""} data-testid="pro-services-input"
+                    placeholder="Cours individuels, ateliers collectifs"
+                    onChange={(e) => setPro({ ...pro, services_text: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Avantage réservé aux adhérents</Label>
+                  <Textarea rows={2} value={pro.member_advantages || ""} data-testid="pro-advantages-input"
+                    onChange={(e) => setPro({ ...pro, member_advantages: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Visibilité de ma fiche</Label>
+                  <Select value={pro.public_visibility || "MEMBERS"}
+                    onValueChange={(v) => setPro({ ...pro, public_visibility: v })}>
+                    <SelectTrigger data-testid="pro-visibility-select"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["INTERNAL_ONLY", "BUREAU", "PROFESSIONALS", "MEMBERS", "PUBLIC"].map((v) => (
+                        <SelectItem key={v} value={v} data-testid={`pro-visibility-${v}`}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {pro.partnership_status && (
+                  <div className="rounded-lg bg-muted/60 p-4 text-sm" data-testid="pro-partnership-readonly">
+                    <p className="font-semibold text-[#002060]">Partenariat (géré par le Bureau)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Statut : {pro.partnership_status} · Contrat : {pro.contract_status || "—"}
+                    </p>
+                  </div>
+                )}
+                <Button type="submit" data-testid="pro-save-button" className="rounded-full bg-[#800020] hover:bg-[#63001a]">
+                  Enregistrer ma fiche
+                </Button>
+              </form>
+            )}
+          </TabsContent>
+        )}
 
         <TabsContent value="dogs" className="mt-6 space-y-4">
           <form onSubmit={addDog} className="space-y-4 rounded-xl border bg-card p-5" data-testid="dog-form">

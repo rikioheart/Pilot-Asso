@@ -1,80 +1,26 @@
-from dotenv import load_dotenv
-from pathlib import Path
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
+from deps import (ROOT_DIR, db, mongo_client, logger, now_utc, iso, new_id, hash_password, verify_password,
+                  create_access_token, create_refresh_token, set_auth_cookies, clean_user, resolve_user,
+                  current_user, active_user, require, require_admin, log_action, hub, notify, notify_bureau)
 
 import os
-import uuid
-import logging
 import secrets
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Literal
 
-import bcrypt
-import jwt
 import httpx
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, WebSocket, WebSocketDisconnect, Query
+from fastapi import (FastAPI, APIRouter, HTTPException, Request, Response, Depends,
+                     WebSocket, WebSocketDisconnect, Query)
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 import rbac
 from rbac import ROLE_ADMIN, ROLE_PRO, ROLE_MEMBER
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("lavoixduchien")
-
-client = AsyncIOMotorClient(os.environ["MONGO_URL"])
-db = client[os.environ["DB_NAME"]]
+import projects as projects_module
+import professionals as professionals_module
+import imports_csv as imports_module
 
 app = FastAPI(title="La Voix du Chien — Plateforme interne")
 api = APIRouter(prefix="/api")
-
-JWT_ALGORITHM = "HS256"
-
-
-def now_utc():
-    return datetime.now(timezone.utc)
-
-
-def iso(dt):
-    return dt.isoformat() if isinstance(dt, datetime) else dt
-
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    try:
-        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
-    except Exception:
-        return False
-
-
-def get_jwt_secret() -> str:
-    return os.environ["JWT_SECRET"]
-
-
-def create_access_token(user_id: str, email: str) -> str:
-    return jwt.encode(
-        {"sub": user_id, "email": email, "type": "access", "exp": now_utc() + timedelta(hours=12)},
-        get_jwt_secret(), algorithm=JWT_ALGORITHM,
-    )
-
-
-def create_refresh_token(user_id: str) -> str:
-    return jwt.encode(
-        {"sub": user_id, "type": "refresh", "exp": now_utc() + timedelta(days=7)},
-        get_jwt_secret(), algorithm=JWT_ALGORITHM,
-    )
-
-
-def set_auth_cookies(response: Response, access: str, refresh: Optional[str] = None):
-    response.set_cookie("access_token", access, httponly=True, secure=True, samesite="none", max_age=43200, path="/")
-    if refresh:
-        response.set_cookie("refresh_token", refresh, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
 
 
 # ---------------------------------------------------------------- Models
@@ -126,133 +72,12 @@ class NotifyIn(BaseModel):
     link: Optional[str] = None
 
 
-# ---------------------------------------------------------------- Auth helpers
-def clean_user(user: dict) -> dict:
-    user = {k: v for k, v in user.items() if k not in ("_id", "password_hash")}
-    user["permissions"] = rbac.effective_permissions(user)
-    return user
-
-
-async def resolve_user(request: Request = None, token: str = None) -> Optional[dict]:
-    if token is None and request is not None:
-        token = request.cookies.get("access_token")
-        if not token:
-            header = request.headers.get("Authorization", "")
-            if header.startswith("Bearer "):
-                token = header[7:]
-    if not token:
-        return None
-    # 1) JWT
-    try:
-        payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
-        if payload.get("type") == "access":
-            return await db.users.find_one({"user_id": payload["sub"]})
-    except jwt.InvalidTokenError:
-        pass
-    # 2) Session Google (Emergent)
-    session = await db.user_sessions.find_one({"session_token": token})
-    if session:
-        expires = session["expires_at"]
-        if isinstance(expires, str):
-            expires = datetime.fromisoformat(expires)
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=timezone.utc)
-        if expires > now_utc():
-            return await db.users.find_one({"user_id": session["user_id"]})
-    return None
-
-
-async def current_user(request: Request) -> dict:
-    user = await resolve_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Non authentifié")
-    if not user.get("is_active"):
-        raise HTTPException(status_code=403, detail="Compte désactivé")
-    return user
-
-
-async def active_user(request: Request) -> dict:
-    user = await current_user(request)
-    if user.get("status") != "ACTIVE":
-        raise HTTPException(status_code=403, detail="Compte en attente de validation par le Bureau")
-    return user
-
-
-def require(permission: str):
-    async def dep(user: dict = Depends(active_user)) -> dict:
-        if not rbac.has_permission(user, permission):
-            raise HTTPException(status_code=403, detail=f"Permission requise : {permission}")
-        return user
-    return dep
-
-
-async def require_admin(user: dict = Depends(active_user)) -> dict:
-    if user.get("role") != ROLE_ADMIN:
-        raise HTTPException(status_code=403, detail="Réservé au Bureau")
-    return user
-
-
-# ---------------------------------------------------------------- Audit & notifications
-async def log_action(user: dict, action: str, module: str, target: str = None,
-                     old_value=None, new_value=None, comment: str = None):
-    await db.audit_logs.insert_one({
-        "log_id": f"log_{uuid.uuid4().hex[:12]}",
-        "user_id": user.get("user_id") if user else None,
-        "user_email": user.get("email") if user else "system",
-        "action": action, "module": module, "target": target,
-        "old_value": old_value, "new_value": new_value, "comment": comment,
-        "timestamp": iso(now_utc()),
-    })
-
-
-class WSHub:
-    def __init__(self):
-        self.connections: dict = {}
-
-    async def connect(self, user_id: str, ws: WebSocket):
-        await ws.accept()
-        self.connections.setdefault(user_id, []).append(ws)
-
-    def disconnect(self, user_id: str, ws: WebSocket):
-        conns = self.connections.get(user_id, [])
-        if ws in conns:
-            conns.remove(ws)
-
-    async def push(self, user_id: str, payload: dict):
-        for ws in list(self.connections.get(user_id, [])):
-            try:
-                await ws.send_json(payload)
-            except Exception:
-                self.disconnect(user_id, ws)
-
-
-hub = WSHub()
-
-
-async def notify(recipient_id: str, type: str, title: str, message: str = "",
-                 level: str = "INFO", resource_type: str = None, resource_id: str = None, link: str = None):
-    doc = {
-        "notification_id": f"ntf_{uuid.uuid4().hex[:12]}",
-        "recipient_id": recipient_id, "type": type, "title": title, "message": message,
-        "level": level, "resource_type": resource_type, "resource_id": resource_id,
-        "link": link, "is_read": False, "read_at": None, "created_at": iso(now_utc()),
-    }
-    await db.notifications.insert_one(doc)
-    await hub.push(recipient_id, {k: v for k, v in doc.items() if k != "_id"})
-    return {k: v for k, v in doc.items() if k != "_id"}
-
-
-async def notify_bureau(**kwargs):
-    async for admin in db.users.find({"role": ROLE_ADMIN, "status": "ACTIVE"}):
-        await notify(admin["user_id"], **kwargs)
-
-
-# ---------------------------------------------------------------- Auth routes
+# ---------------------------------------------------------------- Auth
 async def create_user_and_profile(email: str, role: str, first_name: str, last_name: str,
                                   password: str = None, status: str = "PENDING",
                                   access_level: str = None, extra_profile: dict = None,
                                   picture: str = None, is_demo: bool = False):
-    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    user_id = new_id("user")
     doc = {
         "user_id": user_id, "email": email.lower(), "role": role,
         "access_level": access_level or rbac.DEFAULT_LEVEL[role],
@@ -265,7 +90,7 @@ async def create_user_and_profile(email: str, role: str, first_name: str, last_n
         doc["password_hash"] = hash_password(password)
     await db.users.insert_one(doc)
     profile = {
-        "profile_id": f"prf_{uuid.uuid4().hex[:12]}", "user_id": user_id,
+        "profile_id": new_id("prf"), "user_id": user_id,
         "first_name": first_name, "last_name": last_name,
         "display_name": f"{first_name} {last_name}".strip(), "avatar": picture,
         "phone": None, "city": None, "department": None,
@@ -276,7 +101,8 @@ async def create_user_and_profile(email: str, role: str, first_name: str, last_n
     }
     profile.update(extra_profile or {})
     await db.profiles.insert_one(profile)
-    return await db.users.find_one({"user_id": user_id})
+    created = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return created
 
 
 @api.post("/auth/register")
@@ -410,7 +236,7 @@ async def update_my_profile(payload: ProfileUpdate, user: dict = Depends(current
     return await db.profiles.find_one({"user_id": user["user_id"]}, {"_id": 0})
 
 
-# ---------------------------------------------------------------- Membres (Bureau)
+# ---------------------------------------------------------------- Membres
 @api.get("/members")
 async def list_members(status: Optional[str] = None, role: Optional[str] = None,
                        q: Optional[str] = None, page: int = 1, limit: int = 25,
@@ -551,24 +377,39 @@ async def ws_notifications(ws: WebSocket, token: str = Query(None)):
 @api.get("/dashboard/admin")
 async def dashboard_admin(admin: dict = Depends(require_admin)):
     week_ago = iso(now_utc() - timedelta(days=7))
-    total = await db.users.count_documents({})
+    today = iso(now_utc())
+    open_projects = {"status": {"$in": ["PLANNED", "IN_PROGRESS", "WAITING", "TO_REVIEW", "IDEA", "BLOCKED"]}}
     return {
         "kpis": {
-            "members": total,
+            "members": await db.users.count_documents({}),
             "professionals": await db.users.count_documents({"role": ROLE_PRO, "status": "ACTIVE"}),
             "individuals": await db.users.count_documents({"role": ROLE_MEMBER, "status": "ACTIVE"}),
             "pending_members": await db.users.count_documents({"status": "PENDING"}),
+            "active_projects": await db.projects.count_documents(open_projects),
+            "tasks_to_validate": await db.tasks.count_documents({"status": "PENDING_VALIDATION"}),
+            "overdue_tasks": await db.tasks.count_documents(
+                {"deadline": {"$lt": today, "$ne": None},
+                 "status": {"$nin": ["COMPLETED", "ARCHIVED", "CANCELLED"]}}),
+            "help_requests": await db.help_requests.count_documents({"status": "OPEN"}),
+            "volunteer_tasks_open": await db.tasks.count_documents(
+                {"is_volunteer_task": True, "assigned_user_id": None, "status": "TODO"}),
+            "blocked_tasks": await db.tasks.count_documents({"status": "BLOCKED"}),
             "suspended": await db.users.count_documents({"status": "SUSPENDED"}),
             "bureau": await db.users.count_documents({"role": ROLE_ADMIN}),
         },
         "weekly_progress": {
+            "tasks_completed": await db.tasks.count_documents({"status": "COMPLETED", "completed_at": {"$gte": week_ago}}),
+            "validations": await db.task_history.count_documents({"action": "VALIDATE", "timestamp": {"$gte": week_ago}}),
             "new_members": await db.users.count_documents({"created_at": {"$gte": week_ago}}),
-            "validations": await db.audit_logs.count_documents({"action": "UPDATE", "module": "members", "timestamp": {"$gte": week_ago}}),
-            "logins": await db.audit_logs.count_documents({"action": {"$in": ["LOGIN", "LOGIN_GOOGLE"]}, "timestamp": {"$gte": week_ago}}),
+            "new_projects": await db.projects.count_documents({"created_at": {"$gte": week_ago}}),
             "actions": await db.audit_logs.count_documents({"timestamp": {"$gte": week_ago}}),
         },
         "pending_list": await db.users.find({"status": "PENDING"}, {"_id": 0, "password_hash": 0})
             .sort("created_at", -1).limit(8).to_list(8),
+        "validation_queue": await db.tasks.find({"status": "PENDING_VALIDATION"}, {"_id": 0})
+            .sort("submitted_at", 1).limit(6).to_list(6),
+        "help_list": await db.help_requests.find({"status": "OPEN"}, {"_id": 0})
+            .sort("created_at", -1).limit(6).to_list(6),
         "activity_feed": await db.audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).limit(12).to_list(12),
     }
 
@@ -578,12 +419,31 @@ async def dashboard_pro(user: dict = Depends(active_user)):
     if user["role"] not in (ROLE_PRO, ROLE_ADMIN):
         raise HTTPException(status_code=403, detail="Réservé aux professionnels")
     profile = await db.profiles.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    team_ids = [t["project_id"] async for t in db.project_teams.find(
+        {"member_id": user["user_id"], "status": "ACTIVE"}, {"_id": 0, "project_id": 1})]
+    my_tasks = await db.tasks.find({"assigned_user_id": user["user_id"],
+                                   "status": {"$nin": ["COMPLETED", "ARCHIVED", "CANCELLED"]}},
+                                  {"_id": 0}).sort("deadline", 1).limit(10).to_list(10)
     return {
         "profile": profile,
-        "kpis": {"projects": 0, "tasks": 0, "events": 0, "proposals": 0, "reservations": 0, "revenue_share": 0},
-        "unread_notifications": await db.notifications.count_documents({"recipient_id": user["user_id"], "is_read": False}),
+        "kpis": {
+            "projects": await db.projects.count_documents({"project_id": {"$in": team_ids},
+                                                           "status": {"$ne": "ARCHIVED"}}),
+            "tasks": len(my_tasks),
+            "pending_validation": await db.tasks.count_documents(
+                {"submitted_by": user["user_id"], "status": "PENDING_VALIDATION"}),
+            "completed": await db.tasks.count_documents(
+                {"assigned_user_id": user["user_id"], "status": "COMPLETED"}),
+            "events": 0, "proposals": 0, "reservations": 0, "revenue_share": 0,
+        },
+        "my_tasks": my_tasks,
+        "my_projects": await db.projects.find({"project_id": {"$in": team_ids}, "status": {"$ne": "ARCHIVED"}},
+                                              {"_id": 0}).limit(8).to_list(8),
+        "unread_notifications": await db.notifications.count_documents(
+            {"recipient_id": user["user_id"], "is_read": False}),
         "permissions": rbac.effective_permissions(user),
-        "history": await db.audit_logs.find({"user_id": user["user_id"]}, {"_id": 0}).sort("timestamp", -1).limit(10).to_list(10),
+        "history": await db.audit_logs.find({"user_id": user["user_id"]}, {"_id": 0})
+            .sort("timestamp", -1).limit(10).to_list(10),
     }
 
 
@@ -591,11 +451,17 @@ async def dashboard_pro(user: dict = Depends(active_user)):
 async def dashboard_member(user: dict = Depends(active_user)):
     profile = await db.profiles.find_one({"user_id": user["user_id"]}, {"_id": 0})
     dogs = await db.dogs.find({"owner_id": user["user_id"]}, {"_id": 0}).to_list(20)
+    my_tasks = await db.tasks.find({"assigned_user_id": user["user_id"],
+                                    "status": {"$nin": ["COMPLETED", "ARCHIVED", "CANCELLED"]}},
+                                   {"_id": 0}).sort("deadline", 1).limit(10).to_list(10)
+    open_volunteer = await db.tasks.find({"is_volunteer_task": True, "assigned_user_id": None, "status": "TODO"},
+                                         {"_id": 0}).limit(8).to_list(8)
     return {
-        "profile": profile, "dogs": dogs,
-        "kpis": {"activities": 0, "registrations": 0, "volunteer_tasks": 0,
+        "profile": profile, "dogs": dogs, "my_tasks": my_tasks, "open_volunteer_tasks": open_volunteer,
+        "kpis": {"activities": 0, "registrations": 0, "volunteer_tasks": len(my_tasks),
                  "dogs": len(dogs), "loyalty_points": 0, "advantages": 0},
-        "unread_notifications": await db.notifications.count_documents({"recipient_id": user["user_id"], "is_read": False}),
+        "unread_notifications": await db.notifications.count_documents(
+            {"recipient_id": user["user_id"], "is_read": False}),
         "permissions": rbac.effective_permissions(user),
     }
 
@@ -620,8 +486,7 @@ async def my_dogs(user: dict = Depends(active_user)):
 
 @api.post("/dogs")
 async def create_dog(payload: DogIn, user: dict = Depends(active_user)):
-    doc = {"dog_id": f"dog_{uuid.uuid4().hex[:12]}", "owner_id": user["user_id"],
-           **payload.model_dump(), "photo": None,
+    doc = {"dog_id": new_id("dog"), "owner_id": user["user_id"], **payload.model_dump(), "photo": None,
            "created_at": iso(now_utc()), "updated_at": iso(now_utc())}
     await db.dogs.insert_one(doc)
     await log_action(user, "CREATE", "dogs", doc["dog_id"], new_value={"name": payload.name})
@@ -667,26 +532,52 @@ async def global_search(q: str, user: dict = Depends(active_user)):
     prof_query = {"$or": [{"display_name": rx}, {"city": rx}]}
     if user["role"] != ROLE_ADMIN:
         prof_query["visibility"] = {"$in": ["MEMBERS", "PROFESSIONALS", "PUBLIC"]}
-    profiles = await db.profiles.find(prof_query, {"_id": 0}).limit(8).to_list(8)
+    profiles = await db.profiles.find(prof_query, {"_id": 0}).limit(6).to_list(6)
     if profiles:
         groups.append({"label": "Membres", "items": [
             {"id": p["user_id"], "title": p["display_name"], "subtitle": p.get("membership_type"),
              "link": f"/admin/members?focus={p['user_id']}" if user["role"] == ROLE_ADMIN else "/directory"}
             for p in profiles]})
+    if rbac.has_permission(user, "projects.view"):
+        pfilter = await projects_module.visible_project_filter(user)
+        pquery = {"$and": [pfilter, {"title": rx}]} if pfilter else {"title": rx}
+        found = await db.projects.find(pquery, {"_id": 0}).limit(6).to_list(6)
+        if found:
+            groups.append({"label": "Projets", "items": [
+                {"id": p["project_id"], "title": p["title"], "subtitle": p["status"],
+                 "link": f"/projects/{p['project_id']}"} for p in found]})
+    if rbac.has_permission(user, "tasks.view"):
+        tquery = {"title": rx} if user["role"] == ROLE_ADMIN else \
+            {"title": rx, "$or": [{"assigned_user_id": user["user_id"]}, {"is_volunteer_task": True}]}
+        tasks = await db.tasks.find(tquery, {"_id": 0}).limit(6).to_list(6)
+        if tasks:
+            groups.append({"label": "Tâches", "items": [
+                {"id": t["task_id"], "title": t["title"], "subtitle": t["status"],
+                 "link": f"/projects/{t['project_id']}"} for t in tasks]})
     dog_query = {"name": rx} if user["role"] == ROLE_ADMIN else {"name": rx, "owner_id": user["user_id"]}
-    dogs = await db.dogs.find(dog_query, {"_id": 0}).limit(8).to_list(8)
+    dogs = await db.dogs.find(dog_query, {"_id": 0}).limit(6).to_list(6)
     if dogs:
         groups.append({"label": "Chiens", "items": [
-            {"id": d["dog_id"], "title": d["name"], "subtitle": d.get("breed") or "Chien", "link": "/profile"} for d in dogs]})
+            {"id": d["dog_id"], "title": d["name"], "subtitle": d.get("breed") or "Chien", "link": "/profile"}
+            for d in dogs]})
+    pros = await db.professional_details.find(
+        {"$or": [{"company_name": rx}, {"specialties": rx}]}, {"_id": 0}).limit(6).to_list(6)
+    if pros:
+        groups.append({"label": "Professionnels", "items": [
+            {"id": p["user_id"], "title": p.get("company_name") or "Fiche professionnelle",
+             "subtitle": p.get("professional_category"), "link": f"/directory?focus={p['user_id']}"} for p in pros]})
     return {"groups": groups}
 
 
 @api.get("/")
 async def root():
-    return {"message": "API La Voix du Chien", "phase": 1}
+    return {"message": "API La Voix du Chien", "phase": 2}
 
 
 app.include_router(api)
+app.include_router(projects_module.router)
+app.include_router(professionals_module.router)
+app.include_router(imports_module.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -711,6 +602,21 @@ async def startup():
     await db.user_sessions.create_index("session_token")
     await db.login_attempts.create_index("identifier")
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.projects.create_index("project_id", unique=True)
+    await db.projects.create_index("status")
+    await db.projects.create_index("owner_id")
+    await db.projects.create_index("deadline")
+    await db.tasks.create_index("task_id", unique=True)
+    await db.tasks.create_index("project_id")
+    await db.tasks.create_index("assigned_user_id")
+    await db.tasks.create_index("status")
+    await db.tasks.create_index("deadline")
+    await db.project_teams.create_index([("project_id", 1), ("member_id", 1)])
+    await db.task_history.create_index("task_id")
+    await db.help_requests.create_index("status")
+    await db.professional_details.create_index("user_id", unique=True)
+    await db.professional_details.create_index("professional_category")
+    await db.professional_details.create_index("departments")
 
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]
@@ -718,7 +624,8 @@ async def startup():
     if not existing:
         await create_user_and_profile(admin_email, ROLE_ADMIN, "Bureau", "La Voix du Chien",
                                       password=admin_password, status="ACTIVE", access_level="BUREAU",
-                                      extra_profile={"function_badges": ["FONDATEUR"], "city": "Nargis", "department": "45"})
+                                      extra_profile={"function_badges": ["FONDATEUR"], "city": "Nargis",
+                                                     "department": "45"})
         logger.info("Admin Bureau créé")
     elif not verify_password(admin_password, existing.get("password_hash", "")):
         await db.users.update_one({"email": admin_email}, {"$set": {"password_hash": hash_password(admin_password)}})
@@ -729,4 +636,4 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    client.close()
+    mongo_client.close()
