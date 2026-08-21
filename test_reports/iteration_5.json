@@ -1,0 +1,39 @@
+{
+  "summary": "Testing Lot C (Prompt 3): tarification horaire terrains, réservations pro, écritures financières provisoires/encaissées et agenda partagé. Backend 11/11 tests pass, frontend flows fonctionnels (Bureau édition/tarifs, Pro demande + estimation, Agenda partagé avec bouton Google Calendar désactivé). RBAC calendrier partagé confirmé: Membre ne voit pas TERRAIN, Pro voit uniquement ses réservations, Bureau voit tout.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dialogs terrains", "issues": ["Warning React: DialogContent sans Description/aria-describedby (accessibilité). Ajouter <DialogDescription> aux dialogs terrain-dialog et terrain-request-dialog."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_terrain_lot_c.py",
+    "/app/test_reports/pytest/lot_c_results.xml"
+  ],
+  "action_items": [
+    "Optionnel: ajouter DialogDescription (aria-describedby) aux dialogs Terrains pour supprimer warning a11y.",
+    "Note: pro1.demo est PRO_STANDARD (pas de terrain.reserve) alors que /app/memory/test_credentials.md indique PRO_COORDINATEUR — incohérence entre credentials.md et seed_demo.py. Utiliser pro2.demo pour tester les réservations pro. À harmoniser."
+  ],
+  "critical_code_review_comments": [
+    "terrain.py: la logique review_reservation gère bien PROVISIONAL puis RECORDED via /paid. Aucune écriture n'est créée pour les réservations gratuites (is_free) — bon comportement vérifié.",
+    "terrain.py: conflit de créneau uniquement contre CONFIRMED — les PENDING chevauchants sont tolérés (peut être voulu, à noter).",
+    "unified_calendar: filtre correct par rôle (manager voit tout, PRO voit siennes, MEMBRE ne voit pas TERRAIN).",
+    "Terrains.jsx: window.prompt pour motif de refus fonctionne mais UX rudimentaire; envisager modal shadcn dédié.",
+    "SharedCalendar.jsx: bouton google-sync-button bien `disabled`, texte 'bientôt disponible' présent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_terrain_lot_c.py (nouveau)"
+  ],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "100% flows critiques"},
+  "test_credentials": "admin: associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro (avec terrain.reserve): pro2.demo@lavoixduchien.fr/Demo2026! ; membre: membre1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Terrains TEST_Terrain_LotC_* créés avec tarifs horaires complets (7 catégories) + réservations TEST_* pro. Non nettoyés (préfixe TEST_ pour identification).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Lot C validé end-to-end. Pour les tests futurs de réservation pro: utiliser pro2.demo (PRO_COORDINATEUR seedé) car pro1.demo est PRO_STANDARD sans permission terrain.reserve. Le test unifié cover: meta catégories FR, PUT tarifs, POST réservation avec calcul amount, review CONFIRM → transaction PROVISIONAL, /paid → RECORDED, refus sans commentaire = 400, conflit créneau = 400, is_free = amount 0 sans transaction, calendar/unified filtré par rôle.",
+  "rca of the issue": "N/A — aucun bug détecté sur Lot C."
+}

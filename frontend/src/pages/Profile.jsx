@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
-import { api, apiError } from "@/lib/api";
+import { api, apiError, fileUrl } from "@/lib/api";
+import { FileUpload } from "@/components/FileUpload";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
@@ -149,9 +150,22 @@ export default function Profile() {
                 <Input value={form.department || ""} data-testid="profile-department-input"
                   onChange={(e) => setForm({ ...form, department: e.target.value })} />
               </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Photo de profil</Label>
+              <div className="flex items-center gap-4">
+                {form.avatar && (
+                  <img src={form.avatar} alt="Ma photo" data-testid="profile-avatar-preview"
+                    className="h-16 w-16 rounded-full border object-cover" />
+                )}
+                <FileUpload usage="AVATAR" accept="image/*" testId="profile-avatar-upload"
+                  label="Choisir une photo" value={form.avatar_file_id}
+                  onChange={(id) => setForm({ ...form, avatar_file_id: id,
+                    avatar: id ? fileUrl(id) : null })} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Présentation</Label>
+          </div>
+          <div className="space-y-2">
+            <Label>Présentation</Label>
               <Textarea rows={4} value={form.bio || ""} data-testid="profile-bio-input"
                 onChange={(e) => setForm({ ...form, bio: e.target.value })} />
             </div>

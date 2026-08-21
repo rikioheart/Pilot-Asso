@@ -1,0 +1,25 @@
+crons:
+  - name: rappels-quotidiens
+    description: "Envoie chaque matin les rappels J-2 et J-1 des tâches, activités, événements et publications"
+    cron: "0 7 * * *"
+    timezone: "Europe/Paris"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/reminders"
+    method: POST
+    enabled: true
+  - name: recap-email-bimensuel
+    description: "Envoie l'e-mail récapitulatif à l'adresse principale de l'association toutes les 2 semaines"
+    cron: "0 9 1,15 * *"
+    timezone: "Europe/Paris"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/recap-email"
+    method: POST
+    enabled: true
+  - name: recap-lundi
+    description: "Envoie au Bureau le récapitulatif hebdomadaire chaque lundi matin"
+    cron: "0 8 * * 1"
+    timezone: "Europe/Paris"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/weekly-summary"
+    method: POST
+    enabled: true

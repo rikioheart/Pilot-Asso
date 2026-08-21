@@ -2,18 +2,25 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Users, Briefcase, UserCheck, Clock, FolderKanban, CheckCircle2, AlertTriangle,
-  LifeBuoy, HandHeart, Ban, TrendingUp,
+  LifeBuoy, HandHeart, TrendingUp, PartyPopper, Sparkle, Star,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { PageHeader, KpiCard, EmptyState } from "@/components/Ui";
+import { PageHeader, KpiCard, EmptyState, WelcomeBanner } from "@/components/Ui";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { PriorityQueue } from "@/components/PriorityQueue";
+import { ExportsPanel } from "@/components/ExportsPanel";
 import { Button } from "@/components/ui/button";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
+  const [feed, setFeed] = useState(null);
+  const [queue, setQueue] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     api.get("/dashboard/admin").then((r) => setData(r.data)).catch(() => setData(false));
+    api.get("/feed").then((r) => setFeed(r.data)).catch(() => {});
+    api.get("/priorities").then((r) => setQueue(r.data)).catch(() => {});
   }, []);
 
   if (!data) return <p className="text-muted-foreground" data-testid="admin-dashboard-loading">Chargement du cockpit…</p>;
@@ -23,16 +30,21 @@ export default function AdminDashboard() {
 
   return (
     <div data-testid="admin-dashboard">
-      <PageHeader breadcrumb="Bureau" title="Tableau de bord du Bureau"
-        subtitle="Ce qui existe, ce qui avance, ce qui bloque, ce qui doit être validé."
+      <WelcomeBanner testId="admin-welcome" greeting="Bonjour, membre du Bureau"
+        name="Le cockpit de La Voix du Chien"
+        message="Ce qui existe, ce qui avance, ce qui bloque, ce qui doit être validé — en un seul endroit."
+        badges={["Bureau"]}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="rounded-full" data-testid="dashboard-projects-cta"
+          <>
+            <Button variant="outline" data-testid="dashboard-projects-cta"
+              className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
               onClick={() => navigate("/projects")}>Voir les projets</Button>
             <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="dashboard-validate-cta"
               onClick={() => navigate("/admin/validation")}>Valider les actions</Button>
-          </div>
+          </>
         } />
+
+      <PriorityQueue data={queue} />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
         <KpiCard testId="kpi-members" label="Membres" value={k.members} icon={Users} onClick={() => navigate("/admin/members")} />
@@ -51,14 +63,16 @@ export default function AdminDashboard() {
       <section className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6 sm:mt-4">
         <KpiCard testId="kpi-overdue" label="Tâches en retard" value={k.overdue_tasks} icon={AlertTriangle}
           tone="bordeaux" onClick={() => navigate("/tasks")} />
+        <KpiCard testId="kpi-upcoming-events" label="Événements à venir" value={k.upcoming_events} icon={PartyPopper}
+          onClick={() => navigate("/events")} />
+        <KpiCard testId="kpi-activities-review" label="Activités proposées" value={k.activities_to_review}
+          icon={Sparkle} tone="bordeaux" onClick={() => navigate("/activities")} />
         <KpiCard testId="kpi-help" label="Besoins d'aide" value={k.help_requests} icon={LifeBuoy} tone="bordeaux"
           onClick={() => navigate("/admin/help")} />
         <KpiCard testId="kpi-volunteer-open" label="Bénévolat ouvert" value={k.volunteer_tasks_open} icon={HandHeart}
           onClick={() => navigate("/tasks")} />
-        <KpiCard testId="kpi-blocked" label="Tâches bloquées" value={k.blocked_tasks} icon={Ban}
-          onClick={() => navigate("/tasks")} />
-        <KpiCard testId="kpi-suspended" label="Suspendus" value={k.suspended} icon={Ban} />
-        <KpiCard testId="kpi-bureau" label="Bureau" value={k.bureau} icon={Users} />
+        <KpiCard testId="kpi-loyalty-stamps" label="Tampons fidélité" value={k.loyalty_stamps} icon={Star}
+          onClick={() => navigate("/admin/loyalty")} />
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -133,6 +147,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-6">
+          <ActivityFeed feed={feed} />
+          <ExportsPanel />
+
           <div className="rounded-xl border bg-card p-5" data-testid="help-widget">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Qui a besoin d'aide</h2>

@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FolderKanban, ListChecks, CheckCircle2, Send, MapPin, Wallet } from "lucide-react";
+import { FolderKanban, ListChecks, CheckCircle2, Send, CalendarDays, Sparkle, Star, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { PageHeader, KpiCard, EmptyState } from "@/components/Ui";
+import { PageHeader, KpiCard, EmptyState, WelcomeBanner } from "@/components/Ui";
+import { ActivityFeed, EngagementCard } from "@/components/ActivityFeed";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 
 export default function ProDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const [feed, setFeed] = useState(null);
+  const [engagement, setEngagement] = useState(null);
 
   useEffect(() => {
     api.get("/dashboard/pro").then((r) => setData(r.data)).catch(() => setData(false));
+    api.get("/feed").then((r) => setFeed(r.data)).catch(() => {});
+    api.get("/me/engagement").then((r) => setEngagement(r.data)).catch(() => {});
   }, []);
 
   if (!data) return <p className="text-muted-foreground">Chargement…</p>;
@@ -19,9 +24,10 @@ export default function ProDashboard() {
 
   return (
     <div data-testid="pro-dashboard">
-      <PageHeader breadcrumb="Espace professionnel"
-        title={`Bonjour ${data.profile?.first_name || ""}`}
-        subtitle="Mon activité associative : projets, tâches, validations et historique." />
+      <WelcomeBanner testId="pro-welcome" greeting="Espace professionnel"
+        name={`Bonjour ${data.profile?.first_name || ""}`}
+        message="Vos projets, vos tâches, vos parts et les actualités de l'association."
+        badges={engagement?.badges} />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
         <KpiCard testId="pro-kpi-projects" label="Mes projets" value={k.projects} icon={FolderKanban} />
@@ -29,11 +35,16 @@ export default function ProDashboard() {
         <KpiCard testId="pro-kpi-pending" label="En attente de validation" value={k.pending_validation}
           icon={Send} tone="bordeaux" />
         <KpiCard testId="pro-kpi-completed" label="Tâches validées" value={k.completed} icon={CheckCircle2} />
-        <KpiCard testId="pro-kpi-reservations" label="Réservations terrain" value={k.reservations} icon={MapPin} />
+        <KpiCard testId="pro-kpi-events" label="Mes événements" value={k.events} icon={CalendarDays} />
+        <KpiCard testId="pro-kpi-activities" label="Mes activités" value={k.activities} icon={Sparkle} />
+        <KpiCard testId="pro-kpi-stamps" label="Tampons validés" value={k.stamps} icon={Star} tone="bordeaux" />
         <KpiCard testId="pro-kpi-revenue" label="Ma part" value={`${k.revenue_share} €`} icon={Wallet} tone="bordeaux" />
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
+        <EngagementCard engagement={engagement} />
+        <ActivityFeed feed={feed} />
+
         <div className="rounded-xl border bg-card p-5" data-testid="pro-my-tasks">
           <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mes tâches en cours</h2>
           <div className="mt-4 space-y-2">

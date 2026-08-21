@@ -1,56 +1,81 @@
 # PRD — Plateforme interne « La Voix du Chien »
 
-## Problème initial (résumé fidèle)
-Construire le cockpit opérationnel interne de l'association française « La Voix du Chien » (Nargis, Loiret) : gouvernance, membres, professionnels, particuliers, chiens, projets/tâches/validations, activités, événements, partenariats, mairies, terrain, blog/communication, formations, stocks, campagnes, carte de fidélité QR, finances opérationnelles, remboursements, documents, notifications temps réel, mindmap, RBAC fin, audit.
-Interdits absolus : adoption, paiement en ligne, Supabase, dépendance GitHub, e-mails externes en V1.
-Développement par phases avec test après chaque phase.
+## Problème initial
+Cockpit opérationnel interne pour l'association française **La Voix du Chien** (Nargis, Loiret) :
+centraliser gouvernance, membres, chiens, projets, tâches, événements, partenariats, finances et ressources.
+**Règles strictes** : aucune fonctionnalité d'adoption · pas de Supabase · pas de dépendance GitHub ·
+aucun paiement en ligne intégré. Interface et contenus **100 % en français**.
 
-## Architecture technique
-- Frontend : React 19 (CRA + craco, JSX), Tailwind, shadcn/ui, lucide-react, react-router 7, sonner. (TypeScript non appliqué : template CRA JS conservé pour la fiabilité.)
-- Backend : FastAPI modulaire — `deps.py` (base, auth, permissions, notifications, audit), `server.py` (auth, membres, chiens, dashboards, audit, recherche), `projects.py` (projets/tâches/équipes/aide), `professionals.py` (annuaire), `imports_csv.py` (import), `rbac.py`, `seed_demo.py`.
-- RBAC : ROLE (ADMIN_BUREAU / PROFESSIONNEL / PARTICULIER) + NIVEAU + permissions + overrides, plus contexte projet (owner/coordinateur) et visibilité. Vérification exclusivement serveur.
-- Auth : JWT email/mot de passe (cookies httpOnly + Bearer), bcrypt, anti-brute-force, reset token ; ET Google géré par Emergent.
-- Collections : users, profiles, dogs, notifications, audit_logs, user_sessions, projects, project_teams, tasks, task_history, help_requests, professional_details, import_runs (+ index sur email, role, status, deadline, project_id, assigned_user_id, recipient/is_read, timestamp).
+**Stack** : React + Tailwind + shadcn/ui · FastAPI · MongoDB · WebSocket temps réel · RBAC strict côté backend.
+**Charte** : marine `#002060`, bordeaux `#800020`, logo officiel (`/frontend/public/logo-vdc.png`).
 
-## Personas
-- Membre du Bureau : pilote, valide après preuve, arbitre, importe les données.
-- Professionnel (PRO_STANDARD / AVANCE / COORDINATEUR) : propose, coordonne des projets, exécute et soumet des tâches, tient sa fiche d'annuaire.
-- Particulier (STANDARD / IMPLIQUE / BENEVOLE_VALIDE / REFERENT_BENEVOLE) : chiens, missions bénévoles, demandes d'aide.
+## Rôles
+- **ADMIN_BUREAU** (Bureau, 3 gestionnaires) — accès complet
+- **PROFESSIONNEL** (PRO_STANDARD / PRO_AVANCE / PRO_COORDINATEUR)
+- **PARTICULIER** (MEMBRE_STANDARD / MEMBRE_IMPLIQUE / BENEVOLE / REFERENT)
 
-## Exigences structurelles (stables)
-CLARTÉ → SIMPLICITÉ → FIABILITÉ → SÉCURITÉ → PETITS PROGRÈS → TRAÇABILITÉ → COLLABORATION → ÉVOLUTIVITÉ.
-Logique fondamentale : ACTION → PREUVE → VALIDATION → HISTORIQUE → PROGRESSION.
-Pas de suppression physique par défaut (ARCHIVE / SUSPENDED / CANCELLED) ; les non-admins ne suppriment jamais une tâche.
+## Livré
 
-## Implémenté
-### Juin 2026 — Phase 1 (fondations)
-- Connexion / création de compte (PENDING validé par le Bureau), Google, mot de passe oublié.
-- Dashboards Bureau / Professionnel / Particulier, sidebar dynamique, header (recherche globale, cloche temps réel).
-- Membres : validation, refus, suspension, réactivation, rôle + niveau, overrides de permissions.
-- Notifications internes + WebSocket, page /notifications, journal d'audit, matrice RBAC, profil + chiens.
-- Données DEMO marquées [DEMO]. Tests : 36/36 backend + parcours Playwright.
+### Phases 1 à 8 + Prompts 1 & 2 — validés lors des itérations précédentes
+Auth JWT + Google managé, RBAC, profils, dashboards, notifications WebSocket · Projets, tâches Kanban,
+validation, import CSV, annuaire pro · Activités, événements, calendrier, carte de fidélité + QR,
+statistiques, mindmap · Blog, formations, bibliothèque, planificateur réseaux sociaux, concours, Avent ·
+Finances, parts pros, remboursements, avantages adhérents · Partenaires, terrains, stocks, documents,
+formulaires · Notifications hiérarchisées, file de priorité Bureau, 8 exports Excel, onboarding, crons ·
+Accessibilité (OpenDyslexic, contraste, mode focus) et espaces pros qualifiés · Fiches chiens,
+suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 
-### Juin 2026 — Phase 2 + annuaire + import + aide
-- Projets : Kanban (glisser-déposer), liste, filtres (catégorie, en retard, recherche), sous-projets, templates (journée thématique, article blog, formation, événement), progression automatique, archivage, visibilité par mode.
-- Équipes projet : rôles contextuels OWNER/COORDINATOR/CONTRIBUTOR/VOLUNTEER/EXPERT/REVIEWER, ajout/retrait, demande pour rejoindre.
-- Tâches et sous-tâches : attribution, deadlines (chips « J-x / en retard »), dépendances (bloquée par), bénévolat ouvert + claim, commentaires, preuve, soumission → PENDING_VALIDATION → validation Bureau (ACCEPT / demande de modification motivée), task_history complet, suppression réservée au Bureau.
-- Page /admin/validation : cartes avec membre, projet, date, preuve, commentaires, boutons Valider / Demander une modification.
-- Annuaire professionnel filtrable (catégorie, département, spécialité, recherche) + fiche détaillée en tiroir ; onglet « Ma fiche pro » dans le profil ; champs partenariat/contrats/documents masqués aux non-admins.
-- Import CSV (Administration) : analyse, mapping proposé, prévisualisation, doublons internes et comptes existants, lignes sans e-mail, exécution sans écrasement silencieux (conflits listés), option de mise à jour explicite, historique des imports.
-- « J'ai besoin d'aide » / « Je peux aider sur… » dans le header et sur chaque tâche → notification au Bureau, page /admin/help, widget « Qui a besoin d'aide », réponse et résolution.
-- Dashboard Bureau enrichi (12 KPI dont projets actifs, tâches à valider, en retard, besoins d'aide, bénévolat ouvert, bloquées) + « Progression cette semaine ».
-- Tests : 66/66 backend (36 Phase 1 + 30 Phase 2, `/app/backend/tests/`) et 12/12 parcours frontend desktop + mobile.
+### Prompt 3 — Activités, Événements, Terrain & Calendriers (21/08/2026, testé 100 %)
+- **Lot C** : tarifs horaires par catégorie fixés par le Bureau (7 catégories), réservation par les pros
+  avec estimation du montant, validation/refus tracés, **écriture financière provisoire** créée à la
+  validation puis **marquée encaissée** après la séance ; détection des conflits de créneaux ;
+  mise à disposition gratuite sans écriture ; nouvelle page **Agenda partagé** (`/agenda`) filtrée par
+  rôle (Particulier ne voit pas les réservations, Pro ne voit que les siennes) ; bouton Google Calendar
+  **désactivé** (« bientôt disponible ») sur l'agenda et dans les préférences.
+- **Lot A** : panneau latéral de **création rapide** (activités, événements, partenaires, avantages,
+  qualification d'un professionnel) accessible depuis l'en-tête du Bureau ; onglet « Archiver » avec
+  **archivage récupérable**, restauration et **suppression définitive**, motif obligatoire et tracé
+  (`/api/records/{entity}`).
+- **Lot B** : fiches enrichies (lien Google Maps, visio/distanciel + lien, formulaire associé avec date de
+  notification, éligibilité carte d'engagement), ajout de participants depuis la fiche, visibilité par
+  élément (tous les membres / pros + Bureau / Bureau seul), **nomenclatures configurables** par le Bureau
+  (catégories et types d'activités, types d'événements) dans Administration, libellés entièrement français.
+
+### Prompt 4 — Engagement, QR Code & Fidélité (21/08/2026, testé 100 % — 23/23 backend)
+- Onglet Bureau renommé **Engagement** (`/admin/engagement`) : cartes des membres, historique des tampons,
+  règles & paliers
+- Historique daté complet : élément concerné, professionnel ou membre du Bureau, date et **mode
+  d'obtention** (scan QR, validation pro, ajout Bureau, validation automatique de présence)
+- Filtres et tris : par membre, par activité, par date, par mode d'obtention
+- Éligibilité carte d'engagement sur **activités et événements** ; **tampon automatique** à la validation
+  de présence (nouvel endpoint de présence pour les activités)
+- **Ajout / retrait manuel** par le Bureau avec motif obligatoire, identifié comme manuel, total recalculé,
+  retrait bloqué sous zéro ; **annulation d'une ligne précise** avec motif
+- **QR Code personnel** : téléchargeable en PNG par le Particulier, régénérable par le membre **et par le
+  Bureau** (l'ancien devient immédiatement invalide, vérifié par test)
+- Scan pro : profil simplifié, validation en un clic, **saisie manuelle du code** en secours
+- Paliers existants conservés et modifiables (seuil + avantage) par le Bureau
+
+## Architecture backend
+`server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
+`partners.py` · `terrain.py` · `stock.py` · `documents.py` · `exports.py` · `crons_api.py` ·
+`profiles_plus.py` · `dogs.py` · `activities.py` (+ taxonomies, participants, présences) · `loyalty.py`
+(engagement) · `records.py` (archivage / suppression tracés) · `seed_demo.py` + `seed_phases.py`
 
 ## Backlog priorisé
-- P0 — Phase 3 : adhésions détaillées, badges/fonctions (fondateur, représentants), niveaux d'implication avancés, fiche membre complète côté Bureau.
-- P0 — Phase 4 : activités, événements, calendrier, inscriptions, participations, bénévoles.
-- P1 — Phase 5 : partenaires (mairies, associations, commerces), avantages, codes promo, propositions professionnelles, contrats.
-- P1 — Phase 6 : carte de fidélité (QR sécurisé, scan caméra, recherche manuelle, règles configurables, historique).
-- P2 — Phase 7 : finances opérationnelles (recettes/dépenses/net, répartition multi-pros = 100 %, remboursements, part association).
-- P2 — Phase 8 : mindmap React Flow. Phase 9 : terrain/stocks/campagnes. Phase 10 : blog/communication/formations. Phase 11 : statistiques stratégiques, exports, optimisation.
-- Dette technique notée : `projects.py` à scinder (projects/tasks/help) s'il grossit ; limite de taille sur l'upload CSV ; modèle Pydantic pour PUT /help-requests.
 
-## Prochaines tâches
-1. Phase 4 (activités, événements, calendrier, inscriptions) — la plus visible pour les adhérents.
-2. Phase 3 (fiche membre complète, badges de fonction, adhésions).
-3. Phase 6 (carte de fidélité + QR) pour l'usage terrain sur mobile.
+### P0
+- **Synchronisation Google Calendar** unidirectionnelle (plateforme → Google), sélection manuelle,
+  Bureau vers agenda dédié, pros sur leurs éléments, aucune sync pour les particuliers
+  → nécessite l'intégration OAuth Google Calendar (playbook + identifiants)
+
+### P1
+- Prompt 7 : intégration Rintintin Pro et déduplication d'agenda (indicateur d'origine déjà en place)
+- Statistiques enrichies : indicateurs d'engagement (tampons, paliers atteints) et finances
+- Exports PDF des récapitulatifs financiers (en plus d'Excel/CSV)
+- Délégation fine des validations à des professionnels de confiance (UI dédiée)
+
+### P2
+- Recherche globale étendue aux chiens, partenaires et documents
+- Pagination des listes longues (`/api/loyalty/members` : N+1 à optimiser si la base grossit)
+- Notifications e-mail individuelles optionnelles par membre

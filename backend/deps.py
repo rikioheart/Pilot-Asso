@@ -176,7 +176,9 @@ async def notify(recipient_id: str, type: str, title: str, message: str = "", le
     doc = {
         "notification_id": new_id("ntf"), "recipient_id": recipient_id, "type": type, "title": title,
         "message": message, "level": level, "resource_type": resource_type, "resource_id": resource_id,
-        "link": link, "is_read": False, "read_at": None, "created_at": iso(now_utc()),
+        "link": link, "is_read": False, "read_at": None,
+        "priority": "HIGH" if level in ("ACTION", "WARNING") else "NORMAL",
+        "created_at": iso(now_utc()),
     }
     await db.notifications.insert_one(doc)
     payload = {k: v for k, v in doc.items() if k != "_id"}

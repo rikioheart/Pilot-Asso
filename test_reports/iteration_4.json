@@ -1,0 +1,39 @@
+{
+  "summary": "Itération 4 (profils/rôles/accessibilité + suivi des chiens avec confidentialité) testée en profondeur. Backend : 26/26 pytest cases PASS incluant le point CRITIQUE de confidentialité (compte-rendu et commentaire avec visible_to_owner=false sont invisibles du propriétaire ; toggle à true les rend visibles ; owner-notes réservées au propriétaire, cases/steps réservés aux pros intervenants + Bureau). Le correctif du cron weekly-summary est bien en place (401 sans secret, 200 avec Bearer, duplicate=true en replay du même run_id). Le particulier ne voit plus /api/documents ni /api/mindmap (403). La promotion automatique en PROFESSIONNEL lors du changement de catégorie fonctionne, appears_in_directory=true. Frontend : login des 3 rôles OK ; /dogs affiche cartes avec nom du chien + propriétaire ; détail dialog contient dog-referent-select, dog-report-save-button, dog-report-visible-checkbox ; /admin/members ouvre le dialogue rôle avec member-category-select et member-role-save ; /admin/animation charge ; /tasks montre tasks-help-offer-button ; /my-space avec 3 onglets. Régression : navigation dépliable (Pilotage / Vie de l'asso / Communication / Gestion / Administration) intacte.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "console 404 récurrents (frontend)", "issue": "Le front tire une ressource inconnue (visible en console.error 404) sur toutes les pages une fois connecté. Non bloquant mais bruite les logs — probablement un endpoint d'avatar/preview supprimé ou une image manquante. À investiguer."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration4.py",
+    "/app/test_reports/pytest/iteration4_results.xml"
+  ],
+  "action_items": [
+    "OPTIONNEL : investiguer le 404 récurrent en console navigateur (probable ressource image ou endpoint /api/... obsolète référencé par une carte utilisateur)."
+  ],
+  "critical_code_review_comments": [
+    "backend/dogs.py get_dog(): la logique de filtrage des étapes de cas utilise `if owner and not manager` alors que celle des reports utilise `if owner and not (manager or team)`. Un propriétaire qui est aussi pro intervenant sur son propre chien verrait toutes les steps (visible_to_owner ignoré). Cas rare mais incohérent — aligner sur `owner and not (manager or team)`.",
+    "backend/dogs.py add_report() : la notification aux pros intervenants exclut l'auteur avec `pro_id != user['user_id']`, mais si le référent est également dans `pro_team_ids`, il pourrait recevoir un doublon. `set()` autour de la concat évite ce cas — c'est bien fait, mais commenter la logique aiderait.",
+    "backend/profiles_plus.py set_member_category(): la promotion en ROLE_PRO ne remet PAS à jour `access_level` (l'utilisateur garde `PARTICULIER_STANDARD` alors que son role devient PROFESSIONNEL). Résultat : effective_permissions() renverra les permissions particulier car access_level ne matche aucun bloc PRO_*. Ajouter `access_level: 'PRO_STANDARD'` dans l'update users.update_one.",
+    "backend/crons_api.py ligne 180-181 : plus de saut de ligne entre `return {...}` et `@router.post('/cron/weekly-summary')`. Ajouter une ligne vide pour la lisibilité (PEP-8 : 2 lignes entre fonctions de module).",
+    "backend/dogs.py : les 3 champs `owner`, `team`, `manager` sont retournés par dog_access mais aussi recomputés dans list_dogs — factoriser une petite fonction `can_view_private(user, dog)` pour éviter la duplication de la règle `owner and not (manager or team)`.",
+    "frontend : le 404 récurrent en console mérite un fetch conditionnel (skip si file_id null) dans les composants d'avatar."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration4.py (nouveau, 26 cas)"
+  ],
+  "success_rate": {"backend": "100% (26/26)", "frontend": "100% smoke tests (login 3 rôles, /dogs, /admin/members, /admin/animation, /my-space, /tasks, dog detail dialog)"},
+  "test_credentials": "Utilisés depuis /app/memory/test_credentials.md — admin, pro1, membre1 authentifiés OK.",
+  "seed_data_creation": "Le test crée un utilisateur TEST_promo_<ts>@lavoixduchien.fr (activé + promu PROFESSIONNEL) qui persiste ; plusieurs chiens TEST_* (isolated, confidog, admincreate, dog_) et un cas/étape/compte-rendu/commentaires/notes propriétaire suffixés TEST_. Une join-request HELP_OFFER TEST_ également. Aucune donnée de production touchée.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Suite réutilisable : /app/backend/tests/test_iteration4.py (couvre cron weekly-summary, RBAC particulier, catégorie/promotion, accessibility/preferences, pro-space, function-description, animation-review, nudge, join-requests, /me/space, dogs CRUD + référent + confidentialité + owner-notes + link + stats). Toutes les fixtures dans /app/backend/tests/conftest.py sont réutilisables (admin_token, pro_token, member_token, *_user). Point critique validé : le propriétaire ne voit JAMAIS un report/comment avec visible_to_owner=false. Regarder aussi le point du code review sur access_level non-mis-à-jour lors de la promotion PROFESSIONNEL — impact permissions à confirmer.",
+  "rca of the issue": "Aucun bug bloquant sur cette itération. Point d'attention non-testé côté runtime : après PUT /members/{id}/category → PROFESSIONNEL, `users.role` passe à PROFESSIONNEL mais `users.access_level` reste à PARTICULIER_STANDARD, ce qui laisserait `effective_permissions()` retourner une liste vide (aucun LEVEL_PERMISSIONS['PARTICULIER_STANDARD'] côté PRO). Recommandation : ajouter `access_level: 'PRO_STANDARD'` dans l'update de users lors de la promotion. Reproduction : promouvoir un membre, se reconnecter avec son compte, tenter d'accéder à /api/projects → devrait renvoyer 403 alors qu'un pro standard doit voir les projets."
+}

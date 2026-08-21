@@ -18,20 +18,39 @@ ALL_PERMISSIONS = [
     "loyalty.view_own", "loyalty.stamp", "loyalty.manage",
     "settings.view", "settings.edit",
     "users.manage", "audit.view", "stats.view",
+    "content.view", "content.create", "content.validate",
+    "formations.view", "formations.create", "formations.manage",
+    "library.view", "library.upload", "library.manage",
+    "social.view", "social.manage",
+    "contests.view", "contests.participate", "contests.manage",
+    "advent.view", "advent.manage",
+    "advantages.view", "advantages.manage",
+    "stock.view", "stock.manage",
+    "forms.view", "forms.manage",
+    "audit.view_own",
 ]
+
+MANAGER_BADGES = {"FONDATEUR", "PRESIDENT", "BUREAU", "REPRESENTANT", "REPRESENTANT_LOCAL"}
 
 _PRO_STANDARD = [
     "projects.view", "tasks.view", "tasks.submit", "events.view", "activities.view",
     "activities.propose", "finance.view_own", "partners.view", "documents.view",
     "documents.upload", "mindmap.view", "terrain.view", "members.view",
+    "content.view", "content.create", "formations.view", "library.view",
+    "contests.view", "advent.view", "advantages.view", "forms.view", "audit.view_own",
 ]
-_PRO_AVANCE = _PRO_STANDARD + ["tasks.edit", "tasks.create", "events.edit", "activities.create", "terrain.reserve"]
-_PRO_COORD = _PRO_AVANCE + ["projects.edit", "tasks.assign", "loyalty.stamp", "stats.view"]
+_PRO_AVANCE = _PRO_STANDARD + ["tasks.edit", "tasks.create", "events.edit", "activities.create",
+                               "terrain.reserve", "loyalty.stamp", "library.upload",
+                               "formations.create", "social.view"]
+_PRO_COORD = _PRO_AVANCE + ["projects.edit", "tasks.assign", "events.create", "stats.view", "social.manage"]
 
-_MEMBER_STANDARD = ["activities.view", "events.view", "loyalty.view_own", "documents.view", "partners.view"]
-_MEMBER_IMPLIQUE = _MEMBER_STANDARD + ["projects.view", "mindmap.view"]
-_BENEVOLE = _MEMBER_IMPLIQUE + ["tasks.view", "tasks.submit"]
-_REFERENT = _BENEVOLE + ["tasks.assign"]
+_MEMBER_STANDARD = ["activities.view", "events.view", "loyalty.view_own", "partners.view",
+                    "content.view", "formations.view", "library.view", "contests.view",
+                    "contests.participate", "advent.view", "advantages.view", "forms.view",
+                    "audit.view_own"]
+_MEMBER_IMPLIQUE = _MEMBER_STANDARD + ["projects.view"]
+_BENEVOLE = _MEMBER_IMPLIQUE + ["tasks.view", "tasks.submit", "content.create"]
+_REFERENT = _BENEVOLE + ["tasks.assign", "library.upload", "social.view"]
 
 LEVEL_PERMISSIONS = {
     "PRO_STANDARD": _PRO_STANDARD,
@@ -67,6 +86,14 @@ def effective_permissions(user: dict) -> list:
     for p in overrides.get("revoked", []):
         perms.discard(p)
     return sorted(perms)
+
+
+def is_manager(user: dict, profile: dict = None) -> bool:
+    """Bureau ou représentant mandaté (badge de fonction)."""
+    if user.get("role") == ROLE_ADMIN:
+        return True
+    badges = set((profile or {}).get("function_badges") or [])
+    return bool(badges & MANAGER_BADGES)
 
 
 def has_permission(user: dict, permission: str) -> bool:

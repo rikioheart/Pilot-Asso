@@ -41,6 +41,13 @@ class ProAdminIn(BaseModel):
     contract_reference: Optional[str] = None
     contract_url: Optional[str] = None
     public_visibility: Optional[str] = None
+    company_name: Optional[str] = None
+    professional_category: Optional[str] = None
+    description: Optional[str] = None
+    website: Optional[str] = None
+    social_links: Optional[dict] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
 
 
 def _blank(user_id: str, profile_id: str) -> dict:

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Dog, LogIn, Mail, ShieldCheck } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -71,10 +72,8 @@ export default function Login() {
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr]">
       <aside className="vdc-grain relative hidden lg:flex flex-col justify-between p-14 text-white vdc-sidebar">
-        <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#800020]">
-            <Dog className="h-6 w-6" />
-          </span>
+        <div className="flex items-center gap-4">
+          <Logo size={72} withGlow />
           <div>
             <p className="font-display text-lg font-extrabold leading-none">LA VOIX DU CHIEN</p>
             <p className="text-xs text-white/60">Nargis · Loiret · Association</p>
@@ -98,9 +97,7 @@ export default function Login() {
       <main className="flex items-center justify-center bg-background px-5 py-12">
         <div className="w-full max-w-md">
           <div className="lg:hidden mb-8 flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#800020] text-white">
-              <Dog className="h-5 w-5" />
-            </span>
+            <Logo size={52} />
             <p className="font-display font-extrabold text-[#002060]">LA VOIX DU CHIEN</p>
           </div>
 

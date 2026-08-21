@@ -1,95 +1,226 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
-  Bell, Dog, History, Home, LogOut, Menu, Network, Settings, ShieldCheck, Sparkles, Users, X,
+  Bell, ChevronDown, History, Home, LogOut, Menu, Network, Settings, ShieldCheck, Sparkles, Users, X,
   CalendarDays, FolderKanban, HeartHandshake, UserCircle, ListChecks, CheckCircle2, LifeBuoy,
-  BookUser, Upload, FileText,
+  Dog, Wallet as WalletIcon,
+  BookUser, Upload, FileText, Sparkle, PartyPopper, QrCode, Star, BarChart3, TicketCheck,
+  Newspaper, GraduationCap, Library, Send, Trophy, Gift, Wallet, Boxes, MapPinned, ClipboardList,
+  Receipt, Handshake,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { HelpButton } from "@/components/HelpButton";
+import { QuickCreateButton } from "@/components/QuickCreatePanel";
+import { LogoLockup, Logo } from "@/components/Logo";
+import { Onboarding } from "@/components/Onboarding";
 import { Button } from "@/components/ui/button";
 
 const BUREAU_NAV = [
-  { to: "/admin/dashboard", label: "Accueil", icon: Home },
-  { to: "/projects", label: "Projets", icon: FolderKanban },
-  { to: "/tasks", label: "Tâches", icon: ListChecks },
-  { to: "/admin/validation", label: "Validation", icon: CheckCircle2 },
-  { to: "/directory", label: "Professionnels", icon: BookUser },
-  { to: "/admin/members", label: "Membres", icon: Users },
-  { to: "/admin/help", label: "Aide", icon: LifeBuoy },
-  { to: "/notifications", label: "Notifications", icon: Bell },
-  { to: "/admin/import", label: "Import CSV", icon: Upload },
-  { to: "/admin/audit", label: "Journal d'audit", icon: History },
-  { to: "/admin/settings", label: "Administration", icon: Settings },
-  { to: "/profile", label: "Mon profil", icon: UserCircle },
+  { label: "Accueil", to: "/admin/dashboard", icon: Home },
+  {
+    label: "Pilotage", icon: FolderKanban, items: [
+      { to: "/projects", label: "Projets", icon: FolderKanban },
+      { to: "/tasks", label: "Tâches", icon: ListChecks },
+      { to: "/admin/validation", label: "Validation", icon: CheckCircle2 },
+      { to: "/mindmap", label: "Mindmap", icon: Network },
+      { to: "/admin/help", label: "Besoins d'aide", icon: LifeBuoy },
+    ],
+  },
+  {
+    label: "Vie de l'asso", icon: CalendarDays, items: [
+      { to: "/calendar", label: "Calendrier", icon: CalendarDays },
+      { to: "/agenda", label: "Agenda partagé", icon: CalendarDays },
+      { to: "/activities", label: "Activités", icon: Sparkle },
+      { to: "/events", label: "Événements", icon: PartyPopper },
+      { to: "/terrains", label: "Terrains", icon: MapPinned },
+      { to: "/admin/engagement", label: "Engagement", icon: Star },
+      { to: "/advantages", label: "Avantages", icon: Gift },
+    ],
+  },
+  {
+    label: "Communication", icon: Newspaper, items: [
+      { to: "/blog", label: "Blog & contenus", icon: Newspaper },
+      { to: "/formations", label: "Formations & lives", icon: GraduationCap },
+      { to: "/library", label: "Bibliothèque", icon: Library },
+      { to: "/social", label: "Réseaux sociaux", icon: Send },
+      { to: "/contests", label: "Jeux-concours", icon: Trophy },
+      { to: "/advent", label: "Calendrier de l'Avent", icon: Gift },
+    ],
+  },
+  {
+    label: "Gestion", icon: Wallet, items: [
+      { to: "/finance", label: "Finances", icon: Wallet },
+      { to: "/finance/reimbursements", label: "Remboursements", icon: Receipt },
+      { to: "/stock", label: "Stocks", icon: Boxes },
+      { to: "/partners", label: "Partenaires", icon: Handshake },
+      { to: "/documents", label: "Documents", icon: FileText },
+      { to: "/forms", label: "Formulaires", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Administration", icon: Settings, items: [
+      { to: "/admin/members", label: "Membres", icon: Users },
+      { to: "/dogs", label: "Chiens suivis", icon: Dog },
+      { to: "/admin/animation", label: "Animation des membres", icon: HeartHandshake },
+      { to: "/my-space", label: "Mon espace & préférences", icon: UserCircle },
+      { to: "/directory", label: "Annuaire pro", icon: BookUser },
+      { to: "/statistics", label: "Statistiques", icon: BarChart3 },
+      { to: "/admin/import", label: "Import CSV", icon: Upload },
+      { to: "/admin/audit", label: "Journal d'audit", icon: History },
+      { to: "/admin/settings", label: "Réglages", icon: Settings },
+    ],
+  },
 ];
 
 const PRO_NAV = [
-  { to: "/pro/dashboard", label: "Accueil", icon: Home },
-  { to: "/projects", label: "Projets", icon: FolderKanban },
-  { to: "/tasks", label: "Mes tâches", icon: ListChecks },
-  { to: "/directory", label: "Annuaire", icon: BookUser },
-  { to: "/help", label: "Aide", icon: LifeBuoy },
-  { to: "/notifications", label: "Notifications", icon: Bell },
-  { to: "/profile", label: "Mon profil", icon: UserCircle },
+  { label: "Accueil", to: "/pro/dashboard", icon: Home },
+  {
+    label: "Mon activité", icon: ListChecks, items: [
+      { to: "/tasks", label: "Mes tâches", icon: ListChecks },
+      { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
+      { to: "/participations", label: "Mes participations", icon: TicketCheck },
+      { to: "/dogs", label: "Chiens suivis", icon: Dog },
+      { to: "/finance/my-shares", label: "Mes parts & frais", icon: Wallet, permission: "finance.view_own" },
+      { to: "/history", label: "Mon historique", icon: History, permission: "audit.view_own" },
+      { to: "/my-space", label: "Mon espace & préférences", icon: Settings },
+    ],
+  },
+  {
+    label: "Vie de l'asso", icon: CalendarDays, items: [
+      { to: "/calendar", label: "Calendrier", icon: CalendarDays },
+      { to: "/agenda", label: "Agenda partagé", icon: CalendarDays },
+      { to: "/activities", label: "Activités", icon: Sparkle, permission: "activities.view" },
+      { to: "/events", label: "Événements", icon: PartyPopper, permission: "events.view" },
+      { to: "/terrains", label: "Terrains", icon: MapPinned, permission: "terrain.view" },
+      { to: "/loyalty/scan", label: "Valider une participation", icon: QrCode, permission: "loyalty.stamp" },
+    ],
+  },
+  {
+    label: "Contenus", icon: Newspaper, items: [
+      { to: "/blog", label: "Blog & contenus", icon: Newspaper, permission: "content.view" },
+      { to: "/formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
+      { to: "/library", label: "Bibliothèque", icon: Library, permission: "library.view" },
+      { to: "/social", label: "Réseaux sociaux", icon: Send, permission: "social.view" },
+      { to: "/forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
+    ],
+  },
+  {
+    label: "Réseau", icon: HeartHandshake, items: [
+      { to: "/directory", label: "Annuaire", icon: BookUser, permission: "members.view" },
+      { to: "/partners", label: "Partenaires", icon: Handshake, permission: "partners.view" },
+      { to: "/advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
+      { to: "/help", label: "Aide", icon: LifeBuoy },
+      { to: "/profile", label: "Mon profil", icon: UserCircle },
+    ],
+  },
 ];
 
 const MEMBER_NAV = [
-  { to: "/member/dashboard", label: "Accueil", icon: Home },
-  { to: "/tasks", label: "Mes tâches", icon: ListChecks },
-  { to: "/projects", label: "Projets", icon: FolderKanban },
-  { to: "/directory", label: "Professionnels", icon: BookUser },
-  { to: "/help", label: "Aide", icon: LifeBuoy },
-  { to: "/notifications", label: "Notifications", icon: Bell },
-  { to: "/profile", label: "Mon profil", icon: UserCircle },
+  { label: "Accueil", to: "/member/dashboard", icon: Home },
+  {
+    label: "Participer", icon: Sparkle, items: [
+      { to: "/calendar", label: "Calendrier", icon: CalendarDays },
+      { to: "/activities", label: "Activités", icon: Sparkle, permission: "activities.view" },
+      { to: "/events", label: "Événements", icon: PartyPopper, permission: "events.view" },
+      { to: "/participations", label: "Mes participations", icon: TicketCheck },
+      { to: "/terrains", label: "Terrains", icon: MapPinned, permission: "terrain.view" },
+    ],
+  },
+  {
+    label: "Mes avantages", icon: Gift, items: [
+      { to: "/advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
+      { to: "/loyalty", label: "Ma carte d'engagement", icon: Star, permission: "loyalty.view_own" },
+      { to: "/contests", label: "Jeux-concours", icon: Trophy, permission: "contests.view" },
+      { to: "/advent", label: "Calendrier de l'Avent", icon: Gift, permission: "advent.view" },
+    ],
+  },
+  {
+    label: "Contenus", icon: Newspaper, items: [
+      { to: "/blog", label: "Blog & conseils", icon: Newspaper, permission: "content.view" },
+      { to: "/formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
+      { to: "/library", label: "Bibliothèque", icon: Library, permission: "library.view" },
+      { to: "/forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
+    ],
+  },
+  {
+    label: "Mon espace", icon: UserCircle, items: [
+      { to: "/profile", label: "Mon profil & mes chiens", icon: UserCircle },
+      { to: "/dogs", label: "Suivi de mes chiens", icon: Dog },
+      { to: "/my-space", label: "Mon espace & préférences", icon: Settings },
+      { to: "/tasks", label: "Mes missions", icon: ListChecks, permission: "tasks.view" },
+      { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
+      { to: "/directory", label: "Professionnels", icon: BookUser, permission: "members.view" },
+      { to: "/notifications", label: "Notifications", icon: Bell },
+      { to: "/help", label: "Aide", icon: LifeBuoy },
+    ],
+  },
 ];
 
-const PLANNED = [
-  { label: "Mindmap", icon: Network },
-  { label: "Calendrier", icon: CalendarDays },
-  { label: "Partenaires", icon: HeartHandshake },
-  { label: "Documents", icon: FileText },
-];
+const slug = (label) => label.toLowerCase().normalize("NFD").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
 
 export const AppShell = ({ children }) => {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, can } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  const nav = user?.role === "ADMIN_BUREAU" ? BUREAU_NAV : user?.role === "PROFESSIONNEL" ? PRO_NAV : MEMBER_NAV;
+  const base = user?.role === "ADMIN_BUREAU" ? BUREAU_NAV : user?.role === "PROFESSIONNEL" ? PRO_NAV : MEMBER_NAV;
+  const nav = useMemo(() => base
+    .map((group) => group.items
+      ? { ...group, items: group.items.filter((item) => !item.permission || can(item.permission)) }
+      : group)
+    .filter((group) => !group.items || group.items.length > 0), [base, can]);
+
+  const activeGroup = nav.find((group) => group.items?.some((item) => location.pathname.startsWith(item.to)));
+  const [expanded, setExpanded] = useState(activeGroup?.label || nav[1]?.label);
   const roleLabel = { ADMIN_BUREAU: "Bureau", PROFESSIONNEL: "Professionnel", PARTICULIER: "Adhérent" }[user?.role];
 
   const sidebar = (
     <div className="vdc-sidebar vdc-grain relative flex h-full w-64 shrink-0 flex-col text-white">
-      <Link to="/" className="flex items-center gap-3 px-5 py-6" data-testid="sidebar-logo">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#800020]">
-          <Dog className="h-5 w-5" />
-        </span>
-        <span>
-          <span className="block font-display text-sm font-extrabold leading-tight">LA VOIX DU CHIEN</span>
-          <span className="block text-[11px] text-white/50">Cockpit interne</span>
-        </span>
+      <Link to="/" className="px-5 py-6" data-testid="sidebar-logo" onClick={() => setOpen(false)}>
+        <LogoLockup size={46} />
       </Link>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-6">
-        {nav.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} onClick={() => setOpen(false)}
-            data-testid={`nav-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                isActive ? "bg-[#800020] font-semibold text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
-              }`}>
-            <Icon className="h-4 w-4" /> {label}
-          </NavLink>
-        ))}
-        <p className="px-3 pt-6 pb-2 text-[10px] font-bold uppercase tracking-widest text-white/35">À venir</p>
-        {PLANNED.map(({ label, icon: Icon }) => (
-          <span key={label} title={`${label} (phase suivante)`}
-            className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/30">
-            <Icon className="h-4 w-4" /> {label}
-          </span>
-        ))}
+        {nav.map((group) => {
+          if (!group.items) {
+            const Icon = group.icon;
+            return (
+              <NavLink key={group.to} to={group.to} onClick={() => setOpen(false)}
+                data-testid={`nav-${slug(group.label)}`}
+                className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  isActive ? "bg-[#800020] font-semibold text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
+                <Icon className="h-4 w-4 shrink-0" /> <span className="truncate">{group.label}</span>
+              </NavLink>
+            );
+          }
+          const Icon = group.icon;
+          const isOpen = expanded === group.label;
+          const hasActive = group.items.some((item) => location.pathname.startsWith(item.to));
+          return (
+            <div key={group.label}>
+              <button type="button" onClick={() => setExpanded(isOpen ? null : group.label)}
+                data-testid={`nav-group-${slug(group.label)}`}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                  hasActive ? "text-white" : "text-white/70"} hover:bg-white/10 hover:text-white`}>
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1 truncate text-left font-semibold">{group.label}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+              </button>
+              {isOpen && (
+                <div className="mt-1 space-y-0.5 border-l border-white/12 pl-3 ml-4">
+                  {group.items.map(({ to, label, icon: ItemIcon }) => (
+                    <NavLink key={to} to={to} onClick={() => setOpen(false)} data-testid={`nav-${slug(label)}`}
+                      className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors ${
+                        isActive ? "bg-[#800020] font-semibold text-white" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>
+                      <ItemIcon className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
       <div className="border-t border-white/10 px-4 py-4">
         <p className="text-sm font-semibold">{profile?.display_name || user?.email}</p>
@@ -120,16 +251,21 @@ export const AppShell = ({ children }) => {
             aria-label="Ouvrir le menu">
             <Menu className="h-6 w-6 text-[#002060]" />
           </button>
+          <Link to="/" className="lg:hidden" data-testid="header-logo"><Logo size={32} /></Link>
           <div className="flex-1"><GlobalSearch /></div>
+          {user?.role === "ADMIN_BUREAU" && <QuickCreateButton />}
           <div className="hidden sm:block"><HelpButton /></div>
           <div className="sm:hidden"><HelpButton compact /></div>
           <NotificationBell />
           <Link to="/profile" data-testid="header-profile-link"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#002060] text-sm font-bold text-white">
-            {(profile?.display_name || user?.email || "?").slice(0, 1).toUpperCase()}
+            className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#002060] text-sm font-bold text-white">
+            {profile?.avatar
+              ? <img src={profile.avatar} alt="Mon profil" className="h-full w-full object-cover" />
+              : (profile?.display_name || user?.email || "?").slice(0, 1).toUpperCase()}
           </Link>
         </header>
         <main key={location.pathname} className="vdc-reveal min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <Onboarding />
       </div>
     </div>
   );

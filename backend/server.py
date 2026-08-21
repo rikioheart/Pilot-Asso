@@ -18,6 +18,22 @@ from rbac import ROLE_ADMIN, ROLE_PRO, ROLE_MEMBER
 import projects as projects_module
 import professionals as professionals_module
 import imports_csv as imports_module
+import activities as activities_module
+import loyalty as loyalty_module
+import records as records_module
+import stats_mindmap as stats_module
+import storage as storage_module
+import content as content_module
+import community as community_module
+import finance as finance_module
+import partners as partners_module
+import terrain as terrain_module
+import stock as stock_module
+import documents as documents_module
+import exports as exports_module
+import profiles_plus as profiles_plus_module
+import dogs as dogs_module
+import crons_api as crons_module
 
 app = FastAPI(title="La Voix du Chien — Plateforme interne")
 api = APIRouter(prefix="/api")
@@ -50,6 +66,10 @@ class ProfileUpdate(BaseModel):
     department: Optional[str] = None
     bio: Optional[str] = None
     visibility: Optional[str] = None
+    avatar: Optional[str] = None
+    avatar_file_id: Optional[str] = None
+    cover_file_id: Optional[str] = None
+    onboarding_done: Optional[bool] = None
 
 
 class UserAdminUpdate(BaseModel):
@@ -59,6 +79,7 @@ class UserAdminUpdate(BaseModel):
     function_badges: Optional[List[str]] = None
     granted: Optional[List[str]] = None
     revoked: Optional[List[str]] = None
+    history_scope: Optional[str] = None
 
 
 class NotifyIn(BaseModel):
@@ -306,6 +327,10 @@ async def update_member(user_id: str, payload: UserAdminUpdate, admin: dict = De
                        "involvement_level": updates.get("access_level", target["access_level"])}
     if payload.function_badges is not None:
         profile_updates["function_badges"] = payload.function_badges
+    if payload.history_scope is not None:
+        if payload.history_scope not in ("OWN", "MODULE", "FULL"):
+            raise HTTPException(status_code=400, detail="Niveau de visibilité d'historique invalide")
+        profile_updates["history_scope"] = payload.history_scope
     await db.profiles.update_one({"user_id": user_id}, {"$set": profile_updates})
     await log_action(admin, "UPDATE", "members", user_id,
                      old_value={k: target.get(k) for k in updates}, new_value=updates)
@@ -391,6 +416,10 @@ async def dashboard_admin(admin: dict = Depends(require_admin)):
                 {"deadline": {"$lt": today, "$ne": None},
                  "status": {"$nin": ["COMPLETED", "ARCHIVED", "CANCELLED"]}}),
             "help_requests": await db.help_requests.count_documents({"status": "OPEN"}),
+            "upcoming_events": await db.events.count_documents(
+                {"start_date": {"$gte": iso(now_utc())[:10]}, "status": {"$in": ["PLANNED", "CONFIRMED"]}}),
+            "activities_to_review": await db.activities.count_documents({"status": "PROPOSED"}),
+            "loyalty_stamps": await db.loyalty_stamps.count_documents({}),
             "volunteer_tasks_open": await db.tasks.count_documents(
                 {"is_volunteer_task": True, "assigned_user_id": None, "status": "TODO"}),
             "blocked_tasks": await db.tasks.count_documents({"status": "BLOCKED"}),
@@ -434,7 +463,10 @@ async def dashboard_pro(user: dict = Depends(active_user)):
                 {"submitted_by": user["user_id"], "status": "PENDING_VALIDATION"}),
             "completed": await db.tasks.count_documents(
                 {"assigned_user_id": user["user_id"], "status": "COMPLETED"}),
-            "events": 0, "proposals": 0, "reservations": 0, "revenue_share": 0,
+            "events": await db.events.count_documents({"professional_ids": user["user_id"]}),
+            "activities": await db.activities.count_documents({"created_by": user["user_id"]}),
+            "stamps": await db.loyalty_stamps.count_documents({"validated_by": user["user_id"]}),
+            "reservations": 0, "revenue_share": 0,
         },
         "my_tasks": my_tasks,
         "my_projects": await db.projects.find({"project_id": {"$in": team_ids}, "status": {"$ne": "ARCHIVED"}},
@@ -456,10 +488,35 @@ async def dashboard_member(user: dict = Depends(active_user)):
                                    {"_id": 0}).sort("deadline", 1).limit(10).to_list(10)
     open_volunteer = await db.tasks.find({"is_volunteer_task": True, "assigned_user_id": None, "status": "TODO"},
                                          {"_id": 0}).limit(8).to_list(8)
+    card = await db.loyalty_cards.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    participations = await db.participations.find({"user_id": user["user_id"]}, {"_id": 0}) \
+        .sort("registered_at", -1).limit(50).to_list(50)
+    upcoming = []
+    today = iso(now_utc())[:10]
+    for p in participations:
+        if p.get("activity_id"):
+            activity = await db.activities.find_one({"activity_id": p["activity_id"]},
+                                                    {"_id": 0, "title": 1, "date": 1, "location": 1})
+            if activity and (activity.get("date") or "") >= today:
+                upcoming.append({"title": activity["title"], "date": activity["date"],
+                                 "location": activity.get("location"), "role": p["role"], "link": "/activities"})
+        elif p.get("event_id"):
+            event = await db.events.find_one({"event_id": p["event_id"]},
+                                             {"_id": 0, "title": 1, "start_date": 1, "location": 1})
+            if event and (event.get("start_date") or "")[:10] >= today:
+                upcoming.append({"title": event["title"], "date": event["start_date"][:10],
+                                 "location": event.get("location"), "role": p["role"],
+                                 "link": f"/events/{p['event_id']}"})
     return {
         "profile": profile, "dogs": dogs, "my_tasks": my_tasks, "open_volunteer_tasks": open_volunteer,
-        "kpis": {"activities": 0, "registrations": 0, "volunteer_tasks": len(my_tasks),
-                 "dogs": len(dogs), "loyalty_points": 0, "advantages": 0},
+        "upcoming": sorted(upcoming, key=lambda x: x["date"])[:6],
+        "kpis": {"activities": len([p for p in participations if p.get("activity_id")]),
+                 "registrations": len(upcoming),
+                 "volunteer_tasks": len(my_tasks),
+                 "dogs": len(dogs),
+                 "loyalty_points": (card or {}).get("total_points", 0),
+                 "advantages": await db.professional_details.count_documents(
+                     {"member_advantages": {"$nin": [None, ""]}})},
         "unread_notifications": await db.notifications.count_documents(
             {"recipient_id": user["user_id"], "is_read": False}),
         "permissions": rbac.effective_permissions(user),
@@ -477,20 +534,6 @@ class DogIn(BaseModel):
     needs: Optional[str] = None
     useful_information: Optional[str] = None
     visibility: str = "MEMBERS"
-
-
-@api.get("/dogs")
-async def my_dogs(user: dict = Depends(active_user)):
-    return await db.dogs.find({"owner_id": user["user_id"]}, {"_id": 0}).to_list(50)
-
-
-@api.post("/dogs")
-async def create_dog(payload: DogIn, user: dict = Depends(active_user)):
-    doc = {"dog_id": new_id("dog"), "owner_id": user["user_id"], **payload.model_dump(), "photo": None,
-           "created_at": iso(now_utc()), "updated_at": iso(now_utc())}
-    await db.dogs.insert_one(doc)
-    await log_action(user, "CREATE", "dogs", doc["dog_id"], new_value={"name": payload.name})
-    return {k: v for k, v in doc.items() if k != "_id"}
 
 
 @api.delete("/dogs/{dog_id}")
@@ -578,6 +621,22 @@ app.include_router(api)
 app.include_router(projects_module.router)
 app.include_router(professionals_module.router)
 app.include_router(imports_module.router)
+app.include_router(activities_module.router)
+app.include_router(loyalty_module.router)
+app.include_router(stats_module.router)
+app.include_router(storage_module.router)
+app.include_router(content_module.router)
+app.include_router(community_module.router)
+app.include_router(finance_module.router)
+app.include_router(partners_module.router)
+app.include_router(terrain_module.router)
+app.include_router(stock_module.router)
+app.include_router(documents_module.router)
+app.include_router(exports_module.router)
+app.include_router(profiles_plus_module.router)
+app.include_router(dogs_module.router)
+app.include_router(crons_module.router)
+app.include_router(records_module.router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -617,6 +676,74 @@ async def startup():
     await db.professional_details.create_index("user_id", unique=True)
     await db.professional_details.create_index("professional_category")
     await db.professional_details.create_index("departments")
+    await db.activities.create_index("activity_id", unique=True)
+    await db.activities.create_index("date")
+    await db.activities.create_index("category")
+    await db.activities.create_index("event_id")
+    await db.events.create_index("event_id", unique=True)
+    await db.events.create_index("start_date")
+    await db.participations.create_index([("user_id", 1), ("activity_id", 1)])
+    await db.participations.create_index([("event_id", 1), ("role", 1)])
+    await db.loyalty_cards.create_index("card_id", unique=True)
+    await db.loyalty_cards.create_index("qr_token", unique=True)
+    await db.loyalty_cards.create_index("user_id", unique=True)
+    await db.loyalty_stamps.create_index("card_id")
+    await db.loyalty_stamps.create_index("created_at")
+    await db.loyalty_rules.create_index("kind")
+    await db.mindmap_nodes.create_index("node_id", unique=True)
+    await db.mindmap_edges.create_index([("source", 1), ("target", 1)])
+    await db.files.create_index("file_id", unique=True)
+    await db.files.create_index("owner_id")
+    await db.articles.create_index("article_id", unique=True)
+    await db.articles.create_index("status")
+    await db.articles.create_index("published_at")
+    await db.formations.create_index("formation_id", unique=True)
+    await db.formations.create_index("date")
+    await db.formation_registrations.create_index([("formation_id", 1), ("user_id", 1)])
+    await db.library_items.create_index("item_id", unique=True)
+    await db.library_downloads.create_index("item_id")
+    await db.social_posts.create_index("post_id", unique=True)
+    await db.social_posts.create_index("scheduled_date")
+    await db.contests.create_index("contest_id", unique=True)
+    await db.contest_participants.create_index([("contest_id", 1), ("user_id", 1)], unique=True)
+    await db.advent_calendars.create_index("year", unique=True)
+    await db.advent_boxes.create_index([("calendar_id", 1), ("day", 1)], unique=True)
+    await db.advent_openings.create_index([("calendar_id", 1), ("day", 1), ("user_id", 1)])
+    await db.transactions.create_index("transaction_id", unique=True)
+    await db.transactions.create_index("date")
+    await db.distributions.create_index("distribution_id", unique=True)
+    await db.distribution_lines.create_index("professional_id")
+    await db.reimbursements.create_index("beneficiary_id")
+    await db.advantages.create_index("advantage_id", unique=True)
+    await db.advantage_claims.create_index([("advantage_id", 1), ("user_id", 1)], unique=True)
+    await db.partners.create_index("partner_id", unique=True)
+    await db.partners.create_index("category")
+    await db.partner_exchanges.create_index("partner_id")
+    await db.advantage_proposals.create_index("proposal_id", unique=True)
+    await db.terrains.create_index("terrain_id", unique=True)
+    await db.terrain_slots.create_index([("terrain_id", 1), ("date", 1)])
+    await db.terrain_reservations.create_index([("terrain_id", 1), ("date", 1)])
+    await db.terrain_reservations.create_index("status")
+    await db.stock_items.create_index("item_id", unique=True)
+    await db.stock_movements.create_index("item_id")
+    await db.documents.create_index("document_id", unique=True)
+    await db.documents.create_index("expiry_date")
+    await db.external_forms.create_index("form_id", unique=True)
+    await db.reminder_log.create_index("key", unique=True)
+    await db.dogs.create_index("dog_id", unique=True)
+    await db.dogs.create_index("owner_id")
+    await db.dog_cases.create_index("dog_id")
+    await db.dog_reports.create_index("dog_id")
+    await db.dog_comments.create_index("report_id")
+    await db.dog_owner_notes.create_index("dog_id")
+    await db.join_requests.create_index("request_id", unique=True)
+    await db.cron_runs.create_index("run_id")
+
+    try:
+        await storage_module.init_storage()
+        logger.info("Stockage de fichiers initialisé")
+    except Exception as exc:
+        logger.error(f"Stockage de fichiers indisponible : {exc}")
 
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]

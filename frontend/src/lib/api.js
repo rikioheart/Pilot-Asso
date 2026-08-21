@@ -10,6 +10,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export const fileUrl = (fileId, download = false) =>
+  fileId
+    ? `${API}/files/${fileId}/download?auth=${localStorage.getItem("vdc_token") || ""}${download ? "&download=true" : ""}`
+    : null;
+
+export async function uploadFile(file, usage = "OTHER") {
+  const body = new FormData();
+  body.append("file", file);
+  const { data } = await api.post(`/files/upload?usage=${usage}`, body,
+    { headers: { "Content-Type": "multipart/form-data" } });
+  return data;
+}
+
 export function apiError(e) {
   const detail = e?.response?.data?.detail;
   if (typeof detail === "string") return detail;

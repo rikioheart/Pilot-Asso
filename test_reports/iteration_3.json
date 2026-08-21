@@ -1,0 +1,45 @@
+{
+  "summary": "Phases 5-8 tested end-to-end. Backend: 37/39 pytest cases PASS. One CRITICAL bug found (weekly-summary cron route not registered) + one test-side mismatch (documents.view is granted to pros with shared docs, spec expectation was 403 which is fine because the pro sees empty list). Frontend loads correctly with French UI, logo, 5 nav groups and priority queue.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/cron/weekly-summary", "issue": "Route decorator missing in backend/crons_api.py — the function `cron_weekly_summary` is defined right after `cron_recap_email` without `@router.post(\"/cron/weekly-summary\")`. Result: 404 Not Found even with valid Bearer token. Add the decorator on the line above `async def cron_weekly_summary(...)` (currently line 181).", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/documents", "issue": "A pro receives 200 (empty list) instead of 403. This is by design (docs shared with them), but spec text implied a 403; consider explicitly documenting or restricting to Bureau-only listing.", "priority": "LOW"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phases_5_to_8.py",
+    "/app/test_reports/pytest/phases_5_8_results.xml"
+  ],
+  "action_items": [
+    "URGENT: Add `@router.post(\"/cron/weekly-summary\")` decorator above line 181 of /app/backend/crons_api.py so the endpoint is registered. Without this the Emergent cron for the weekly Bureau summary is silently broken (404) and no weekly notification will be created.",
+    "OPTIONAL: If /api/documents is intended to be Bureau-only, guard with require_admin (or require(\"documents.upload\")) in addition to require(\"documents.view\"); otherwise ignore."
+  ],
+  "critical_code_review_comments": [
+    "backend/crons_api.py line 180-181: missing route decorator — the recap-email function body ends at 180 and cron_weekly_summary starts at 181 without any @router.post. This is a copy-paste regression.",
+    "backend/finance.py period_range uses hard-coded day 31 for month/quarter end which is invalid for Feb/Apr/etc.; mongo string comparison still works because ISO dates sort lexicographically, but risks silently excluding transactions dated e.g. 2026-04-31 (impossible) or including 2026-02-30 (impossible). Prefer computing real end-of-month.",
+    "backend/documents.py `is_expiring` heuristic (line 98-100) is overly complex and looks buggy: `doc[\"expiry_date\"] <= iso(now_utc())[:4] + doc[\"expiry_date\"][4:]` is always true when years match. Refactor to `today <= expiry_date <= today+30d`.",
+    "backend/exports.py `_sheet()` reuses the default Sheet only for the first call by checking `max_row==1 and title=='Sheet'`; combined with header row (which makes max_row=2 by design), the first `_sheet` may return a new sheet leaving an empty 'Sheet' behind. Prefer explicit `workbook.remove(workbook.active)` at start.",
+    "backend/community.py update_contest allows setting status=OPEN without requiring status transition validation; combined with the notification loop `async for u in db.users.find(...) await notify(...)` it can create hundreds of notifications synchronously — offload to background task.",
+    "backend/content.py `_get_article` and update_article: PENDING_REVIEW articles are hidden from other pros; but a pro can only see their own drafts (correct). No leaks found.",
+    "backend/partners.py public_partner() blacklist is correct; verified via test that siret, clauses, contract_file_ids, contact_email are stripped for pros.",
+    "backend/stock.py apply_movement uses `iso(now_utc())` and correctly refuses negative stock. Alert threshold notification good.",
+    "backend/server.py exceeds 767 lines — split auth/dashboard/notifications/dogs into their own routers as recommended in previous iterations."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phases_5_to_8.py (new)"
+  ],
+  "success_rate": {"backend": "94.9% (37/39)", "frontend": "100% smoke tests (login, nav groups, priority queue, exports panel, activity feed, blog page all present)"},
+  "test_credentials": "Used /app/memory/test_credentials.md — admin, pro1, pro2, member all authenticated OK.",
+  "seed_data_creation": "Tests create TEST_-prefixed articles, formations, library items, social posts, contests, advent boxes (year 2099), transactions, distributions, reimbursements, advantages, partners, terrains, reservations, stock items. Most are cleaned up (archived) at end; a few advent/contest test entries persist harmlessly for year 2099 and marked TEST_.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Reusable suite: /app/backend/tests/test_phases_5_to_8.py (uses conftest.py fixtures: admin_token, pro_token, member_token). The ONLY critical issue is the missing @router.post decorator on cron_weekly_summary in crons_api.py — one-line fix. After fix, rerun `pytest tests/test_phases_5_to_8.py::TestCrons -v`. Frontend testids verified present: sidebar-logo, header-logo, vdc-logo, nav-group-pilotage/communication/gestion/administration/vie-de-l-asso (note the extra dash), priority-queue, priority-{key}, exports-panel, activity-feed, blog-page, admin-dashboard, kpi-*. Login flow via POST /api/auth/login working. Priority queue on admin dashboard is fully populated and clickable.",
+  "rca of the issue": "The `@router.post(\"/cron/weekly-summary\")` decorator line was accidentally deleted (or never added) between the end of `cron_recap_email` (line 180: `return {...}`) and the start of `async def cron_weekly_summary(...)` at line 181. FastAPI therefore never mounts that endpoint on the router, so hitting /api/cron/weekly-summary returns 404 even with a valid Bearer token. Reproduction: `curl -X POST -H 'Authorization: Bearer $WEBHOOK_CRON_SECRET' -d '{}' $BASE/api/cron/weekly-summary` -> 404. Fix: insert `@router.post(\"/cron/weekly-summary\")` on the blank line 180.5, i.e. right before the async def."
+}

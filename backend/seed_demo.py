@@ -1,4 +1,5 @@
 """Données de démonstration clairement marquées DEMO (idempotent par module)."""
+import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
 
@@ -15,6 +16,10 @@ def _now():
 
 def _iso(dt):
     return dt.isoformat()
+
+
+def _day(offset):
+    return (_now() + timedelta(days=offset)).date().isoformat()
 
 
 DEMO_USERS = [
@@ -156,33 +161,35 @@ PROJECTS = [
 
 async def seed_projects(db, users, notify):
     if await db.projects.count_documents({"is_demo": True}) > 0:
-        return
+        return {}
     admin = await db.users.find_one({"role": "ADMIN_BUREAU"}, {"_id": 0, "user_id": 1})
     if not admin:
-        return
+        return {}
     admin_id = admin["user_id"]
     pro = users.get("pro1.demo@lavoixduchien.fr")
     pro2 = users.get("pro2.demo@lavoixduchien.fr")
     benevole = users.get("benevole.demo@lavoixduchien.fr")
     assignees = {"pro": pro, "pro2": pro2, "benevole": benevole}
+    created = {}
 
     for spec in PROJECTS:
         project_id = _id("prj")
+        created[spec["category"]] = project_id
         total = len(spec["tasks"])
         done = len([t for t in spec["tasks"] if t[1] == "COMPLETED"])
+        owner_id = pro2 if spec["category"] == "PEDAGOGIE" else admin_id
         await db.projects.insert_one({
             "project_id": project_id, "title": spec["title"],
             "slug": spec["title"].lower().replace(" ", "-")[:60], "description": spec["description"],
             "category": spec["category"], "status": spec["status"], "priority": spec["priority"],
             "start_date": _iso(_now()), "deadline": _iso(_now() + timedelta(days=spec["days"])),
             "completion_percentage": int(round(done * 100 / total)) if total else 0,
-            "owner_id": pro2 if spec["category"] == "PEDAGOGIE" else admin_id,
-            "visibility": spec["visibility"], "parent_project_id": None, "mindmap_node_id": None,
-            "budget_reference": None, "linked_partner_ids": [], "linked_event_ids": [],
-            "linked_activity_ids": [], "needs_help": False, "template": None, "is_demo": True,
-            "created_by": admin_id, "created_at": _iso(_now()), "updated_at": _iso(_now()), "archived_at": None,
+            "owner_id": owner_id, "visibility": spec["visibility"], "parent_project_id": None,
+            "mindmap_node_id": None, "budget_reference": None, "linked_partner_ids": [],
+            "linked_event_ids": [], "linked_activity_ids": [], "needs_help": False, "template": None,
+            "is_demo": True, "created_by": admin_id, "created_at": _iso(_now()),
+            "updated_at": _iso(_now()), "archived_at": None,
         })
-        owner_id = pro2 if spec["category"] == "PEDAGOGIE" else admin_id
         for member_id, role in [(owner_id, "OWNER"), (pro, "CONTRIBUTOR"), (benevole, "VOLUNTEER")]:
             if member_id:
                 await db.project_teams.insert_one({
@@ -237,15 +244,158 @@ async def seed_projects(db, users, notify):
         await notify(admin_doc["user_id"], type="NEEDS_HELP", title="Un membre a besoin d'aide [DEMO]",
                      message="Marc Vasseur [DEMO] : je ne sais pas quels commerces cibler.",
                      level="ACTION", resource_type="help_request", resource_id=None, link="/admin/help")
+    return created
+
+
+EVENTS = [
+    {
+        "title": "Journée à thème « Bien vivre avec son chien » [DEMO]",
+        "description": "Ateliers, balade collective et stands des professionnels du réseau.",
+        "event_type": "THEMED_DAY", "days": 30, "location": "Salle municipale, Nargis (45)",
+        "capacity": 40, "status": "CONFIRMED", "visibility": "MEMBERS",
+        "activities": [
+            ("Balade collective éducative [DEMO]", "BALADE", 1, 20, 0.0, 0.0, 0),
+            ("Atelier « comprendre les signaux » [DEMO]", "ATELIER", 1, 15, 12.0, 8.0, 0),
+            ("Classe de lecture canine [DEMO]", "CLASSE_LECTURE", 1, 8, 10.0, 6.0, 1),
+        ],
+    },
+    {
+        "title": "Rencontre des professionnels du réseau [DEMO]",
+        "description": "Point trimestriel : projets communs, formations, communication.",
+        "event_type": "PRO_MEETING", "days": 14, "location": "Visioconférence",
+        "capacity": None, "status": "PLANNED", "visibility": "PROFESSIONALS",
+        "activities": [("Table ronde projets communs [DEMO]", "RENCONTRE_PRO", 0, None, 0.0, 0.0, 0)],
+    },
+    {
+        "title": "Live « prévention morsures » [DEMO]",
+        "description": "Interview en direct avec un comportementaliste du réseau.",
+        "event_type": "LIVE", "days": -10, "location": "En ligne",
+        "capacity": None, "status": "DONE", "visibility": "MEMBERS",
+        "activities": [("Sensibilisation en ligne [DEMO]", "SENSIBILISATION", 1, None, 0.0, 0.0, -10)],
+    },
+]
+
+
+async def seed_activities(db, users, projects):
+    if await db.events.count_documents({"is_demo": True}) > 0:
+        return
+    admin = await db.users.find_one({"role": "ADMIN_BUREAU"}, {"_id": 0, "user_id": 1})
+    if not admin:
+        return
+    admin_id = admin["user_id"]
+    pro = users.get("pro1.demo@lavoixduchien.fr")
+    pro2 = users.get("pro2.demo@lavoixduchien.fr")
+    member = users.get("membre1.demo@lavoixduchien.fr")
+    benevole = users.get("benevole.demo@lavoixduchien.fr")
+
+    for spec in EVENTS:
+        event_id = _id("evt")
+        await db.events.insert_one({
+            "event_id": event_id, "title": spec["title"], "description": spec["description"],
+            "event_type": spec["event_type"], "start_date": _day(spec["days"]),
+            "end_date": _day(spec["days"]), "location": spec["location"],
+            "visibility": spec["visibility"], "capacity": spec["capacity"], "status": spec["status"],
+            "organizer_id": admin_id, "professional_ids": [p for p in (pro, pro2) if p],
+            "activity_ids": [], "project_id": projects.get("EVENEMENT") if spec["event_type"] == "THEMED_DAY" else None,
+            "financial_summary": None, "is_demo": True,
+            "created_at": _iso(_now()), "updated_at": _iso(_now())})
+        for title, category, eligible, capacity, price_public, price_member, offset in spec["activities"]:
+            activity_id = _id("act")
+            await db.activities.insert_one({
+                "activity_id": activity_id, "title": title, "description": "Activité de démonstration.",
+                "category": category, "type": "COLLECTIVE", "recurrence": None,
+                "date": _day(spec["days"] + offset), "start_time": "10:00", "end_time": "12:00",
+                "location": spec["location"], "capacity": capacity,
+                "price_public": price_public, "price_member": price_member,
+                "eligible_for_loyalty": bool(eligible), "loyalty_points": 2 if category == "JOURNEE_THEME" else 1,
+                "loyalty_card_types": ["STANDARD"], "visibility": spec["visibility"],
+                "status": "DONE" if spec["status"] == "DONE" else "ACTIVE",
+                "project_id": projects.get("EVENEMENT") if spec["event_type"] == "THEMED_DAY" else None,
+                "event_id": event_id, "professional_ids": [p for p in (pro,) if p],
+                "created_by": admin_id, "review_comment": None, "reviewed_by": None,
+                "is_demo": True, "created_at": _iso(_now()), "updated_at": _iso(_now())})
+            for user_id, role in [(member, "PARTICIPANT"), (benevole, "VOLUNTEER")]:
+                if user_id and category in ("BALADE", "CLASSE_LECTURE", "SENSIBILISATION"):
+                    await db.participations.insert_one({
+                        "participation_id": _id("prt"), "user_id": user_id, "activity_id": activity_id,
+                        "event_id": event_id, "role": role, "registration_status": "CONFIRMED",
+                        "registered_at": _iso(_now() - timedelta(days=1)),
+                        "attendance_status": "PRESENT" if spec["status"] == "DONE" else "UNKNOWN",
+                        "comment": None, "validated_by": admin_id if spec["status"] == "DONE" else None,
+                        "validated_at": _iso(_now()) if spec["status"] == "DONE" else None, "is_demo": True})
+        if member:
+            await db.participations.insert_one({
+                "participation_id": _id("prt"), "user_id": member, "activity_id": None,
+                "event_id": event_id, "role": "PARTICIPANT", "registration_status": "CONFIRMED",
+                "registered_at": _iso(_now() - timedelta(days=1)), "attendance_status": "UNKNOWN",
+                "comment": None, "validated_by": None, "validated_at": None, "is_demo": True})
+
+
+async def seed_loyalty(db, users, notify):
+    if await db.loyalty_rules.count_documents({}) > 0:
+        return
+    admin = await db.users.find_one({"role": "ADMIN_BUREAU"}, {"_id": 0, "user_id": 1})
+    if not admin:
+        return
+    admin_id = admin["user_id"]
+    rules = [
+        ("Balade collective = 1 point", "STAMP", "BALADE", 1, None, None),
+        ("Classe de lecture canine = 1 point", "STAMP", "CLASSE_LECTURE", 1, None, None),
+        ("Journée à thème = 2 points", "STAMP", "JOURNEE_THEME", 2, None, None),
+        ("Atelier = 1 point", "STAMP", "ATELIER", 1, None, None),
+        ("5 points : balade offerte", "REWARD", None, 0, 5, "Une balade collective offerte"),
+        ("10 points : atelier offert", "REWARD", None, 0, 10, "Un atelier au choix offert"),
+    ]
+    for label, kind, category, points, threshold, reward in rules:
+        await db.loyalty_rules.insert_one({
+            "rule_id": _id("rule"), "label": label, "kind": kind, "activity_id": None,
+            "activity_category": category, "points": points, "threshold": threshold, "reward": reward,
+            "card_types": ["STANDARD"], "validity_days": None, "is_active": True,
+            "created_by": admin_id, "is_demo": True,
+            "created_at": _iso(_now()), "updated_at": _iso(_now())})
+
+    member = users.get("membre1.demo@lavoixduchien.fr")
+    pro = users.get("pro1.demo@lavoixduchien.fr")
+    if not member:
+        return
+    card_id = _id("card")
+    await db.loyalty_cards.insert_one({
+        "card_id": card_id, "user_id": member, "card_type": "STANDARD",
+        "qr_token": secrets.token_urlsafe(24), "total_points": 0, "status": "ACTIVE", "is_demo": True,
+        "created_at": _iso(_now()), "updated_at": _iso(_now())})
+    total = 0
+    async for activity in db.activities.find({"eligible_for_loyalty": True, "is_demo": True}, {"_id": 0}).limit(2):
+        rule = await db.loyalty_rules.find_one({"kind": "STAMP", "activity_category": activity["category"]},
+                                              {"_id": 0})
+        points = (rule or {}).get("points", 1)
+        total += points
+        await db.loyalty_stamps.insert_one({
+            "stamp_id": _id("stamp"), "card_id": card_id, "user_id": member,
+            "activity_id": activity["activity_id"], "activity_title": activity["title"],
+            "rule_id": (rule or {}).get("rule_id"), "points": points,
+            "comment": "Tampon de démonstration", "validated_by": pro,
+            "validated_by_name": "Camille Dubreuil [DEMO]", "is_demo": True,
+            "created_at": _iso(_now() - timedelta(days=3))})
+    await db.loyalty_cards.update_one({"card_id": card_id}, {"$set": {"total_points": total}})
+    await notify(member, type="LOYALTY_UPDATED", title="Carte de fidélité mise à jour [DEMO]",
+                 message=f"Vous avez {total} point(s) sur votre carte.", level="SUCCESS",
+                 resource_type="loyalty_card", resource_id=card_id, link="/loyalty")
 
 
 async def seed_demo(db, create_user_and_profile, notify):
     users = await seed_users(db, create_user_and_profile)
     await seed_dogs(db, users.get("membre1.demo@lavoixduchien.fr"))
     await seed_pro_details(db, users)
-    await seed_projects(db, users, notify)
+    projects = await seed_projects(db, users, notify)
+    if not projects:
+        projects = {p["category"]: p["project_id"] async for p in db.projects.find(
+            {"is_demo": True}, {"_id": 0, "category": 1, "project_id": 1})}
+    await seed_activities(db, users, projects)
+    await seed_loyalty(db, users, notify)
+    from seed_phases import seed_phases
+    await seed_phases(db, notify)
     if await db.notifications.count_documents({"type": "SYSTEM"}) == 0:
         async for admin in db.users.find({"role": "ADMIN_BUREAU"}, {"_id": 0, "user_id": 1}):
             await notify(admin["user_id"], type="SYSTEM", title="Bienvenue sur votre cockpit",
-                         message="Phase 1 et 2 installées : membres, projets, tâches, validations, annuaire.",
+                         message="Projets, activités, événements, fidélité, statistiques et mindmap sont actifs.",
                          level="INFO", link="/admin/dashboard")

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
+import { JoinRequestButton } from "@/components/JoinRequestButton";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
 
@@ -41,7 +42,9 @@ export default function Tasks() {
   return (
     <div data-testid="tasks-page">
       <PageHeader breadcrumb="Pilotage" title="Tâches"
-        subtitle="Vue transversale : ce qui avance, ce qui bloque, ce qui attend une validation." />
+        subtitle="Vue transversale : ce qui avance, ce qui bloque, ce qui attend une validation."
+        actions={<JoinRequestButton kind="HELP_OFFER" variant="default" size="default"
+          label="Je propose mon aide" testId="tasks-help-offer" />} />
 
       <div className="mb-5 flex flex-wrap gap-2">
         {FILTERS.map(([value, label]) => (

@@ -1,0 +1,29 @@
+{
+  "summary": "Prompt 3 Lot A+B — testé end-to-end. Backend 13/13 tests pytest passent (archive/restore/delete tracés pour activities/events/partners/advantages, taxonomies configurables, champs enrichis google_maps_url/is_remote/visio_url/form_id/form_notify_date/eligible_for_loyalty sur activities & events, ajout de participants depuis fiche event & activity avec dédoublonnage, visibilité BUREAU/PROFESSIONALS filtrant correctement Membre/Pro, non-régression Lot C ok). Frontend: QuickCreatePanel accessible au Bureau (data-testid=quick-create-button), 6 onglets présents (activity/event/partner/advantage/pro/manage), création d'activité fonctionnelle avec toast succès, onglet Archiver charge et affiche boutons quick-archive/quick-delete par élément; /admin/settings taxonomies (kind-select + label-input + submit) crée et affiche bouton taxonomy-delete-{id}; EventDetail expose event-participant-member/role/add et affiche 'Éligible carte d'engagement'; /my-space onglet Préférences contient google-calendar-sync-button DÉSACTIVÉ avec chip 'Bientôt disponible'; /terrains et /agenda chargent sans régression (Lot C).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt3_lot_ab.py",
+    "/app/test_reports/pytest/prompt3_lot_ab.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "records.py: mapping ENTITIES cohérent, statut 'archived'/'restored' propre à chaque entité (partners->ARCHIVE/DISCUSSION, terrains->ARCHIVE/DISPONIBLE, activities/events/advantages->ARCHIVED). previous_status stocké au moment de l'archive et utilisé pour restaurer proprement.",
+    "activities.py: taxonomies bien intégrées à all_activity_categories/all_event_types + custom_labels exposés dans /activities/meta. Endpoints /participants (event & activity) créent une participation CONFIRMED + notification au membre + trace log_action REGISTER + gestion doublon 400. Bien.",
+    "activities.py list_activities filtre correctement par visibility via allowed_visibility(user): PROFESSIONALS non visible pour un particulier, BUREAU non visible pour pro ni particulier — vérifié en tests.",
+    "QuickCreatePanel.jsx: usage de window.prompt pour motifs d'archivage/suppression (UX simple mais fonctionnelle et tracée backend). Envisager modal shadcn dédié à terme.",
+    "DisplayPreferences.jsx: google-calendar-sync-button correctement disabled + Chip 'Bientôt disponible' présent."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt3_lot_ab.py"],
+  "success_rate": {"backend": "100% (13/13)", "frontend": "100% flows critiques"},
+  "test_credentials": "admin: associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro (COORDINATEUR): pro2.demo@lavoixduchien.fr/Demo2026! ; membre: membre1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Activités/événements/partenaires/avantages TEST_* créés puis supprimés via l'endpoint DELETE définitif. Une taxonomie TEST_taxo_* peut subsister via le test UI /admin/settings (bouton taxonomy-delete visible pour cleanup).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 3 Lot A+B validé. Route MySpace = /my-space (pas /mon-espace). Audit endpoint filtre par query param 'module' (pas entity_type), champ 'target' (pas entity_id). Field name in audit log for entity id is 'target'. Une taxonomie de test TEST_taxo_<ts> peut subsister — supprimable via UI Réglages ou DELETE /api/taxonomies/{id}. Lot C reste vert.",
+  "rca of the issue": "N/A — aucun bug détecté."
+}

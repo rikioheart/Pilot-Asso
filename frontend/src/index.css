@@ -88,3 +88,69 @@
         display: contents !important;
     }
 }
+
+/* --- Accessibilité : préférences appliquées depuis le profil --- */
+@font-face {
+    font-family: "OpenDyslexic";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/files/opendyslexic-latin-400-normal.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "OpenDyslexic";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/files/opendyslexic-latin-700-normal.woff2") format("woff2");
+    font-weight: 700;
+    font-display: swap;
+}
+
+html[data-font="dyslexia"] body,
+html[data-font="dyslexia"] .font-display {
+    font-family: "OpenDyslexic", "Comic Sans MS", sans-serif !important;
+    letter-spacing: 0.02em;
+}
+
+html[data-font="serif"] body {
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+html[data-text-size="small"] { font-size: 14px; }
+html[data-text-size="normal"] { font-size: 16px; }
+html[data-text-size="large"] { font-size: 18px; }
+html[data-text-size="xlarge"] { font-size: 20px; }
+
+html[data-spacing="comfortable"] body { line-height: 1.75; letter-spacing: 0.01em; }
+html[data-spacing="wide"] body { line-height: 2; letter-spacing: 0.03em; word-spacing: 0.12em; }
+
+html[data-contrast="high"] {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --muted-foreground: 0 0% 18%;
+    --border: 0 0% 20%;
+}
+
+html[data-contrast="high"] body { color: #000; }
+html[data-contrast="high"] .text-muted-foreground { color: #1f1f1f !important; }
+html[data-contrast="high"] a,
+html[data-contrast="high"] button { text-underline-offset: 3px; }
+html[data-contrast="high"] .rounded-xl,
+html[data-contrast="high"] .rounded-2xl,
+html[data-contrast="high"] .rounded-lg { border-width: 2px; }
+
+html[data-contrast="soft"] {
+    --background: 40 30% 97%;
+    --card: 40 25% 99%;
+}
+html[data-contrast="soft"] body { color: #33302c; }
+
+html[data-focus="on"] [data-focus-secondary="true"] { display: none !important; }
+html[data-focus="on"] .vdc-grain::before { display: none; }
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+}

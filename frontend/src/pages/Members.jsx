@@ -23,11 +23,18 @@ const LEVELS = {
   PARTICULIER: ["PARTICULIER_STANDARD", "PARTICULIER_IMPLIQUE", "BENEVOLE_VALIDE", "REFERENT_BENEVOLE"],
 };
 
+const CATEGORIES = {
+  PROFESSIONNEL: "Professionnel", REPRESENTANT_PRO: "Représentant professionnel",
+  BIENFAITEUR: "Bienfaiteur", PARTICULIER: "Particulier", BENEVOLE: "Bénévole",
+  APPRENANT: "Apprenant", MEMBRE_SOUTIEN: "Membre soutien",
+};
+
 export default function Members() {
   const [params, setParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
+  const [collapsed, setCollapsed] = useState({});
   const status = params.get("status") || "";
   const role = params.get("role") || "";
 
@@ -46,6 +53,20 @@ export default function Members() {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value); else next.delete(key);
     setParams(next);
+  };
+
+  const saveMember = async () => {
+    try {
+      await api.put(`/members/${editing.user_id}`,
+        { role: editing.newRole, access_level: editing.newLevel });
+      await api.put(`/members/${editing.user_id}/category`,
+        { member_category: editing.newCategory });
+      toast.success("Rôle et catégorie mis à jour");
+      setEditing(null);
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
 
   const update = async (userId, payload, message) => {
@@ -113,8 +134,26 @@ export default function Members() {
               {items.map((m) => (
                 <tr key={m.user_id} className="border-t" data-testid={`member-row-${m.user_id}`}>
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-[#002060]">{m.profile?.display_name || "—"}</p>
-                    <p className="text-xs text-muted-foreground">{m.email}</p>
+                    <button type="button" data-testid={`member-collapse-${m.user_id}`}
+                      onClick={() => setCollapsed((c) => ({ ...c, [m.user_id]: !c[m.user_id] }))}
+                      className="text-left">
+                      <p className="font-semibold text-[#002060]">{m.profile?.display_name || "—"}</p>
+                      {!collapsed[m.user_id] && (
+                        <>
+                          <p className="text-xs text-muted-foreground">{m.email}</p>
+                          {m.profile?.pro_space?.company_name && (
+                            <p className="text-xs font-medium text-[#800020]">
+                              {m.profile.pro_space.company_name}
+                            </p>
+                          )}
+                          {m.profile?.member_category && (
+                            <p className="text-xs text-muted-foreground">
+                              {CATEGORIES[m.profile.member_category] || m.profile.member_category}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-xs">{m.role}</td>
                   <td className="px-4 py-3 hidden md:table-cell text-xs">{m.access_level}</td>
@@ -146,7 +185,8 @@ export default function Members() {
                           onClick={() => update(m.user_id, { status: "ACTIVE" }, "Membre réactivé")}>Réactiver</Button>
                       )}
                       <Button size="sm" variant="ghost" data-testid={`member-edit-${m.user_id}`}
-                        onClick={() => setEditing({ ...m, newRole: m.role, newLevel: m.access_level })}>Rôle</Button>
+                        onClick={() => setEditing({ ...m, newRole: m.role, newLevel: m.access_level,
+                          newCategory: m.profile?.member_category || "PARTICULIER" })}>Rôle</Button>
                     </div>
                   </td>
                 </tr>
@@ -184,12 +224,28 @@ export default function Members() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Catégorie d'adhésion</Label>
+                <Select value={editing.newCategory}
+                  onValueChange={(v) => setEditing({ ...editing, newCategory: v })}>
+                  <SelectTrigger data-testid="member-category-select"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CATEGORIES).map(([key, label]) => (
+                      <SelectItem key={key} value={key} data-testid={`category-option-${key}`}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Représentant professionnel, professionnel et bienfaiteur apparaissent
+                  automatiquement dans l'annuaire des professionnels.
+                </p>
+              </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)} data-testid="member-role-cancel">Annuler</Button>
             <Button data-testid="member-role-save" className="bg-[#800020] hover:bg-[#63001a]"
-              onClick={() => update(editing.user_id, { role: editing.newRole, access_level: editing.newLevel }, "Rôle mis à jour")}>
+              onClick={saveMember}>
               Enregistrer
             </Button>
           </DialogFooter>

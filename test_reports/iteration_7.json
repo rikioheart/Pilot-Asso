@@ -1,0 +1,36 @@
+{
+  "summary": "Prompt 4 — Engagement / QR / Fidélité testé end-to-end. Backend: 23/23 tests pytest passent (test_prompt4_engagement.py) couvrant GET /api/loyalty/members (avec RBAC 403 pour pro/particulier), POST /api/loyalty/manual (add + retrait + reason<3 => 422/400 + points:0 => 400 + retrait sous 0 => 400), DELETE /api/loyalty/stamps/{id}?reason=... (avec et sans motif), POST /api/loyalty/{user_id}/regenerate (ancien token 404 sur /scan, nouveau OK, eligible_activities/eligible_events présents), POST /api/loyalty/me/regenerate, GET /api/loyalty/me (source_labels), POST /api/loyalty/stamp (event éligible / doublon / event non éligible / activité eligible sans règle / activité non éligible), auto_stamp via /api/events/{id}/attendance et /api/activities/{id}/attendance (idempotent, source AUTO_PARTICIPATION), GET /api/loyalty/history (admin voit tout + member_name + source_label ; particulier ne voit que son historique ; filtre source). Frontend: /admin/engagement charge, 3 onglets présents, dialog membre s'ouvre avec tous les data-testid attendus (manual-points-input, manual-reason-input, manual-add/remove-button, member-regenerate-qr, member-qr-preview, member-history), filtres et tris de l'onglet Historique tous présents, rule-create-button présent onglet Règles. Particulier /loyalty: loyalty-download-button + loyalty-regenerate-button OK, titre 'engagement' présent. Pro /loyalty/scan: loyalty-token-input + loyalty-token-submit OK, page 'Valider une participation'. Menu Bureau: entrée 'Engagement' -> /admin/engagement confirmée dans AppShell.jsx.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "member-engagement-dialog", "issues": ["Warning React 'Missing Description or aria-describedby' sur DialogContent (a11y mineur, non bloquant)"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt4_engagement.py",
+    "/app/test_reports/pytest/prompt4_engagement.xml"
+  ],
+  "action_items": [
+    "Optionnel (a11y): ajouter <DialogDescription> ou aria-describedby dans member-engagement-dialog et rule-create-dialog pour supprimer le warning React."
+  ],
+  "critical_code_review_comments": [
+    "loyalty.py bien structuré : recompute_total garantit total >= 0 côté écriture (max(sum, 0)) ET vérification métier avant insertion pour BUREAU_REMOVAL (message clair 400).",
+    "manual_stamp trace source correcte (BUREAU_MANUAL / BUREAU_REMOVAL), is_manual=true, validated_by_name enregistré, notification INFO envoyée. Motif passé dans reason+comment => bien exploitable côté UI.",
+    "auto_stamp est idempotent : find_one({card_id, key: element_id}) avant insertion => pas de doublon sur rappel /attendance PRESENT. Points prennent element.loyalty_points ou 1 par défaut.",
+    "add_stamp accepte activité eligible_for_loyalty sans règle (nouveau comportement du Prompt 4) ; combine correctement rule.points OU activity.loyalty_points.",
+    "regenerate_member_qr : notification INFO envoyée à l'adhérent et log_action REGENERATE_QR — bon niveau de traçabilité.",
+    "history filtre correctement par user_id, activity_id, event_id, source, date_from/to, q (recherche member_name/activity_title), sort (member/activity/date). Particulier non-manage voit uniquement son user_id.",
+    "engagement_members : appel ensure_card par utilisateur dans une boucle async — acceptable pour un petit nombre d'adhérents mais N+1 potentiel si la base grossit ; envisager une agg pipeline.",
+    "cancel_stamp : reason est passé en query param (DELETE ...?reason=...) — cohérent mais non standard REST ; les tests le confirment fonctionnel."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt4_engagement.py"],
+  "success_rate": {"backend": "100% (23/23)", "frontend": "100% flows critiques"},
+  "test_credentials": "admin: associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro (COORDINATEUR): pro2.demo@lavoixduchien.fr/Demo2026! ; membre: membre1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "TEST_prompt4_activity (eligible_for_loyalty=true, points=2) et TEST_prompt4_event (eligible_for_loyalty=true, points=3) créés puis supprimés par la fixture (definitive delete). Tampons de test créés puis nettoyés via DELETE /api/loyalty/stamps/{id}?reason=TEST_cleanup. Un stamp temporaire de type auto peut subsister si un test est interrompu mais chaque test tente le cleanup en fin.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 4 validé (backend + frontend). Aucun test de POST /api/exports/test-recap déclenché (interdit). Fichier de tests: /app/backend/tests/test_prompt4_engagement.py (23 tests). Le motif d'annulation d'un stamp est un query param (?reason=...). Warning a11y non bloquant sur DialogContent d'Engagement.jsx. Lots A/B/C Prompt 3 non retestés — validés aux itérations 5 et 6, aucune régression observée via l'accès /admin/engagement + AppShell.",
+  "rca of the issue": "N/A — aucun bug détecté."
+}
