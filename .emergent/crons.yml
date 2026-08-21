@@ -16,6 +16,15 @@ crons:
     method: POST
     enabled: true
   - name: recap-lundi
+  - name: recap-mensuel-adherents
+    description: "Envoie chaque 1er du mois le récap d'engagement à chaque adhérent particulier (notification + e-mail si non désabonné)"
+    cron: "0 9 1 * *"
+    timezone: "Europe/Paris"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/member-recaps"
+    method: POST
+    enabled: true
+
     description: "Envoie au Bureau le récapitulatif hebdomadaire chaque lundi matin"
     cron: "0 8 * * 1"
     timezone: "Europe/Paris"

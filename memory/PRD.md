@@ -56,6 +56,17 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - Scan pro : profil simplifié, validation en un clic, **saisie manuelle du code** en secours
 - Paliers existants conservés et modifiables (seuil + avantage) par le Bureau
 
+### Prompt 5 — Statistiques d'engagement & récap mensuel adhérent (21/08/2026, testé 100 % — 10/10)
+- Onglet **Statistiques** dans Engagement : 4 KPI (tampons attribués, tampons cumulés, adhérents engagés,
+  taux de participation), **classement des membres les plus impliqués**, répartition par **mode
+  d'obtention**, **paliers atteints par mois** avec le détail des membres concernés, éléments les plus
+  tamponnés
+- **Récap mensuel de l'adhérent** : notification dans la plateforme **et** e-mail (Resend managé), envoyé
+  chaque **1er du mois à 9 h** (cron `recap-mensuel-adherents`, idempotent) ; encart récap sur la carte
+  d'engagement du Particulier ; **désabonnement de l'e-mail** possible dans « Mon espace & préférences »
+  (la notification reste active) ; envoi manuel possible par le Bureau depuis la page Engagement
+- Mise à jour partielle des préférences (dot-notation Mongo) : plus d'écrasement des modules masqués
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `partners.py` · `terrain.py` · `stock.py` · `documents.py` · `exports.py` · `crons_api.py` ·
@@ -68,6 +79,9 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Synchronisation Google Calendar** unidirectionnelle (plateforme → Google), sélection manuelle,
   Bureau vers agenda dédié, pros sur leurs éléments, aucune sync pour les particuliers
   → nécessite l'intégration OAuth Google Calendar (playbook + identifiants)
+
+  → **reporté à la demande du client** (21/08/2026) : toute l'UI est prête, le bouton reste inactif
+  jusqu'à la fourniture des identifiants
 
 ### P1
 - Prompt 7 : intégration Rintintin Pro et déduplication d'agenda (indicateur d'origine déjà en place)

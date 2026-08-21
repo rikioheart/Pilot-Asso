@@ -178,6 +178,23 @@ async def cron_recap_email(request: Request, background: BackgroundTasks, author
     from exports import send_recap_email
     background.add_task(send_recap_email)
     return {"ok": True, "queued": "recap-email", "run_id": run_id}
+@router.post("/cron/member-recaps")
+async def cron_member_recaps(request: Request, background: BackgroundTasks,
+                             authorization: str = Header(None), x_webhook_id: str = Header(None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    check_secret(authorization)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    run_id = x_webhook_id or body.get("run_id") or new_id("run")
+    if not await claim_run("member-recaps", run_id):
+        return {"ok": True, "duplicate": True}
+    from exports import send_member_monthly_recaps
+    background.add_task(send_member_monthly_recaps)
+    return {"ok": True, "queued": "member-recaps", "run_id": run_id}
+
+
 @router.post("/cron/weekly-summary")
 async def cron_weekly_summary(request: Request, background: BackgroundTasks, authorization: str = Header(None),
                               x_webhook_id: str = Header(None)):

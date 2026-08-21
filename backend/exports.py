@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from deps import db, iso, now_utc, logger, require, require_admin, log_action
+from deps import db, iso, now_utc, logger, require, require_admin, log_action, notify
 from finance import CATEGORY_LABELS, period_range
 
 router = APIRouter(prefix="/api")
@@ -348,6 +348,77 @@ async def send_recap_email():
     return {"email_id": email_id}
 
 
+async def send_member_monthly_recaps():
+    """Récap mensuel d'engagement : notification dans la plateforme + e-mail (si non désabonné)."""
+    from loyalty import build_monthly_recap
+    sent, notified, skipped = 0, 0, 0
+    async for member in db.users.find({"role": "PARTICULIER", "status": "ACTIVE"},
+                                      {"_id": 0, "user_id": 1, "email": 1}):
+        recap = await build_monthly_recap(member["user_id"])
+        period = recap["period"]["label"]
+        detail = (f"{recap['gained']} tampon(s) gagné(s) en {period}, total {recap['total_points']}."
+                  if recap["gained"] else
+                  f"Aucun tampon en {period} — votre total reste de {recap['total_points']}.")
+        if recap.get("next_reward"):
+            detail += (f" Encore {recap['missing']} tampon(s) pour « "
+                       f"{recap['next_reward'].get('reward') or recap['next_reward'].get('label')} ».")
+        await notify(member["user_id"], type="LOYALTY_RECAP",
+                     title=f"Votre récap d'engagement — {period}", message=detail,
+                     level="INFO", link="/loyalty")
+        notified += 1
+
+        profile = await db.profiles.find_one({"user_id": member["user_id"]},
+                                            {"_id": 0, "preferences": 1})
+        opted_out = ((profile or {}).get("preferences") or {}).get("monthly_recap_email") is False
+        if opted_out:
+            skipped += 1
+            continue
+        lines = "".join(
+            f"<li>{escape(s.get('activity_title') or '')} — "
+            f"{escape((s.get('created_at') or '')[:10])} "
+            f"({'+' if s.get('points', 0) > 0 else ''}{s.get('points', 0)})</li>"
+            for s in recap["stamps"]) or "<li>Aucun tampon ce mois-ci.</li>"
+        goal = ""
+        if recap.get("next_reward"):
+            reward = recap["next_reward"].get("reward") or recap["next_reward"].get("label")
+            goal = (f'<p style="margin:0 0 16px">Prochain palier : <strong>{escape(str(reward))}</strong>'
+                    f' — encore {recap["missing"]} tampon(s).</p>')
+        html = (
+            '<table role="presentation" width="100%"><tr><td style="padding:24px;'
+            'font-family:Arial,sans-serif;color:#333333">'
+            f'<h1 style="color:#002060;font-size:22px;margin:0 0 8px">Votre engagement — {escape(period)}</h1>'
+            f'<p style="color:#666666;margin:0 0 20px">Bonjour {escape(recap["display_name"] or "")}, '
+            f'voici le résumé de votre carte d\'engagement.</p>'
+            f'<p style="margin:0 0 16px">Total de tampons : <strong>{recap["total_points"]}</strong> '
+            f'(dont {recap["gained"]} ce mois-ci).</p>'
+            f'<h2 style="color:#800020;font-size:16px">Vos tampons du mois</h2><ul>{lines}</ul>'
+            f'{goal}'
+            '<p style="background:#f4f6fb;border-left:3px solid #800020;padding:12px 16px;margin:20px 0">'
+            'Merci pour votre présence auprès de l\'association et de nos chiens.</p>'
+            f'<p style="font-size:12px;color:#888888">Message automatique de {escape(EMAIL_FROM_NAME)}. '
+            'Vous pouvez désactiver cet e-mail dans « Mon espace &amp; préférences ». '
+            'Nous ne demandons jamais de mot de passe ni de coordonnées bancaires par e-mail.</p>'
+            '</td></tr></table>')
+        subject = f"Votre récap d'engagement — {period}"
+        _assert_safe_email(subject, html)
+        email_id = await send_email(to=member["email"], subject=subject, html=html)
+        await db.email_log.insert_one({"kind": "MEMBER_RECAP", "recipient": member["email"],
+                                       "email_id": email_id, "sent_at": iso(now_utc())})
+        if email_id:
+            sent += 1
+    logger.info(f"[CRON] Récaps mensuels : {notified} notification(s), {sent} e-mail(s), "
+                f"{skipped} désabonné(s)")
+    return {"notified": notified, "emails": sent, "opted_out": skipped}
+
+
 @router.post("/exports/test-recap")
 async def test_recap(admin: dict = Depends(require_admin)):
     return await send_recap_email()
+
+
+@router.post("/exports/member-recaps")
+async def trigger_member_recaps(admin: dict = Depends(require_admin)):
+    """Déclenchement manuel par le Bureau du récap mensuel des adhérents."""
+    result = await send_member_monthly_recaps()
+    await log_action(admin, "EXPORT", "exports", "member-recaps", new_value=result)
+    return result

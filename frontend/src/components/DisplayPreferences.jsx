@@ -25,19 +25,22 @@ export const DisplayPreferences = () => {
   const [access, setAccess] = useState({ font: "DEFAULT", text_size: "NORMAL", spacing: "NORMAL",
     contrast: "NORMAL", focus_mode: false, reduce_motion: false });
   const [hidden, setHidden] = useState([]);
+  const [recapEmail, setRecapEmail] = useState(true);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
     setAccess((a) => ({ ...a, ...(profile.accessibility || {}) }));
     setHidden(profile.preferences?.hidden_modules || []);
+    setRecapEmail(profile.preferences?.monthly_recap_email !== false);
   }, [profile]);
 
   const save = async () => {
     setBusy(true);
     try {
       await api.put("/profiles/me/accessibility", access);
-      await api.put("/profiles/me/preferences", { hidden_modules: hidden });
+      await api.put("/profiles/me/preferences", { hidden_modules: hidden,
+        monthly_recap_email: recapEmail });
       await refresh?.();
       toast.success("Préférences enregistrées et appliquées");
     } catch (e) { toast.error(apiError(e)); }
@@ -119,8 +122,16 @@ export const DisplayPreferences = () => {
         </p>
       </SectionCard>
 
-      <SectionCard title="Synchronisation d'agenda" testId="calendar-sync-card"
-        subtitle="Exportez vos éléments de la plateforme vers votre agenda Google (à venir).">
+      <SectionCard title="Récap mensuel d'engagement" testId="recap-preferences-card"
+        subtitle="Chaque 1er du mois, un résumé de vos tampons et du palier suivant.">
+        <label className="flex items-center gap-3 text-sm">
+          <Switch checked={recapEmail} onCheckedChange={setRecapEmail}
+            data-testid="recap-email-switch" />
+          Recevoir aussi le récap par e-mail (la notification dans la plateforme reste active)
+        </label>
+      </SectionCard>
+
+      <SectionCard title="Synchronisation d'agenda" testId="calendar-sync-card"        subtitle="Exportez vos éléments de la plateforme vers votre agenda Google (à venir).">
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" className="rounded-full" disabled
             data-testid="google-calendar-sync-button">

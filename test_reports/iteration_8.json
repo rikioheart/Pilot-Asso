@@ -1,0 +1,31 @@
+{
+  "summary": "Prompt 5 — Stats d'engagement Bureau + récap mensuel adhérent (notif + e-mail managé + désabonnement) testé end-to-end. Backend : 10/10 tests pytest (test_prompt5_stats_recap.py). Frontend : /admin/engagement onglet stats OK (4 KPI, ranking, sources, monthly), bouton send-recaps-button présent et NON cliqué, /loyalty encart loyalty-recap OK côté membre, interrupteur recap-email-switch fonctionne et persiste après refresh SANS écraser hidden_modules, bouton Google Calendar disabled. Non-régression : /admin/engagement (4 onglets), /loyalty, /loyalty/scan, /terrains, /agenda chargent.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt5_stats_recap.py",
+    "/app/test_reports/pytest/prompt5.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "loyalty.engagement_stats : algorithme de détection des paliers par mois correct (comparaison before < threshold <= running) et labels FR renvoyés via SOURCE_LABELS. RBAC via Depends(require('loyalty.manage')) => 403 pour pro et particulier confirmé.",
+    "loyalty.build_monthly_recap : période = mois écoulé (start = 1er du mois précédent, end = 1er du mois courant). Le total_points renvoyé est le TOTAL COURANT de la carte, pas celui de fin de période — c'est cohérent avec le libellé UI 'X au total' mais si un tampon est ajouté pendant le mois courant il apparaîtra dans total_points sans être dans stamps[]. Point d'attention documentaire.",
+    "profiles_plus.update_preferences : mise à jour PARTIELLE via {f'preferences.{k}': v ...} en dot-notation Mongo — préserve bien les autres clés (validé par test). Bon pattern.",
+    "exports.send_member_monthly_recaps : lit preferences.monthly_recap_email ; si False => skip e-mail mais notification quand même envoyée. La détection utilise ' is False' donc None ou absent = envoi par défaut (opt-in par défaut), conforme au review_request.",
+    "crons_api.cron_member_recaps : ack 2xx immédiat + BackgroundTasks + claim_run(run_id) via cron_runs — idempotence validée avec x-webhook-id identique (duplicate:true).",
+    "Frontend Engagement.jsx : sendRecaps() demande confirmation window.confirm — bon garde-fou côté UI. Le state 'sending' désactive le bouton pendant l'envoi.",
+    "DisplayPreferences.jsx : Google Calendar button reste disabled + Chip 'Bientôt disponible' — conforme à la demande."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt5_stats_recap.py"],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "100% flows critiques"},
+  "test_credentials": "admin associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro2.demo@lavoixduchien.fr/Demo2026! ; membre1.demo@lavoixduchien.fr/Demo2026! ; WEBHOOK_CRON_SECRET=vdc_cron_9f4b2e7a1c6d8035be4712af95d3c60e",
+  "seed_data_creation": "3 tampons manuels TEST_stat_check_{i} ajoutés au membre1.demo pour test de cohérence des stats, puis supprimés via DELETE /api/loyalty/stamps/{id}?reason=TEST_cleanup. Un REWARD temporaire TEST_reward_* créé si aucun palier n'était en zone de franchissement, supprimé (archivé is_active:false) à la fin. NB : /api/cron/member-recaps a été appelé UNE SEULE FOIS avec un run_id unique (TEST_prompt5_<uuid>) puis rappelé avec le MÊME id pour valider l'idempotence => 1 seul job d'envoi d'e-mails déclenché. POST /api/exports/member-recaps N'A PAS été appelé (comme demandé).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 5 validé backend + frontend. Fichier de tests : /app/backend/tests/test_prompt5_stats_recap.py (10 tests, ~6s). L'endpoint /api/cron/member-recaps déclenche un envoi réel d'e-mails en background sur premier appel avec run_id unique — n'appeler qu'une fois par session. Le libellé FR de by_source est bien renvoyé. GET /api/loyalty/monthly-recap ne prend PAS de paramètre user_id, il utilise toujours l'utilisateur connecté (pas de fuite possible). Warning pytest 'Class-scoped fixture defined as instance method' non bloquant.",
+  "rca of the issue": "N/A — aucun bug détecté."
+}

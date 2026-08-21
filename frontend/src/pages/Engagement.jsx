@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Star, Gift, Power, Plus, Minus, RefreshCw, Trash2, QrCode, Search } from "lucide-react";
+import { Star, Gift, Power, Plus, Minus, RefreshCw, Trash2, QrCode, Search, BarChart3, Mail }
+  from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { api, apiError } from "@/lib/api";
 import { PageHeader, EmptyState, SectionCard, Chip, ProgressBar } from "@/components/Ui";
@@ -29,6 +30,8 @@ export default function Engagement() {
   const [detail, setDetail] = useState(null);
   const [detailData, setDetailData] = useState(null);
   const [manual, setManual] = useState({ points: 1, reason: "", label: "" });
+  const [stats, setStats] = useState(null);
+  const [sending, setSending] = useState(false);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -57,7 +60,19 @@ export default function Engagement() {
     api.get("/activities/meta").then((r) => setCategories(r.data.categories)).catch(() => {});
     api.get("/activities", { params: { limit: 150 } })
       .then((r) => setActivities(r.data.items)).catch(() => {});
+    api.get("/loyalty/stats", { params: { months: 12 } })
+      .then((r) => setStats(r.data)).catch(() => {});
   }, []);
+
+  const sendRecaps = async () => {
+    if (!window.confirm("Envoyer maintenant le récap d'engagement à tous les adhérents ?")) return;
+    setSending(true);
+    try {
+      const { data } = await api.post("/exports/member-recaps");
+      toast.success(`${data.notified} notification(s), ${data.emails} e-mail(s), `
+        + `${data.opted_out} désabonné(s)`);
+    } catch (e) { toast.error(apiError(e)); } finally { setSending(false); }
+  };
 
   const openMember = async (member) => {
     setDetail(member); setDetailData(null); setManual({ points: 1, reason: "", label: "" });
@@ -143,10 +158,16 @@ export default function Engagement() {
       <PageHeader breadcrumb="Bureau" title="Engagement"
         subtitle="Cartes d'engagement, tampons cumulés, historique daté et paliers d'avantages."
         actions={
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="rule-create-button"
-            onClick={() => { setEditingRule(null); setRule(emptyRule); setRuleOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Nouvelle règle / palier
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="rounded-full" disabled={sending}
+              data-testid="send-recaps-button" onClick={sendRecaps}>
+              <Mail className="mr-2 h-4 w-4" /> {sending ? "Envoi…" : "Envoyer les récaps"}
+            </Button>
+            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="rule-create-button"
+              onClick={() => { setEditingRule(null); setRule(emptyRule); setRuleOpen(true); }}>
+              <Plus className="mr-2 h-4 w-4" /> Nouvelle règle / palier
+            </Button>
+          </div>
         } />
 
       <Tabs defaultValue="members" className="space-y-5">
@@ -154,6 +175,7 @@ export default function Engagement() {
           <TabsTrigger value="members" data-testid="engagement-tab-members">Cartes des membres</TabsTrigger>
           <TabsTrigger value="history" data-testid="engagement-tab-history">Historique des tampons</TabsTrigger>
           <TabsTrigger value="rules" data-testid="engagement-tab-rules">Règles & paliers</TabsTrigger>
+          <TabsTrigger value="stats" data-testid="engagement-tab-stats">Statistiques</TabsTrigger>
         </TabsList>
 
         <TabsContent value="members">
@@ -336,10 +358,116 @@ export default function Engagement() {
             </SectionCard>
           </div>
         </TabsContent>
+
+        <TabsContent value="stats">
+          {!stats ? <p className="text-muted-foreground">Chargement des statistiques…</p> : (
+            <div className="space-y-6" data-testid="engagement-stats">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[["Tampons attribués", stats.totals.stamps],
+                  ["Tampons cumulés", stats.totals.points],
+                  ["Adhérents engagés", `${stats.totals.engaged_members} / ${stats.totals.active_members}`],
+                  ["Taux de participation", `${stats.totals.participation_rate} %`]].map(([text, value]) => (
+                  <div key={text} className="rounded-xl border bg-card p-5" data-testid={`stat-${text}`}>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{text}</p>
+                    <p className="mt-2 font-display text-3xl font-extrabold text-[#002060]">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <SectionCard title="Les plus impliqués" icon={BarChart3} testId="stats-ranking">
+                  {stats.ranking.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucun tampon enregistré.</p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {stats.ranking.map((r, index) => (
+                        <li key={r.user_id} data-testid={`stats-rank-${r.user_id}`}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3">
+                          <span className="flex items-center gap-3">
+                            <span className="grid h-7 w-7 place-items-center rounded-full bg-[#002060] text-xs font-bold text-white">
+                              {index + 1}
+                            </span>
+                            <span>
+                              <span className="font-semibold text-[#002060]">{r.display_name}</span>
+                              <p className="text-xs text-muted-foreground">
+                                {r.stamps} tampon(s) · {r.levels_reached} palier(s) atteint(s)
+                                {r.next_reward && ` · prochain : ${r.next_reward} (${r.next_threshold})`}
+                              </p>
+                            </span>
+                          </span>
+                          <Chip tone="bordeaux">{r.total_points}</Chip>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </SectionCard>
+
+                <SectionCard title="Modes d'obtention" icon={Star} testId="stats-sources">
+                  {stats.by_source.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucune donnée.</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {stats.by_source.map((s) => (
+                        <li key={s.source} data-testid={`stats-source-${s.source}`}>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-[#002060]">{s.label}</span>
+                            <span className="font-semibold">{s.count}</span>
+                          </div>
+                          <ProgressBar value={stats.totals.stamps ? s.count / stats.totals.stamps * 100 : 0} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-5">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Éléments les plus tamponnés
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {stats.top_elements.map((e) => (
+                        <Chip key={e.title} tone="muted">{e.title} · {e.count}</Chip>
+                      ))}
+                    </div>
+                  </div>
+                </SectionCard>
+              </div>
+
+              <SectionCard title="Paliers atteints par mois" icon={Gift} testId="stats-monthly">
+                {stats.monthly.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun historique sur la période.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {stats.monthly.map((m) => (
+                      <li key={m.month} data-testid={`stats-month-${m.month}`}
+                        className="rounded-lg border px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold text-[#002060]">{m.label}</span>
+                          <span className="flex flex-wrap gap-2">
+                            <Chip tone="muted">{m.stamps} tampon(s)</Chip>
+                            <Chip tone="marine">{m.active_members} adhérent(s) actif(s)</Chip>
+                            <Chip tone="bordeaux">{m.levels_reached} palier(s) atteint(s)</Chip>
+                          </span>
+                        </div>
+                        {m.levels.length > 0 && (
+                          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                            {m.levels.map((l, index) => (
+                              <li key={index}>
+                                {l.display_name} → « {l.reward} » ({l.threshold} tampons)
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SectionCard>
+            </div>
+          )}
+        </TabsContent>
+
       </Tabs>
 
-      <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>
-        <DialogContent data-testid="rule-create-dialog">
+      <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>        <DialogContent data-testid="rule-create-dialog">
           <DialogHeader>
             <DialogTitle>{editingRule ? "Modifier le palier" : "Nouvelle règle d'engagement"}</DialogTitle>
             <DialogDescription>

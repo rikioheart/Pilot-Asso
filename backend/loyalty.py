@@ -1,5 +1,6 @@
 """Phase 6 — Carte de fidélité : QR sécurisé, règles configurables, scan et tampons."""
 import secrets
+from datetime import timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -164,6 +165,124 @@ async def cancel_stamp(stamp_id: str, reason: str, admin: dict = Depends(require
                          f"Total : {total}.",
                  level="WARNING", link="/loyalty")
     return {"ok": True, "total_points": total}
+
+
+@router.get("/loyalty/stats")
+async def engagement_stats(months: int = 6, admin: dict = Depends(require("loyalty.manage"))):
+    """Statistiques d'engagement : classement, paliers atteints par mois, modes d'obtention."""
+    stamps = await db.loyalty_stamps.find({}, {"_id": 0}).to_list(5000)
+    rewards = await db.loyalty_rules.find({"kind": "REWARD", "is_active": True}, {"_id": 0}) \
+        .sort("threshold", 1).to_list(50)
+
+    by_member: dict = {}
+    by_source: dict = {}
+    by_month: dict = {}
+    by_element: dict = {}
+    for s in stamps:
+        points = s.get("points", 0)
+        member = by_member.setdefault(s["user_id"], {"points": 0, "stamps": 0, "last": None})
+        member["points"] += points
+        member["stamps"] += 1
+        if not member["last"] or s["created_at"] > member["last"]:
+            member["last"] = s["created_at"]
+        source = s.get("source") or "PRO_VALIDATION"
+        by_source[source] = by_source.get(source, 0) + 1
+        month = (s.get("created_at") or "")[:7]
+        if month:
+            bucket = by_month.setdefault(month, {"points": 0, "stamps": 0, "members": set()})
+            bucket["points"] += points
+            bucket["stamps"] += 1
+            bucket["members"].add(s["user_id"])
+        title = s.get("activity_title") or "—"
+        by_element[title] = by_element.get(title, 0) + 1
+
+    ranking = []
+    for user_id, data in by_member.items():
+        total = max(data["points"], 0)
+        reached = [r for r in rewards if (r.get("threshold") or 0) <= total]
+        next_reward = next((r for r in rewards if (r.get("threshold") or 0) > total), None)
+        ranking.append({"user_id": user_id, "display_name": await display_name(user_id),
+                        "total_points": total, "stamps": data["stamps"],
+                        "last_stamp": data["last"], "levels_reached": len(reached),
+                        "next_reward": (next_reward or {}).get("reward")
+                        or (next_reward or {}).get("label"),
+                        "next_threshold": (next_reward or {}).get("threshold")})
+    ranking.sort(key=lambda x: (-x["total_points"], x["display_name"] or ""))
+
+    # Paliers atteints par mois : on rejoue l'historique de chaque membre dans l'ordre.
+    levels_by_month: dict = {}
+    for user_id in by_member:
+        member_stamps = sorted([s for s in stamps if s["user_id"] == user_id],
+                               key=lambda s: s.get("created_at") or "")
+        running = 0
+        for s in member_stamps:
+            before = running
+            running += s.get("points", 0)
+            month = (s.get("created_at") or "")[:7]
+            for r in rewards:
+                threshold = r.get("threshold") or 0
+                if before < threshold <= running and month:
+                    entry = levels_by_month.setdefault(month, [])
+                    entry.append({"user_id": user_id,
+                                  "display_name": await display_name(user_id),
+                                  "reward": r.get("reward") or r.get("label"),
+                                  "threshold": threshold})
+
+    keys = sorted(set(list(by_month) + list(levels_by_month)))[-months:]
+    monthly = [{"month": k,
+                "label": f"{k[5:7]}/{k[:4]}",
+                "points": by_month.get(k, {}).get("points", 0),
+                "stamps": by_month.get(k, {}).get("stamps", 0),
+                "active_members": len(by_month.get(k, {}).get("members", set())),
+                "levels_reached": len(levels_by_month.get(k, [])),
+                "levels": levels_by_month.get(k, [])} for k in keys]
+
+    total_members = await db.users.count_documents({"role": ROLE_MEMBER, "status": "ACTIVE"})
+    return {
+        "ranking": ranking[:20],
+        "monthly": monthly,
+        "by_source": [{"source": k, "label": SOURCE_LABELS.get(k, k), "count": v}
+                      for k, v in sorted(by_source.items(), key=lambda x: -x[1])],
+        "top_elements": [{"title": k, "count": v}
+                         for k, v in sorted(by_element.items(), key=lambda x: -x[1])[:8]],
+        "totals": {"stamps": len(stamps),
+                   "points": sum(s.get("points", 0) for s in stamps),
+                   "engaged_members": len(by_member), "active_members": total_members,
+                   "participation_rate": round(len(by_member) / total_members * 100, 1)
+                   if total_members else 0},
+        "rewards": rewards,
+    }
+
+
+@router.get("/loyalty/monthly-recap")
+async def my_monthly_recap(user: dict = Depends(require("loyalty.view_own"))):
+    """Récapitulatif du mois écoulé pour l'adhérent connecté."""
+    return await build_monthly_recap(user["user_id"])
+
+
+async def build_monthly_recap(user_id: str) -> dict:
+    card = await ensure_card(user_id)
+    reference = now_utc()
+    first_of_month = reference.replace(day=1)
+    start = (first_of_month - timedelta(days=1)).replace(day=1)
+    period_start, period_end = iso(start)[:10], iso(first_of_month)[:10]
+    stamps = await db.loyalty_stamps.find(
+        {"card_id": card["card_id"], "created_at": {"$gte": period_start, "$lt": period_end}},
+        {"_id": 0}).sort("created_at", 1).to_list(200)
+    rewards = await db.loyalty_rules.find({"kind": "REWARD", "is_active": True}, {"_id": 0}) \
+        .sort("threshold", 1).to_list(50)
+    total = card["total_points"]
+    next_reward = next((r for r in rewards if (r.get("threshold") or 0) > total), None)
+    return {
+        "user_id": user_id, "display_name": await display_name(user_id),
+        "period": {"start": period_start, "end": period_end,
+                   "label": f"{start.month:02d}/{start.year}"},
+        "stamps": stamps, "gained": sum(s.get("points", 0) for s in stamps),
+        "total_points": total,
+        "next_reward": next_reward,
+        "missing": ((next_reward.get("threshold") or 0) - total) if next_reward else 0,
+        "reached": [r for r in rewards if (r.get("threshold") or 0) <= total],
+    }
 
 
 # ---------------------------------------------------------------- Règles (Bureau)

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export default function LoyaltyCard() {
   const [data, setData] = useState(null);
+  const [recap, setRecap] = useState(null);
   const qrRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -21,6 +22,9 @@ export default function LoyaltyCard() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    api.get("/loyalty/monthly-recap").then((r) => setRecap(r.data)).catch(() => {});
+  }, []);
 
   if (data === null) return <p className="text-muted-foreground">Chargement de votre carte…</p>;
   if (data === false) return <EmptyState testId="loyalty-unavailable" title="Carte indisponible"
@@ -105,6 +109,31 @@ export default function LoyaltyCard() {
         </div>
 
         <div className="space-y-6">
+          {recap && (
+            <SectionCard title={`Mon récap de ${recap.period.label}`} icon={Star} testId="loyalty-recap"
+              subtitle="Résumé envoyé chaque 1er du mois par notification et par e-mail.">
+              <div className="flex flex-wrap items-center gap-3">
+                <Chip tone="bordeaux">{recap.gained} tampon(s) sur le mois</Chip>
+                <Chip tone="muted">{recap.total_points} au total</Chip>
+                {recap.next_reward && (
+                  <Chip tone="amber">
+                    Encore {recap.missing} pour « {recap.next_reward.reward || recap.next_reward.label} »
+                  </Chip>
+                )}
+              </div>
+              {recap.stamps.length > 0 && (
+                <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  {recap.stamps.map((s) => (
+                    <li key={s.stamp_id}>
+                      {s.activity_title} — {new Date(s.created_at).toLocaleDateString("fr-FR")}
+                      {" "}({s.points > 0 ? `+${s.points}` : s.points})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SectionCard>
+          )}
+
           <SectionCard title="Paliers d'avantages" icon={Gift} testId="loyalty-rewards">
             <div className="space-y-2">
               {rewards.length === 0 && (

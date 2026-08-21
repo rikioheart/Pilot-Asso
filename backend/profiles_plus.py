@@ -52,6 +52,7 @@ class Accessibility(BaseModel):
 class Preferences(BaseModel):
     hidden_modules: Optional[List[str]] = None
     pinned_modules: Optional[List[str]] = None
+    monthly_recap_email: Optional[bool] = None
 
 
 class FunctionDescriptionIn(BaseModel):
@@ -95,8 +96,10 @@ async def update_preferences(payload: Preferences, user: dict = Depends(active_u
         if bad:
             raise HTTPException(status_code=400, detail=f"Module inconnu : {', '.join(bad)}")
     await db.profiles.update_one({"user_id": user["user_id"]},
-                                 {"$set": {"preferences": data, "updated_at": iso(now_utc())}})
-    return {"preferences": data}
+                                 {"$set": {f"preferences.{k}": v for k, v in data.items()}
+                                  | {"updated_at": iso(now_utc())}})
+    profile = await db.profiles.find_one({"user_id": user["user_id"]}, {"_id": 0, "preferences": 1})
+    return {"preferences": (profile or {}).get("preferences") or {}}
 
 
 @router.put("/profiles/me/accessibility")
