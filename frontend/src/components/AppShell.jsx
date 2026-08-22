@@ -6,7 +6,7 @@ import {
   Dog, Wallet as WalletIcon,
   BookUser, Upload, FileText, Sparkle, PartyPopper, QrCode, Star, BarChart3, TicketCheck,
   Newspaper, GraduationCap, Library, Send, Trophy, Gift, Wallet, Boxes, MapPinned, ClipboardList,
-  Receipt, Handshake,
+  Receipt, Handshake, BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -26,6 +26,7 @@ const BUREAU_NAV = [
       { to: "/admin/validation", label: "Validation", icon: CheckCircle2 },
       { to: "/mindmap", label: "Mindmap", icon: Network },
       { to: "/admin/help", label: "Besoins d'aide", icon: LifeBuoy },
+      { to: "/aide", label: "Espace aide", icon: BookOpen },
     ],
   },
   {
@@ -112,6 +113,7 @@ const PRO_NAV = [
       { to: "/partners", label: "Partenaires", icon: Handshake, permission: "partners.view" },
       { to: "/advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
       { to: "/help", label: "Aide", icon: LifeBuoy },
+      { to: "/aide", label: "Espace aide", icon: BookOpen },
       { to: "/profile", label: "Mon profil", icon: UserCircle },
     ],
   },
@@ -154,6 +156,7 @@ const MEMBER_NAV = [
       { to: "/directory", label: "Professionnels", icon: BookUser, permission: "members.view" },
       { to: "/notifications", label: "Notifications", icon: Bell },
       { to: "/help", label: "Aide", icon: LifeBuoy },
+      { to: "/aide", label: "Espace aide", icon: BookOpen },
     ],
   },
 ];

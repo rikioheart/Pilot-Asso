@@ -21,6 +21,7 @@ import imports_csv as imports_module
 import activities as activities_module
 import loyalty as loyalty_module
 import records as records_module
+import help_center as help_module
 import stats_mindmap as stats_module
 import storage as storage_module
 import content as content_module
@@ -637,6 +638,7 @@ app.include_router(profiles_plus_module.router)
 app.include_router(dogs_module.router)
 app.include_router(crons_module.router)
 app.include_router(records_module.router)
+app.include_router(help_module.router)
 
 app.add_middleware(
     CORSMiddleware,

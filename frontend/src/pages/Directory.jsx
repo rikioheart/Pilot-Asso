@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, MapPin, Gift, X } from "lucide-react";
+import { ExternalLink, MapPin, Gift, X, NotebookPen, FileSpreadsheet, Trash2 } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { PageHeader, EmptyState } from "@/components/Ui";
+import { PageHeader, EmptyState, Chip } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -15,6 +16,10 @@ export default function Directory() {
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ q: "", category: "", department: "", specialty: "" });
   const [focus, setFocus] = useState(null);
+  const [reviews, setReviews] = useState(null);
+  const [recap, setRecap] = useState(null);
+  const [review, setReview] = useState({ observations: "", strengths: "", improvements: "",
+    context: "" });
 
   const load = useCallback(async () => {
     try {
@@ -37,9 +42,40 @@ export default function Directory() {
     try {
       const { data } = await api.get(`/professionals/${userId}`);
       setFocus(data);
+      setReviews(null); setRecap(null);
+      setReview({ observations: "", strengths: "", improvements: "", context: "" });
+      if (user?.role === "ADMIN_BUREAU") {
+        const [r, a] = await Promise.all([
+          api.get(`/professionals/${userId}/reviews`),
+          api.get(`/professionals/${userId}/annual-recap`),
+        ]);
+        setReviews(r.data); setRecap(a.data);
+      }
     } catch (e) {
       toast.error(apiError(e));
     }
+  };
+
+  const saveReview = async () => {
+    if (review.observations.trim().length < 3) return toast.error("Renseignez vos observations");
+    try {
+      await api.post(`/professionals/${focus.details.user_id}/reviews`,
+        { ...review, professional_id: focus.details.user_id });
+      toast.success("Retour enregistré (visible du Bureau uniquement)");
+      setReview({ observations: "", strengths: "", improvements: "", context: "" });
+      const { data } = await api.get(`/professionals/${focus.details.user_id}/reviews`);
+      setReviews(data);
+    } catch (e) { toast.error(apiError(e)); }
+  };
+
+  const removeReview = async (item) => {
+    if (!window.confirm("Supprimer ce retour qualitatif ?")) return;
+    try {
+      await api.delete(`/professionals/reviews/${item.review_id}`);
+      toast.success("Retour supprimé");
+      const { data } = await api.get(`/professionals/${focus.details.user_id}/reviews`);
+      setReviews(data);
+    } catch (e) { toast.error(apiError(e)); }
   };
 
   return (
@@ -177,6 +213,108 @@ export default function Directory() {
                 <ul className="mt-2 space-y-1 text-sm">
                   {focus.projects.map((p) => <li key={p.project_id}>{p.title} — {p.status}</li>)}
                 </ul>
+              </section>
+            )}
+
+            {user?.role === "ADMIN_BUREAU" && recap && (
+              <section className="mt-6 rounded-xl border p-4" data-testid="pro-annual-recap">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-display text-sm font-bold text-[#002060]">
+                    Récapitulatif {recap.year}
+                  </h3>
+                  <Button size="sm" variant="outline" className="rounded-full"
+                    data-testid="pro-recap-export"
+                    onClick={async () => {
+                      try {
+                        const res = await api.get(
+                          `/exports/pro-annual/${focus.details.user_id}`,
+                          { params: { year: recap.year }, responseType: "blob" });
+                        const url = window.URL.createObjectURL(new Blob([res.data]));
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = `recap-annuel-${recap.year}.xlsx`;
+                        link.click();
+                        toast.success("Récapitulatif exporté");
+                      } catch (e) { toast.error(apiError(e)); }
+                    }}>
+                    <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" /> Exporter en Excel
+                  </Button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[["Activités animées", recap.totals.activities],
+                    ["Événements", recap.totals.events],
+                    ["Bénévolat", recap.totals.volunteering],
+                    ["Projets", recap.totals.projects],
+                    ["Séances", recap.totals.sessions],
+                    ["Réservations", recap.totals.reservations],
+                    ["Tâches terminées", recap.totals.tasks_done],
+                    ["Parts (€)", recap.totals.shares_amount]].map(([label, value]) => (
+                    <Chip key={label} tone="marine" testId={`recap-${label}`}>{label} : {value}</Chip>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {user?.role === "ADMIN_BUREAU" && (
+              <section className="mt-6 rounded-xl border p-4" data-testid="pro-reviews">
+                <h3 className="inline-flex items-center gap-2 font-display text-sm font-bold text-[#002060]">
+                  <NotebookPen className="h-4 w-4" /> Suivi qualitatif (Bureau uniquement)
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ces retours ne sont jamais visibles par le professionnel ni par les autres membres.
+                </p>
+                <div className="mt-3 space-y-2">
+                  <div>
+                    <Label className="text-xs">Observations *</Label>
+                    <Textarea rows={2} value={review.observations} data-testid="review-observations-input"
+                      onChange={(e) => setReview({ ...review, observations: e.target.value })} />
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <Label className="text-xs">Points forts</Label>
+                      <Input value={review.strengths} data-testid="review-strengths-input"
+                        onChange={(e) => setReview({ ...review, strengths: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Axes d'amélioration</Label>
+                      <Input value={review.improvements} data-testid="review-improvements-input"
+                        onChange={(e) => setReview({ ...review, improvements: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Contexte d'intervention</Label>
+                    <Input value={review.context} data-testid="review-context-input"
+                      onChange={(e) => setReview({ ...review, context: e.target.value })} />
+                  </div>
+                  <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                    data-testid="review-save-button" onClick={saveReview}>Enregistrer le retour</Button>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {(reviews?.items || []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucun retour enregistré.</p>
+                  ) : reviews.items.map((r) => (
+                    <div key={r.review_id} data-testid={`review-${r.review_id}`}
+                      className="rounded-lg border px-3 py-2 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-[#002060]">
+                          {r.author_name} · {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                        </span>
+                        <Button size="sm" variant="outline"
+                          className="rounded-full text-red-700 hover:bg-red-50"
+                          data-testid={`review-delete-${r.review_id}`} onClick={() => removeReview(r)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <p className="mt-1">{r.observations}</p>
+                      {r.strengths && <p className="text-xs text-emerald-700">Points forts : {r.strengths}</p>}
+                      {r.improvements && (
+                        <p className="text-xs text-amber-700">À améliorer : {r.improvements}</p>
+                      )}
+                      {r.context && <p className="text-xs text-muted-foreground">Contexte : {r.context}</p>}
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
           </div>

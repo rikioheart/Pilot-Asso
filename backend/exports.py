@@ -174,6 +174,58 @@ EXPORT_KINDS = ["finance", "shares", "reimbursements", "members", "stock", "part
                 "documents", "statistics"]
 
 
+@router.get("/exports/pro-annual/{user_id}")
+async def export_pro_annual(user_id: str, year: Optional[int] = None,
+                            admin: dict = Depends(require_admin)):
+    """Récapitulatif annuel d'un professionnel au format Excel."""
+    from help_center import build_annual_recap
+    year = year or now_utc().year
+    recap = await build_annual_recap(user_id, year)
+    workbook = Workbook()
+
+    summary = _sheet(workbook, "Synthèse", ["Indicateur", "Valeur"])
+    summary.append(["Professionnel", recap["display_name"]])
+    summary.append(["Année", year])
+    for label, key in [("Activités animées", "activities"), ("Événements", "events"),
+                       ("Participations bénévoles", "volunteering"), ("Projets", "projects"),
+                       ("Séances réalisées", "sessions"), ("Réservations de terrain", "reservations"),
+                       ("Tâches terminées", "tasks_done")]:
+        summary.append([label, recap["totals"][key]])
+    summary.append(["Parts professionnelles (€)", recap["totals"]["shares_amount"]])
+
+    activities = _sheet(workbook, "Activités", ["Date", "Titre", "Catégorie", "Statut"])
+    for a in recap["activities"]:
+        activities.append([a.get("date"), a.get("title"), a.get("category"), a.get("status")])
+
+    events = _sheet(workbook, "Événements", ["Date", "Titre", "Type"])
+    for e in recap["events"]:
+        events.append([e.get("start_date"), e.get("title"), e.get("event_type")])
+
+    volunteering = _sheet(workbook, "Bénévolat", ["Date", "Élément", "Rôle", "Présence"])
+    for v in recap["volunteering"]:
+        volunteering.append([v.get("date"), v.get("title"), v.get("role"),
+                             v.get("attendance_status")])
+
+    sessions = _sheet(workbook, "Séances", ["Date", "Chien", "Type", "Synthèse"])
+    for s in recap["sessions"]:
+        sessions.append([s.get("date"), s.get("dog_name"), s.get("session_type"),
+                         (s.get("summary") or "")[:200]])
+
+    reservations = _sheet(workbook, "Terrain", ["Date", "Terrain", "Créneau", "Montant (€)"])
+    for r in recap["reservations"]:
+        reservations.append([r.get("date"), r.get("terrain_name"),
+                             f"{r.get('start_time')}-{r.get('end_time')}", r.get("amount")])
+
+    projects = _sheet(workbook, "Projets", ["Projet", "Statut"])
+    for p in recap["projects"]:
+        projects.append([p.get("title"), p.get("status")])
+
+    await log_action(admin, "EXPORT", "professionals", user_id,
+                     new_value={"recap_annuel": year})
+    safe = (recap["display_name"] or user_id).replace(" ", "-").lower()
+    return _finalize(workbook, f"recap-annuel-{safe}-{year}.xlsx")
+
+
 @router.get("/exports/{kind}")
 async def export_excel(kind: str, year: Optional[int] = None, month: Optional[int] = None,
                        quarter: Optional[int] = None, admin: dict = Depends(require("stats.view"))):

@@ -14,6 +14,17 @@ router = APIRouter(prefix="/api")
 
 DOCUMENT_CATEGORIES = ["CONTRAT", "CONVENTION", "STATUTS", "ASSURANCE", "ADMINISTRATIF",
                        "PROCES_VERBAL", "SUBVENTION", "AUTRE"]
+CATEGORY_LABELS = {"CONTRAT": "Contrat", "CONVENTION": "Convention", "STATUTS": "Statuts",
+                   "ASSURANCE": "Assurance", "ADMINISTRATIF": "Administratif",
+                   "PROCES_VERBAL": "Procès-verbal", "SUBVENTION": "Subvention", "AUTRE": "Autre"}
+PROOF_TYPES = ["FACTURE", "RECU", "DEVIS", "ATTESTATION", "CONTRAT_SIGNE", "COMPTE_RENDU",
+               "PHOTO", "AUTRE"]
+PROOF_LABELS = {"FACTURE": "Facture", "RECU": "Reçu", "DEVIS": "Devis",
+                "ATTESTATION": "Attestation", "CONTRAT_SIGNE": "Contrat signé",
+                "COMPTE_RENDU": "Compte-rendu", "PHOTO": "Photo", "AUTRE": "Autre"}
+DOCUMENT_VISIBILITIES = ["BUREAU", "PRO_BUREAU", "SHARED"]
+VISIBILITY_LABELS = {"BUREAU": "Bureau seul", "PRO_BUREAU": "Professionnels + Bureau",
+                     "SHARED": "Partagé avec des membres désignés"}
 DOCUMENT_STATUSES = ["EN_COURS", "SIGNE", "EXPIRE", "A_RENOUVELER", "ARCHIVE"]
 FORM_USAGES = ["RETOUR_ACTIVITE", "AJOUT_CHIEN", "CANDIDATURE_BENEVOLE", "SONDAGE", "AUTRE"]
 ROLES = ["ADMIN_BUREAU", "PROFESSIONNEL", "PARTICULIER"]
@@ -32,6 +43,8 @@ class DocumentIn(BaseModel):
     terrain_id: Optional[str] = None
     notes: Optional[str] = None
     shared_with_user_ids: List[str] = []
+    proof_type: str = "AUTRE"
+    visibility: str = "BUREAU"
 
 
 class DocumentUpdate(BaseModel):
@@ -42,8 +55,16 @@ class DocumentUpdate(BaseModel):
     expiry_date: Optional[str] = None
     file_id: Optional[str] = None
     partner_id: Optional[str] = None
+    project_id: Optional[str] = None
+    terrain_id: Optional[str] = None
     notes: Optional[str] = None
     shared_with_user_ids: Optional[List[str]] = None
+    proof_type: Optional[str] = None
+    visibility: Optional[str] = None
+
+
+class DocumentCategoryIn(BaseModel):
+    label: str = Field(min_length=2)
 
 
 class FormIn(BaseModel):
@@ -71,35 +92,102 @@ class FormUpdate(BaseModel):
     status: Optional[str] = None
 
 
+async def all_document_categories() -> List[str]:
+    custom = await db.document_categories.find({}, {"_id": 0, "code": 1}).to_list(100)
+    return DOCUMENT_CATEGORIES + [c["code"] for c in custom]
+
+
+async def document_labels() -> dict:
+    custom = await db.document_categories.find({}, {"_id": 0}).to_list(100)
+    return {**CATEGORY_LABELS, **{c["code"]: c["label"] for c in custom}}
+
+
 # ---------------------------------------------------------------- Documents officiels
 @router.get("/documents/meta")
 async def documents_meta(user: dict = Depends(require("documents.view"))):
-    return {"categories": DOCUMENT_CATEGORIES, "statuses": DOCUMENT_STATUSES,
+    custom = await db.document_categories.find({}, {"_id": 0}).to_list(100)
+    return {"categories": await all_document_categories(), "category_labels": await document_labels(),
+            "custom_categories": custom, "statuses": DOCUMENT_STATUSES,
+            "proof_types": PROOF_TYPES, "proof_labels": PROOF_LABELS,
+            "visibilities": DOCUMENT_VISIBILITIES, "visibility_labels": VISIBILITY_LABELS,
             "form_usages": FORM_USAGES, "roles": ROLES, "is_manager": await is_manager(user)}
+
+
+@router.post("/documents/categories")
+async def create_document_category(payload: DocumentCategoryIn, admin: dict = Depends(require_admin)):
+    code = "".join(c if c.isalnum() else "_" for c in payload.label.upper())[:40]
+    if code in await all_document_categories():
+        raise HTTPException(status_code=400, detail="Cette catégorie existe déjà")
+    doc = {"doc_category_id": new_id("dcat"), "code": code, "label": payload.label,
+           "created_by": admin["user_id"], "created_at": iso(now_utc())}
+    await db.document_categories.insert_one(dict(doc))
+    await log_action(admin, "CREATE", "documents", doc["doc_category_id"],
+                     new_value={"label": payload.label})
+    return doc
+
+
+@router.put("/documents/categories/{doc_category_id}")
+async def update_document_category(doc_category_id: str, payload: DocumentCategoryIn,
+                                   admin: dict = Depends(require_admin)):
+    category = await db.document_categories.find_one({"doc_category_id": doc_category_id}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Catégorie introuvable")
+    await db.document_categories.update_one({"doc_category_id": doc_category_id},
+                                            {"$set": {"label": payload.label,
+                                                      "updated_at": iso(now_utc())}})
+    await log_action(admin, "UPDATE", "documents", doc_category_id,
+                     old_value={"label": category["label"]}, new_value={"label": payload.label})
+    return {**category, "label": payload.label}
+
+
+@router.delete("/documents/categories/{doc_category_id}")
+async def delete_document_category(doc_category_id: str, admin: dict = Depends(require_admin)):
+    category = await db.document_categories.find_one({"doc_category_id": doc_category_id}, {"_id": 0})
+    if not category:
+        raise HTTPException(status_code=404, detail="Catégorie introuvable")
+    used = await db.documents.count_documents({"category": category["code"]})
+    if used:
+        raise HTTPException(status_code=400,
+                            detail=f"{used} document(s) utilisent encore cette catégorie")
+    await db.document_categories.delete_one({"doc_category_id": doc_category_id})
+    await log_action(admin, "DELETE", "documents", doc_category_id)
+    return {"ok": True}
 
 
 @router.get("/documents")
 async def list_documents(category: Optional[str] = None, status: Optional[str] = None,
-                         q: Optional[str] = None, user: dict = Depends(require("documents.view"))):
+                         proof_type: Optional[str] = None, q: Optional[str] = None,
+                         user: dict = Depends(require("documents.view"))):
     manager = await is_manager(user)
     filters = [{"status": {"$ne": "ARCHIVE"}}]
     if not manager:
-        filters.append({"shared_with_user_ids": user["user_id"]})
+        visible = [{"shared_with_user_ids": user["user_id"]}]
+        if user["role"] == "PROFESSIONNEL":
+            visible.append({"visibility": "PRO_BUREAU"})
+        filters.append({"$or": visible})
     if category:
         filters.append({"category": category})
     if status:
         filters.append({"status": status})
+    if proof_type:
+        filters.append({"proof_type": proof_type})
     if q:
         filters.append({"title": {"$regex": q, "$options": "i"}})
     items = await db.documents.find({"$and": filters}, {"_id": 0}).sort("date", -1).to_list(300)
+    labels = await document_labels()
     today = iso(now_utc())[:10]
     for doc in items:
         doc["file"] = await file_meta(doc.get("file_id"))
+        doc["category_label"] = labels.get(doc.get("category"), doc.get("category"))
+        doc["proof_label"] = PROOF_LABELS.get(doc.get("proof_type") or "AUTRE", "Autre")
+        doc["visibility_label"] = VISIBILITY_LABELS.get(doc.get("visibility") or "BUREAU",
+                                                        "Bureau seul")
         doc["is_expiring"] = bool(doc.get("expiry_date") and doc["expiry_date"] >= today
-                                  and (doc["expiry_date"] <= iso(now_utc())[:4] + doc["expiry_date"][4:]
-                                       and doc["expiry_date"] <= _plus_30()))
+                                  and doc["expiry_date"] <= _plus_30())
         doc["is_expired"] = bool(doc.get("expiry_date") and doc["expiry_date"] < today)
     return {"items": items, "total": len(items), "is_manager": manager,
+            "category_labels": labels, "proof_labels": PROOF_LABELS,
+            "visibility_labels": VISIBILITY_LABELS,
             "expiring_count": len([d for d in items if d["is_expiring"]]),
             "expired_count": len([d for d in items if d["is_expired"]])}
 
@@ -111,8 +199,12 @@ def _plus_30() -> str:
 
 @router.post("/documents")
 async def create_document(payload: DocumentIn, admin: dict = Depends(require("documents.upload"))):
-    if payload.category not in DOCUMENT_CATEGORIES:
+    if payload.category not in await all_document_categories():
         raise HTTPException(status_code=400, detail="Catégorie de document invalide")
+    if payload.proof_type not in PROOF_TYPES:
+        raise HTTPException(status_code=400, detail="Type de preuve invalide")
+    if payload.visibility not in DOCUMENT_VISIBILITIES:
+        raise HTTPException(status_code=400, detail="Visibilité invalide")
     if payload.status not in DOCUMENT_STATUSES:
         raise HTTPException(status_code=400, detail="Statut de document invalide")
     if admin["role"] != ROLE_ADMIN:
@@ -140,8 +232,12 @@ async def update_document(document_id: str, payload: DocumentUpdate, admin: dict
         raise HTTPException(status_code=400, detail="Aucune modification fournie")
     if "status" in updates and updates["status"] not in DOCUMENT_STATUSES:
         raise HTTPException(status_code=400, detail="Statut de document invalide")
-    if "category" in updates and updates["category"] not in DOCUMENT_CATEGORIES:
+    if "category" in updates and updates["category"] not in await all_document_categories():
         raise HTTPException(status_code=400, detail="Catégorie de document invalide")
+    if "proof_type" in updates and updates["proof_type"] not in PROOF_TYPES:
+        raise HTTPException(status_code=400, detail="Type de preuve invalide")
+    if "visibility" in updates and updates["visibility"] not in DOCUMENT_VISIBILITIES:
+        raise HTTPException(status_code=400, detail="Visibilité invalide")
     if "expiry_date" in updates:
         updates["reminder_sent"] = False
     updates["updated_at"] = iso(now_utc())
@@ -151,13 +247,22 @@ async def update_document(document_id: str, payload: DocumentUpdate, admin: dict
 
 
 @router.delete("/documents/{document_id}")
-async def archive_document(document_id: str, admin: dict = Depends(require_admin)):
-    res = await db.documents.update_one({"document_id": document_id},
-                                        {"$set": {"status": "ARCHIVE", "updated_at": iso(now_utc())}})
-    if res.matched_count == 0:
+async def delete_document(document_id: str, reason: Optional[str] = None, hard: bool = False,
+                          admin: dict = Depends(require_admin)):
+    document = await db.documents.find_one({"document_id": document_id}, {"_id": 0})
+    if not document:
         raise HTTPException(status_code=404, detail="Document introuvable")
-    await log_action(admin, "ARCHIVE", "documents", document_id)
-    return {"ok": True}
+    if hard:
+        await db.documents.delete_one({"document_id": document_id})
+        await log_action(admin, "DELETE", "documents", document_id,
+                         old_value={"titre": document["title"]},
+                         new_value={"motif": reason, "definitif": True})
+        return {"ok": True, "message": f"« {document['title']} » supprimé définitivement."}
+    await db.documents.update_one({"document_id": document_id},
+                                  {"$set": {"status": "ARCHIVE", "archive_reason": reason,
+                                            "updated_at": iso(now_utc())}})
+    await log_action(admin, "ARCHIVE", "documents", document_id, new_value={"motif": reason})
+    return {"ok": True, "message": f"« {document['title']} » archivé, récupérable."}
 
 
 # ---------------------------------------------------------------- Formulaires externes

@@ -67,11 +67,43 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   (la notification reste active) ; envoi manuel possible par le Bureau depuis la page Engagement
 - Mise à jour partielle des préférences (dot-notation Mongo) : plus d'écrasement des modules masqués
 
+### Prompt 5 bis — Stocks, Inventaire & Documents (22/08/2026, testé 100 % — 40/40 avec le Prompt 6)
+- Mouvements de stock enrichis : **mode de paiement** (espèces, virement, carte, don, autre), **date
+  pré-remplie et modifiable** pour les saisies rétroactives, montant, visibles dans l'historique de
+  l'article et dans le **récapitulatif financier des stocks** (par mode de paiement + valeur du stock)
+- Inventaire **catégorisé obligatoire** (8 catégories par défaut créées automatiquement), vues
+  **kanban et tableau**, recherche et filtre par catégorie, ajout/renommage de catégories depuis les
+  paramètres (répercussion automatique sur les articles), suppression avec confirmation tracée
+  (archivage récupérable ou suppression définitive)
+- **Lien article ↔ projet ou tâche**, visible depuis la fiche article et depuis la fiche projet
+- Documents en **kanban/tableau** classés par catégorie et **type de preuve**, nouvelle visibilité
+  **« Professionnels + Bureau »**, catégories personnalisables, édition directe de tout élément
+  (catégorie, type, visibilité, description) et suppression confirmée tracée
+- Scan/tampon d'engagement étendu à **tous les niveaux Professionnel** (PRO_STANDARD inclus)
+
+### Prompt 6 — Fiches de poste, Guides, Espace aide & Suivi pros (22/08/2026, testé 100 % — 40/40)
+- **Fiches de poste** rédigées dans la plateforme (titre du rôle, responsabilités, actions
+  quotidiennes, modules utilisés), classées dans Documents, liées au profil du membre, visibilité
+  choisie au cas par cas (tous / pros + Bureau / Bureau seul), suppression confirmée
+- **Guides d'utilisation** par rôle (Bureau, Professionnel, Particulier, Bénévole, Apprenant) et par
+  module ; un Professionnel peut **proposer une fiche métier**, soumise à validation du Bureau qui
+  choisit la visibilité en publiant ; refus motivé notifié à l'auteur
+- **Espace aide central** `/aide` pour tous les rôles : recherche par mot-clé, filtres module et rôle,
+  guides groupés par module, fiches de poste visibles, ressources de la bibliothèque ; respecte les
+  préférences d'accessibilité (police adaptée, taille, contraste) déjà en place
+- **Suivi qualitatif des professionnels** strictement réservé au Bureau (jamais visible du pro
+  concerné ni des autres membres), daté et signé, historique complet depuis l'annuaire
+- **Récapitulatif annuel automatique** du professionnel (activités animées, événements, bénévolat,
+  projets, séances, réservations, tâches, parts) consultable par le Bureau et **exportable en Excel**
+  (7 feuilles)
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `partners.py` · `terrain.py` · `stock.py` · `documents.py` · `exports.py` · `crons_api.py` ·
 `profiles_plus.py` · `dogs.py` · `activities.py` (+ taxonomies, participants, présences) · `loyalty.py`
-(engagement) · `records.py` (archivage / suppression tracés) · `seed_demo.py` + `seed_phases.py`
+(engagement) · `records.py` (archivage / suppression tracés) · `help_center.py` (fiches de poste,
+guides, espace aide, suivi et récap annuel des pros) · `seed_demo.py` + `seed_phases.py` +
+`seed_help.py` · `cleanup_test_data.py` (nettoyage des données TEST_)
 
 ## Backlog priorisé
 

@@ -27,6 +27,7 @@ ALL_PERMISSIONS = [
     "advantages.view", "advantages.manage",
     "stock.view", "stock.manage",
     "forms.view", "forms.manage",
+    "help.view", "guides.manage", "guides.propose", "pros.review",
     "audit.view_own",
 ]
 
@@ -38,16 +39,17 @@ _PRO_STANDARD = [
     "documents.upload", "mindmap.view", "terrain.view", "members.view",
     "content.view", "content.create", "formations.view", "library.view",
     "contests.view", "advent.view", "advantages.view", "forms.view", "audit.view_own",
+    "loyalty.stamp", "help.view",
 ]
 _PRO_AVANCE = _PRO_STANDARD + ["tasks.edit", "tasks.create", "events.edit", "activities.create",
-                               "terrain.reserve", "loyalty.stamp", "library.upload",
+                               "terrain.reserve", "library.upload", "guides.propose",
                                "formations.create", "social.view"]
 _PRO_COORD = _PRO_AVANCE + ["projects.edit", "tasks.assign", "events.create", "stats.view", "social.manage"]
 
 _MEMBER_STANDARD = ["activities.view", "events.view", "loyalty.view_own", "partners.view",
                     "content.view", "formations.view", "library.view", "contests.view",
                     "contests.participate", "advent.view", "advantages.view", "forms.view",
-                    "audit.view_own"]
+                    "audit.view_own", "help.view"]
 _MEMBER_IMPLIQUE = _MEMBER_STANDARD + ["projects.view"]
 _BENEVOLE = _MEMBER_IMPLIQUE + ["tasks.view", "tasks.submit", "content.create"]
 _REFERENT = _BENEVOLE + ["tasks.assign", "library.upload", "social.view"]

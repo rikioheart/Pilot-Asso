@@ -27,6 +27,7 @@ export default function ProjectDetail() {
   const [text, setText] = useState("");
   const [proof, setProof] = useState("");
   const [teamForm, setTeamForm] = useState({ member_id: "", role_in_project: "CONTRIBUTOR" });
+  const [stockItems, setStockItems] = useState([]);
 
   const isAdmin = user?.role === "ADMIN_BUREAU";
 
@@ -41,6 +42,10 @@ export default function ProjectDetail() {
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    api.get("/stock/linked", { params: { project_id: projectId } })
+      .then((r) => setStockItems(r.data.items || [])).catch(() => {});
+  }, [projectId]);
   useEffect(() => {
     if (can("members.view")) api.get("/members", { params: { status: "ACTIVE", limit: 100 } })
       .then((r) => setMembers(r.data.items)).catch(() => {});
@@ -259,6 +264,30 @@ export default function ProjectDetail() {
         </div>
 
         <div className="space-y-6">
+          <div className="rounded-xl border bg-card p-5" data-testid="project-stock-items">
+            <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">
+              Matériel d'inventaire lié
+            </h2>
+            {stockItems.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Aucun article lié. Le lien se fait depuis la fiche de l'article dans Stocks.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {stockItems.map((i) => (
+                  <li key={i.item_id} data-testid={`project-stock-${i.item_id}`}
+                    className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                    <span className="font-semibold text-[#002060]">{i.name}</span>
+                    <span className="text-xs text-muted-foreground">{i.quantity} {i.unit}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link to="/stock" className="mt-3 inline-block text-xs font-semibold text-[#800020] hover:underline">
+              Gérer l'inventaire
+            </Link>
+          </div>
+
           <div className="rounded-xl border bg-card p-5" data-testid="project-team">
             <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Équipe projet</h2>
             <div className="mt-4 space-y-2">

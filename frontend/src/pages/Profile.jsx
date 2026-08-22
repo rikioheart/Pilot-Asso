@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
 import { api, apiError, fileUrl } from "@/lib/api";
@@ -112,7 +114,13 @@ export default function Profile() {
   return (
     <div data-testid="profile-page">
       <PageHeader breadcrumb="Mon espace" title="Mon profil"
-        subtitle={`${user?.role} · ${user?.access_level} · statut ${user?.status}`} />
+        subtitle={`${user?.role} · ${user?.access_level} · statut ${user?.status}`}
+        actions={
+          <Link to="/aide" data-testid="profile-help-link"
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold text-[#002060] transition-colors hover:bg-muted">
+            Mes guides et ma fiche de poste
+          </Link>
+        } />
 
       <Tabs defaultValue="infos" className="max-w-3xl">
         <TabsList data-testid="profile-tabs" className="flex-wrap">

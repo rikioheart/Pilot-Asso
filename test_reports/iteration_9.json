@@ -1,0 +1,32 @@
+{
+  "summary": "Prompts 4-complément (RBAC PRO_STANDARD peut scan/tampon), 5 (Stocks + Documents) et 6 (Fiches de poste, Guides, Aide, Suivi qualitatif, Récap annuel Excel) testés end-to-end. Backend : 40/40 pytest (test_prompt6_help_stock_docs.py, ~9s). Frontend : /stock (kanban+table+settings+finance methods), /documents (kanban), /aide (Bureau, Pro, Particulier), /directory (fiche pro avec pro-annual-recap + pro-recap-export + pro-reviews + review-observations-input + review-save-button), /profile (profile-help-link) — tous OK. Non-régression : /admin/engagement, /loyalty, /loyalty/scan, /terrains, /agenda, /activities, /events chargent sans erreur console bloquante.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_prompt6_help_stock_docs.py",
+    "/app/test_reports/pytest/prompt6.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "rbac.py : loyalty.stamp ajouté à _PRO_STANDARD ET help.view — RBAC minimal et cohérent. _PRO_AVANCE hérite via concaténation donc pas de duplication.",
+    "stock.py : ensure_default_categories idempotent (find_one avant insert), rename catégorie propage bien via update_many({category: old}) — validé par test.",
+    "stock.py apply_movement : payment_method optionnel, date défaut = today, amount fallback = unit_cost * qty. PAYMENT_LABELS bien renvoyés en français (Espèces/Virement/Carte/Don/Autre).",
+    "stock.py stock_finance_summary : agrégation Python (pas d'aggregate Mongo) sur ≤3000 mouvements — OK au démarrage, à surveiller si volume dépasse.",
+    "stock.py delete_item : archive puis hard delete + trace audit DELETE — conforme au review_request.",
+    "documents.py list_documents : filtrage PRO_BUREAU via $or [shared_with_user_ids, {visibility: PRO_BUREAU} si pro]. Les particuliers n'ont PAS documents.view => 403 (comportement volontaire, cohérent avec le fait que les particuliers passent par /aide).",
+    "documents.py delete_document_category : refuse si docs l'utilisent (documents.count_documents) — bon garde-fou.",
+    "help_center.py visible_filter : ADMIN => {} (tout), PRO => visibility in [ALL, PRO_BUREAU], PARTICULIER => visibility=ALL. Correct.",
+    "help_center.py list_guides : pending_count calculé UNIQUEMENT si manager (économie de requêtes). Filtre pour non-manager : status=PUBLISHED OR author_id=self => pro voit ses propres PENDING (utile pour visibilité de son propre brouillon).",
+    "help_center.py create_pro_review : aucune notification vers le pro concerné (commentaire explicite) — conforme à 'jamais visible du pro'.",
+    "help_center.py build_annual_recap : requêtes bien scopées par période et user_id, tasks filtrées côté Python sur updated_at[:4] == year — attention si updated_at absent (fallback ''). Robuste pour l'année 2026.",
+    "exports.py /exports/pro-annual/{user_id} : require_admin => 403 pour pro et particulier confirmé par test."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt6_help_stock_docs.py"],
+  "success_rate": {"backend": "100% (40/40)", "frontend": "100% flows critiques"},
+  "test_credentials": "admin associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro1.demo@lavoixduchien.fr/Demo2026! (PRO_STANDARD) ; pro2.demo@lavoixduchien.fr/Demo2026! (PRO_COORDINATEUR) ; membre1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Tag TEST_p6_<uuid6>. Créés puis nettoyés : 1 catégorie stock (créée puis renommée, reste), 2 articles stock (dont 1 supprimé hard, 1 archivé), 1 catégorie doc (créée/renommée/supprimée), 1 document (archivé puis hard delete), 1 fiche de poste (mise à jour), 2 guides (supprimés), 1 review pro (supprimée). Le premier article + la catégorie renommée persistent (préfixe TEST_p6_) — nettoyage possible via GET/DELETE /api/stock/items?q=TEST_p6_. Aucun POST /api/exports/test-recap ni /api/exports/member-recaps effectué.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompts 5 et 6 validés à 100 %. Fichier de tests: /app/backend/tests/test_prompt6_help_stock_docs.py (40 tests, ~9s en parallèle). Sujet particulier: /api/documents renvoie 403 pour les particuliers (documents.view non accordé aux membres — c'est voulu, l'accès aux docs partagés passe par /aide ou d'autres endpoints). Rate limit auth: éviter d'enchaîner >30 logins en 1 min sinon la fixture session-scopée peut être flakey. Reset ctx.clear_cookies() ne suffit pas pour changer d'utilisateur, il faut aussi vider localStorage/sessionStorage via evaluate.",
+  "rca of the issue": "N/A — aucun bug applicatif détecté."
+}

@@ -20,6 +20,7 @@ import Validation from "@/pages/Validation";
 import Directory from "@/pages/Directory";
 import ImportCsv from "@/pages/ImportCsv";
 import HelpRequests from "@/pages/HelpRequests";
+import HelpCenter from "@/pages/HelpCenter";
 import Calendar from "@/pages/Calendar";
 import SharedCalendar from "@/pages/SharedCalendar";
 import Activities from "@/pages/Activities";
@@ -142,6 +143,7 @@ function AppRouter() {
       <Route path="/dogs" element={<Protected><Dogs /></Protected>} />
       <Route path="/admin/animation" element={<Protected adminOnly><MemberAnimation /></Protected>} />
       <Route path="/help" element={<Protected><HelpRequests /></Protected>} />
+      <Route path="/aide" element={<Protected><HelpCenter /></Protected>} />
       <Route path="/notifications" element={<Protected><Notifications /></Protected>} />
       <Route path="/profile" element={<Protected><Profile /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
