@@ -18,7 +18,7 @@ export const LogoLockup = ({ subtitle = "Cockpit interne", size = 44, dark = fal
     <Logo size={size} withGlow />
     <span className="min-w-0">
       <span className={`block font-display text-sm font-extrabold leading-tight tracking-tight ${
-        dark ? "text-[#002060]" : "text-white"}`}>
+        dark ? "text-[var(--marine)]" : "text-white"}`}>
         LA VOIX DU CHIEN
       </span>
       <span className={`block text-[11px] ${dark ? "text-muted-foreground" : "text-white/55"}`}>{subtitle}</span>

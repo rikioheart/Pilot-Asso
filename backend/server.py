@@ -18,6 +18,7 @@ from rbac import ROLE_ADMIN, ROLE_PRO, ROLE_MEMBER
 import projects as projects_module
 import professionals as professionals_module
 import imports_csv as imports_module
+import settings_api as settings_module
 import activities as activities_module
 import loyalty as loyalty_module
 import records as records_module
@@ -35,6 +36,9 @@ import exports as exports_module
 import profiles_plus as profiles_plus_module
 import dogs as dogs_module
 import crons_api as crons_module
+import comments as comments_module
+import payments as payments_module
+import weather as weather_module
 
 app = FastAPI(title="La Voix du Chien — Plateforme interne")
 api = APIRouter(prefix="/api")
@@ -338,6 +342,7 @@ async def update_member(user_id: str, payload: UserAdminUpdate, admin: dict = De
     if updates.get("status") == "ACTIVE" and target["status"] != "ACTIVE":
         await notify(user_id, type="MEMBERSHIP_APPROVED", title="Adhésion validée",
                      message="Bienvenue ! Votre compte a été validé par le Bureau.", level="SUCCESS", link="/")
+        await settings_module.send_onboarding_guides(user_id, updates.get("role", target["role"]))
     if updates.get("status") == "REJECTED":
         await notify(user_id, type="MEMBERSHIP_REJECTED", title="Adhésion refusée",
                      message="Votre demande n'a pas été retenue. Contactez le Bureau pour plus d'informations.",
@@ -441,7 +446,43 @@ async def dashboard_admin(admin: dict = Depends(require_admin)):
         "help_list": await db.help_requests.find({"status": "OPEN"}, {"_id": 0})
             .sort("created_at", -1).limit(6).to_list(6),
         "activity_feed": await db.audit_logs.find({}, {"_id": 0}).sort("timestamp", -1).limit(12).to_list(12),
+        "upcoming_activities": await db.activities.find(
+            {"date": {"$gte": today[:10]}, "status": {"$in": ["PUBLISHED", "PLANNED", "CONFIRMED"]}},
+            {"_id": 0, "activity_id": 1, "title": 1, "date": 1, "start_time": 1, "location": 1, "status": 1,
+             "category": 1}).sort("date", 1).limit(8).to_list(8),
+        "upcoming_events_list": await db.events.find(
+            {"start_date": {"$gte": today[:10]}, "status": {"$in": ["PLANNED", "CONFIRMED", "PUBLISHED"]}},
+            {"_id": 0, "event_id": 1, "title": 1, "start_date": 1, "location": 1, "status": 1}).sort("start_date", 1)
+            .limit(8).to_list(8),
+        "activities_review_list": await db.activities.find({"status": "PROPOSED"}, {"_id": 0, "activity_id": 1,
+            "title": 1, "date": 1, "created_by": 1}).sort("date", 1).limit(8).to_list(8),
+        "pros_list": await _pros_overview(),
+        "recent_reviews": await db.pro_reviews.find({}, {"_id": 0}).sort("created_at", -1).limit(6).to_list(6),
+        "recent_members": await db.users.find({"status": "ACTIVE"}, {"_id": 0, "password_hash": 0})
+            .sort("created_at", -1).limit(8).to_list(8),
+        "delegated_recent": await db.activities.find({"delegated_publication": True, "moderation_until": {"$gte": today}},
+            {"_id": 0, "activity_id": 1, "title": 1, "date": 1, "created_by": 1, "moderation_until": 1})
+            .sort("created_at", -1).limit(8).to_list(8),
     }
+
+
+async def _pros_overview():
+    pros = await db.users.find({"role": ROLE_PRO, "status": "ACTIVE"},
+                               {"_id": 0, "user_id": 1, "email": 1, "access_level": 1, "last_login_at": 1}).to_list(50)
+    details = {d["user_id"]: d async for d in db.professional_details.find(
+        {"user_id": {"$in": [p["user_id"] for p in pros]}},
+        {"_id": 0, "user_id": 1, "company_name": 1, "professional_category": 1, "partnership_status": 1})}
+    profiles = {p["user_id"]: p async for p in db.profiles.find(
+        {"user_id": {"$in": [p["user_id"] for p in pros]}}, {"_id": 0, "user_id": 1, "display_name": 1})}
+    out = []
+    for p in pros:
+        d = details.get(p["user_id"], {})
+        out.append({**p, "display_name": profiles.get(p["user_id"], {}).get("display_name"),
+                    "company_name": d.get("company_name"), "category": d.get("professional_category"),
+                    "partnership_status": d.get("partnership_status", "NONE"),
+                    "activities": await db.activities.count_documents({"created_by": p["user_id"]}),
+                    "google_calendar": False, "rintintin": False})
+    return out
 
 
 @api.get("/dashboard/pro")
@@ -454,6 +495,27 @@ async def dashboard_pro(user: dict = Depends(active_user)):
     my_tasks = await db.tasks.find({"assigned_user_id": user["user_id"],
                                    "status": {"$nin": ["COMPLETED", "ARCHIVED", "CANCELLED"]}},
                                   {"_id": 0}).sort("deadline", 1).limit(10).to_list(10)
+    today = iso(now_utc())[:10]
+    week_end = iso(now_utc() + timedelta(days=7))[:10]
+    mine_or_pro = {"$or": [{"created_by": user["user_id"]}, {"professional_ids": user["user_id"]}]}
+    week_activities = await db.activities.find(
+        {"$and": [mine_or_pro, {"date": {"$gte": today, "$lte": week_end}},
+                  {"status": {"$nin": ["CANCELLED", "ARCHIVED", "REFUSED"]}}]},
+        {"_id": 0, "activity_id": 1, "title": 1, "date": 1, "start_time": 1, "location": 1, "status": 1}) \
+        .sort([("date", 1), ("start_time", 1)]).limit(20).to_list(20)
+    week_events = await db.events.find(
+        {"professional_ids": user["user_id"], "start_date": {"$gte": today, "$lte": week_end + "T23:59"},
+         "status": {"$nin": ["CANCELLED", "ARCHIVED"]}},
+        {"_id": 0, "event_id": 1, "title": 1, "start_date": 1, "location": 1, "status": 1}).sort("start_date", 1) \
+        .limit(20).to_list(20)
+    low_stock = []
+    if rbac.has_permission(user, "stock.view"):
+        async for it in db.stock_items.find({"is_archived": {"$ne": True}}, {"_id": 0, "item_id": 1, "name": 1,
+                                                                             "quantity": 1, "alert_threshold": 1}):
+            if it.get("quantity", 0) <= it.get("alert_threshold", 0):
+                low_stock.append(it)
+    connections = {"google_calendar": bool(profile and profile.get("google_calendar_connected")),
+                   "rintintin": bool(profile and profile.get("rintintin_connected"))}
     return {
         "profile": profile,
         "kpis": {
@@ -470,6 +532,11 @@ async def dashboard_pro(user: dict = Depends(active_user)):
             "reservations": 0, "revenue_share": 0,
         },
         "my_tasks": my_tasks,
+        "today": today, "week_end": week_end,
+        "today_activities": [a for a in week_activities if a["date"] == today],
+        "week_activities": [a for a in week_activities if a["date"] != today],
+        "week_events": week_events, "low_stock": low_stock[:6], "connections": connections,
+        "my_documents_count": await db.documents.count_documents({"owner_id": user["user_id"], "is_archived": {"$ne": True}}),
         "my_projects": await db.projects.find({"project_id": {"$in": team_ids}, "status": {"$ne": "ARCHIVED"}},
                                               {"_id": 0}).limit(8).to_list(8),
         "unread_notifications": await db.notifications.count_documents(
@@ -511,6 +578,9 @@ async def dashboard_member(user: dict = Depends(active_user)):
     return {
         "profile": profile, "dogs": dogs, "my_tasks": my_tasks, "open_volunteer_tasks": open_volunteer,
         "upcoming": sorted(upcoming, key=lambda x: x["date"])[:6],
+        "dog_cards": await _member_dog_cards(dogs, upcoming),
+        "next_items": await _member_next_items(user, today),
+        "my_projects": await _member_projects(user),
         "kpis": {"activities": len([p for p in participations if p.get("activity_id")]),
                  "registrations": len(upcoming),
                  "volunteer_tasks": len(my_tasks),
@@ -525,6 +595,45 @@ async def dashboard_member(user: dict = Depends(active_user)):
 
 
 # ---------------------------------------------------------------- Chiens
+async def _member_dog_cards(dogs: list, upcoming: list) -> list:
+    cards = []
+    next_rdv = sorted(upcoming, key=lambda x: x["date"])[0] if upcoming else None
+    for d in dogs:
+        last_report = await db.dog_reports.find_one({"dog_id": d["dog_id"]}, {"_id": 0, "date": 1, "title": 1,
+                                                                             "summary": 1, "report_type": 1},
+                                                    sort=[("date", -1)])
+        open_case = await db.dog_cases.find_one({"dog_id": d["dog_id"], "status": "OPEN"},
+                                                {"_id": 0, "title": 1, "case_type": 1})
+        cards.append({"dog_id": d["dog_id"], "name": d["name"], "breed": d.get("breed"),
+                      "photo": d.get("photo"), "last_report": last_report, "open_case": open_case,
+                      "next_appointment": next_rdv})
+    return cards
+
+
+async def _member_next_items(user: dict, today: str) -> list:
+    vis = {"$in": ["MEMBERS", "PUBLIC"]}
+    acts = await db.activities.find({"date": {"$gte": today}, "status": {"$in": ["PUBLISHED", "PLANNED", "CONFIRMED"]},
+                                     "visibility": vis}, {"_id": 0, "activity_id": 1, "title": 1, "date": 1,
+                                                          "start_time": 1, "location": 1}).sort("date", 1).limit(3).to_list(3)
+    evs = await db.events.find({"start_date": {"$gte": today}, "status": {"$in": ["PLANNED", "CONFIRMED", "PUBLISHED"]},
+                                "visibility": vis}, {"_id": 0, "event_id": 1, "title": 1, "start_date": 1,
+                                                     "location": 1}).sort("start_date", 1).limit(3).to_list(3)
+    items = [{"id": a["activity_id"], "kind": "activity", "title": a["title"], "date": a["date"],
+              "time": a.get("start_time"), "location": a.get("location"), "link": f"/activities?focus={a['activity_id']}"}
+             for a in acts]
+    items += [{"id": e["event_id"], "kind": "event", "title": e["title"], "date": e["start_date"][:10],
+               "time": e["start_date"][11:16] or None, "location": e.get("location"), "link": f"/events/{e['event_id']}"}
+              for e in evs]
+    return sorted(items, key=lambda x: x["date"])[:3]
+
+
+async def _member_projects(user: dict) -> list:
+    team_ids = [t["project_id"] async for t in db.project_teams.find(
+        {"member_id": user["user_id"], "status": "ACTIVE"}, {"_id": 0, "project_id": 1})]
+    return await db.projects.find({"project_id": {"$in": team_ids}, "status": {"$nin": ["ARCHIVED", "COMPLETED"]}},
+                                  {"_id": 0, "project_id": 1, "title": 1, "status": 1, "progress": 1}).limit(6).to_list(6)
+
+
 class DogIn(BaseModel):
     name: str
     breed: Optional[str] = None
@@ -610,6 +719,44 @@ async def global_search(q: str, user: dict = Depends(active_user)):
         groups.append({"label": "Professionnels", "items": [
             {"id": p["user_id"], "title": p.get("company_name") or "Fiche professionnelle",
              "subtitle": p.get("professional_category"), "link": f"/directory?focus={p['user_id']}"} for p in pros]})
+    if rbac.has_permission(user, "activities.view"):
+        aq = {"title": rx, "is_archived": {"$ne": True}}
+        if user["role"] != ROLE_ADMIN:
+            aq["status"] = "PUBLISHED"
+        acts = await db.activities.find(aq, {"_id": 0}).sort("date", -1).limit(6).to_list(6)
+        if acts:
+            groups.append({"label": "Activités", "items": [
+                {"id": a["activity_id"], "title": a["title"], "subtitle": a.get("date"),
+                 "link": f"/activities?focus={a['activity_id']}"} for a in acts]})
+    if rbac.has_permission(user, "events.view"):
+        eq = {"title": rx, "is_archived": {"$ne": True}}
+        if user["role"] != ROLE_ADMIN:
+            eq["status"] = "PUBLISHED"
+        evs = await db.events.find(eq, {"_id": 0}).sort("start_date", -1).limit(6).to_list(6)
+        if evs:
+            groups.append({"label": "Événements", "items": [
+                {"id": e["event_id"], "title": e["title"], "subtitle": e.get("start_date"),
+                 "link": f"/events/{e['event_id']}"} for e in evs]})
+    if rbac.has_permission(user, "stock.view"):
+        items = await db.stock_items.find({"name": rx, "is_archived": {"$ne": True}}, {"_id": 0}).limit(6).to_list(6)
+        if items:
+            groups.append({"label": "Stocks", "items": [
+                {"id": s["item_id"], "title": s["name"], "subtitle": s.get("category"),
+                 "link": f"/stock?focus={s['item_id']}"} for s in items]})
+    if rbac.has_permission(user, "documents.view"):
+        docs = await db.documents.find({"title": rx, "is_archived": {"$ne": True}}, {"_id": 0}).limit(6).to_list(6)
+        if docs:
+            groups.append({"label": "Documents", "items": [
+                {"id": d["document_id"], "title": d["title"], "subtitle": d.get("category"),
+                 "link": f"/documents?focus={d['document_id']}"} for d in docs]})
+    gq = {"$or": [{"title": rx}, {"summary": rx}], "status": "PUBLISHED"}
+    if user["role"] != ROLE_ADMIN:
+        gq["visibility"] = {"$in": ["ALL", "PRO_BUREAU"] if user["role"] == ROLE_PRO else ["ALL"]}
+    guides = await db.guides.find(gq, {"_id": 0}).limit(6).to_list(6)
+    if guides:
+        groups.append({"label": "Guides", "items": [
+            {"id": g["guide_id"], "title": g["title"], "subtitle": g.get("module"),
+             "link": f"/aide?guide={g['guide_id']}"} for g in guides]})
     return {"groups": groups}
 
 
@@ -639,6 +786,10 @@ app.include_router(dogs_module.router)
 app.include_router(crons_module.router)
 app.include_router(records_module.router)
 app.include_router(help_module.router)
+app.include_router(settings_module.router)
+app.include_router(comments_module.router)
+app.include_router(payments_module.router)
+app.include_router(weather_module.router)
 
 app.add_middleware(
     CORSMiddleware,

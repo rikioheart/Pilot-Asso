@@ -1,5 +1,7 @@
 import { Dog, PawPrint } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
+import { useEmptyMessage } from "@/components/EmptyStates";
 
 export const PageHeader = ({ title, subtitle, breadcrumb, actions }) => (
   <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -9,7 +11,7 @@ export const PageHeader = ({ title, subtitle, breadcrumb, actions }) => (
           {breadcrumb}
         </p>
       )}
-      <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-[#002060]" data-testid="page-title">{title}</h1>
+      <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-[var(--marine)]" data-testid="page-title">{title}</h1>
       {subtitle && <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>}
     </div>
     {actions}
@@ -21,32 +23,42 @@ export const KpiCard = ({ label, value, hint, icon: Icon, tone = "marine", onCli
     className="vdc-kpi text-left disabled:cursor-default" disabled={!onClick}>
     <div className="flex items-start justify-between">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      {Icon && <Icon className={`h-4 w-4 ${tone === "bordeaux" ? "text-[#800020]" : "text-[#002060]"}`} />}
+      {Icon && <Icon className={`h-4 w-4 ${tone === "bordeaux" ? "text-[var(--bordeaux)]" : "text-[var(--marine)]"}`} />}
     </div>
-    <p className={`mt-3 font-display text-3xl font-extrabold ${tone === "bordeaux" ? "text-[#800020]" : "text-[#002060]"}`}>
+    <p className={`mt-3 font-display text-3xl font-extrabold ${tone === "bordeaux" ? "text-[var(--bordeaux)]" : "text-[var(--marine)]"}`}>
       {value}
     </p>
     {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
   </button>
 );
 
-export const EmptyState = ({ title, description, action, icon: Icon = PawPrint, testId }) => (
-  <div className="rounded-xl border border-dashed bg-card/60 px-6 py-10 text-center" data-testid={testId}>
-    <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[#800020]/8">
-      <Icon className="h-6 w-6 text-[#800020]" />
-    </span>
-    <p className="font-display font-bold text-[#002060]">{title}</p>
-    {description && <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{description}</p>}
-    {action && <div className="mt-5 flex justify-center">{action}</div>}
-  </div>
-);
+export const EmptyState = ({ title, description, action, icon: Icon = PawPrint, testId, module }) => {
+  const custom = useEmptyMessage(module);
+  const text = custom?.message || description;
+  const cta = action || (custom?.action_label && custom?.action_link
+    ? <Link to={custom.action_link} data-testid={`${testId || "empty"}-action`}
+        className="inline-flex items-center rounded-full bg-[var(--bordeaux)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--bordeaux-dark)]">
+        {custom.action_label}
+      </Link> : null);
+  return (
+    <div className="rounded-xl border border-dashed bg-card/60 px-6 py-10 text-center" data-testid={testId}>
+      <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--bordeaux-a8)]">
+        <Icon className="h-6 w-6 text-[var(--bordeaux)]" />
+      </span>
+      <p className="font-display font-bold text-[var(--marine)]">{title}</p>
+      {text && <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{text}</p>}
+      {cta && <div className="mt-5 flex justify-center">{cta}</div>}
+    </div>
+  );
+};
 
-export const SectionCard = ({ title, subtitle, icon: Icon, actions, children, testId, className = "" }) => (
-  <section className={`rounded-xl border bg-card p-5 ${className}`} data-testid={testId}>
+export const SectionCard = ({ title, subtitle, icon: Icon, actions, children, testId, className = "", secondary = false }) => (
+  <section className={`rounded-xl border bg-card p-5 ${className}`} data-testid={testId}
+    data-focus-secondary={secondary ? "true" : undefined}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
-        {Icon && <Icon className="h-4 w-4 text-[#800020]" />}
-        <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">{title}</h2>
+        {Icon && <Icon className="h-4 w-4 text-[var(--bordeaux)]" />}
+        <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">{title}</h2>
       </div>
       {actions}
     </div>
@@ -64,7 +76,7 @@ export const ProgressBar = ({ value = 0, tone = "bordeaux", label, testId }) => 
     )}
     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
       <div className={`h-full rounded-full transition-[width] duration-700 ${
-        tone === "bordeaux" ? "bg-[#800020]" : "bg-[#002060]"}`}
+        tone === "bordeaux" ? "bg-[var(--bordeaux)]" : "bg-[var(--marine)]"}`}
         style={{ width: `${Math.min(Math.max(value, 0), 100)}%` }} />
     </div>
   </div>
@@ -72,9 +84,9 @@ export const ProgressBar = ({ value = 0, tone = "bordeaux", label, testId }) => 
 
 export const Chip = ({ children, tone = "muted", testId }) => {
   const tones = {
-    muted: "bg-muted text-[#002060]",
-    marine: "bg-[#002060]/10 text-[#002060]",
-    bordeaux: "bg-[#800020]/10 text-[#800020]",
+    muted: "bg-muted text-[var(--marine)]",
+    marine: "bg-[var(--marine-a10)] text-[var(--marine)]",
+    bordeaux: "bg-[var(--bordeaux-a10)] text-[var(--bordeaux)]",
     green: "bg-emerald-500/10 text-emerald-700",
     amber: "bg-amber-500/15 text-amber-700",
     red: "bg-red-500/10 text-red-700",
@@ -89,13 +101,13 @@ export const Chip = ({ children, tone = "muted", testId }) => {
 
 /** Bandeau d'accueil chaleureux avec le logo de l'association. */
 export const WelcomeBanner = ({ greeting, name, message, coverUrl, badges = [], actions, testId }) => (
-  <section data-testid={testId}
-    className="vdc-grain relative mb-8 overflow-hidden rounded-2xl bg-[#002060] px-5 py-7 text-white sm:px-8 sm:py-9">
+  <section data-testid={testId} data-focus-secondary="true"
+    className="vdc-grain relative mb-8 overflow-hidden rounded-2xl bg-[var(--marine)] px-5 py-7 text-white sm:px-8 sm:py-9">
     {coverUrl && (
       <img src={coverUrl} alt="" aria-hidden
         className="absolute inset-0 h-full w-full object-cover opacity-25" />
     )}
-    <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-[#800020]/35 blur-3xl" />
+    <div className="absolute -right-10 -top-16 h-56 w-56 rounded-full bg-[var(--bordeaux-a35)] blur-3xl" />
     <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-4">
         <Logo size={64} withGlow />

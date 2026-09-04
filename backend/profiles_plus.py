@@ -53,6 +53,8 @@ class Preferences(BaseModel):
     hidden_modules: Optional[List[str]] = None
     pinned_modules: Optional[List[str]] = None
     monthly_recap_email: Optional[bool] = None
+    view_modes: Optional[dict] = None
+    notification_prefs: Optional[dict] = None
 
 
 class FunctionDescriptionIn(BaseModel):

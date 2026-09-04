@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
+import { RowMenu, confirmDialog } from "@/components/ConfirmDialog";
 import { ArrowLeft, Plus, Send, CheckCircle2, MessageSquare, LifeBuoy, Trash2, UserPlus, History } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CommentSection } from "@/components/CommentSection";
 
 const PROJECT_ROLES = ["COORDINATOR", "CONTRIBUTOR", "VOLUNTEER", "EXPERT", "REVIEWER"];
 
@@ -96,7 +98,7 @@ export default function ProjectDetail() {
           className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           style={{ paddingLeft: `${16 + depth * 20}px` }}>
           <div className="min-w-0">
-            <p className="font-semibold text-[#002060]">
+            <p className="font-semibold text-[var(--marine)]">
               {depth > 0 && <span className="mr-2 text-muted-foreground">↳</span>}{t.title}
               {t.needs_help && <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">besoin d'aide</span>}
             </p>
@@ -104,7 +106,7 @@ export default function ProjectDetail() {
               <StatusBadge status={t.status} testId={`task-status-${t.task_id}`} />
               <DeadlineChip deadline={t.deadline} />
               <span>{t.assignee_name || "Non attribuée"}</span>
-              {t.is_volunteer_task && <span className="rounded-full bg-[#002060]/10 px-2 py-0.5 font-semibold text-[#002060]">bénévolat ouvert</span>}
+              {t.is_volunteer_task && <span className="rounded-full bg-[var(--marine-a10)] px-2 py-0.5 font-semibold text-[var(--marine)]">bénévolat ouvert</span>}
               {t.blocked_by_title && <span className="text-red-600">Bloquée par : {t.blocked_by_title}</span>}
             </div>
             {t.rejection_reason && (
@@ -128,13 +130,13 @@ export default function ProjectDetail() {
               </Button>
             )}
             {mine && !["COMPLETED", "PENDING_VALIDATION", "ARCHIVED"].includes(t.status) && (
-              <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid={`task-submit-${t.task_id}`} onClick={() => setDialog({ type: "submit", task: t })}>
                 <Send className="mr-1 h-3.5 w-3.5" /> Terminer
               </Button>
             )}
             {can("tasks.validate") && t.status === "PENDING_VALIDATION" && (
-              <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+              <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                 data-testid={`task-validate-${t.task_id}`} onClick={() => setDialog({ type: "validate", task: t })}>
                 <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Valider
               </Button>
@@ -151,22 +153,13 @@ export default function ProjectDetail() {
               <History className="h-3.5 w-3.5" />
             </Button>
             {isAdmin && (
-              <Button size="sm" variant="ghost" data-testid={`task-delete-${t.task_id}`}
-                onClick={() => act(() => api.delete(`/tasks/${t.task_id}`), "Tâche supprimée")}>
-                <Trash2 className="h-3.5 w-3.5 text-[#800020]" />
-              </Button>
+              <RowMenu testId={`task-menu-${t.task_id}`} items={[
+                { label: "Supprimer la tâche", icon: Trash2, danger: true, testId: `task-delete-${t.task_id}`,
+                  onSelect: async () => { if (!(await confirmDialog("Supprimer cette tâche ?"))) return;
+                    act(() => api.delete(`/tasks/${t.task_id}`), "Tâche supprimée"); } }]} />
             )}
           </div>
         </div>
-        {t.comments?.length > 0 && (
-          <div className="space-y-1 bg-muted/40 px-6 py-2" data-testid={`task-comments-${t.task_id}`}>
-            {t.comments.map((c) => (
-              <p key={c.comment_id} className="text-xs text-muted-foreground">
-                <b className="text-[#002060]">{c.user_name}</b> : {c.text}
-              </p>
-            ))}
-          </div>
-        )}
         {childrenOf(t.task_id).map((c) => taskRow(c, depth + 1))}
       </div>
     );
@@ -175,7 +168,7 @@ export default function ProjectDetail() {
   return (
     <div data-testid="project-detail-page">
       <Link to="/projects" data-testid="project-back-link"
-        className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-[#800020]">
+        className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-[var(--bordeaux)]">
         <ArrowLeft className="h-4 w-4" /> Retour aux projets
       </Link>
       <PageHeader breadcrumb={`Projets · ${project.category}`} title={project.title}
@@ -199,7 +192,7 @@ export default function ProjectDetail() {
         <div className="space-y-6">
           <div className="rounded-xl border bg-card" data-testid="project-tasks">
             <div className="flex items-center justify-between px-4 py-3">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Tâches et sous-tâches</h2>
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Tâches et sous-tâches</h2>
               <span className="text-xs text-muted-foreground">{project.completion_percentage} % avancé</span>
             </div>
             {roots.length === 0 ? (
@@ -210,7 +203,7 @@ export default function ProjectDetail() {
 
           {canManage && (
             <form onSubmit={createTask} className="space-y-4 rounded-xl border bg-card p-5" data-testid="task-create-form">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Ajouter une tâche</h2>
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Ajouter une tâche</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Titre *</Label>
@@ -256,7 +249,7 @@ export default function ProjectDetail() {
                   onCheckedChange={(v) => setNewTask({ ...newTask, is_volunteer_task: !!v })} />
                 Ouvrir cette tâche au bénévolat
               </label>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="task-create-button">
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="task-create-button">
                 <Plus className="mr-2 h-4 w-4" /> Ajouter la tâche
               </Button>
             </form>
@@ -265,7 +258,7 @@ export default function ProjectDetail() {
 
         <div className="space-y-6">
           <div className="rounded-xl border bg-card p-5" data-testid="project-stock-items">
-            <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">
               Matériel d'inventaire lié
             </h2>
             {stockItems.length === 0 ? (
@@ -277,31 +270,32 @@ export default function ProjectDetail() {
                 {stockItems.map((i) => (
                   <li key={i.item_id} data-testid={`project-stock-${i.item_id}`}
                     className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                    <span className="font-semibold text-[#002060]">{i.name}</span>
+                    <span className="font-semibold text-[var(--marine)]">{i.name}</span>
                     <span className="text-xs text-muted-foreground">{i.quantity} {i.unit}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <Link to="/stock" className="mt-3 inline-block text-xs font-semibold text-[#800020] hover:underline">
+            <Link to="/stock" className="mt-3 inline-block text-xs font-semibold text-[var(--bordeaux)] hover:underline">
               Gérer l'inventaire
             </Link>
           </div>
 
           <div className="rounded-xl border bg-card p-5" data-testid="project-team">
-            <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Équipe projet</h2>
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Équipe projet</h2>
             <div className="mt-4 space-y-2">
               {team.map((m) => (
                 <div key={m.member_id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
                   data-testid={`team-member-${m.member_id}`}>
                   <span>
-                    <span className="font-semibold text-[#002060]">{m.display_name}</span>
+                    <span className="font-semibold text-[var(--marine)]">{m.display_name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{m.role_in_project}</span>
                   </span>
                   {canManage && m.role_in_project !== "OWNER" && (
-                    <button data-testid={`team-remove-${m.member_id}`} aria-label="Retirer"
-                      onClick={() => act(() => api.delete(`/projects/${projectId}/team/${m.member_id}`), "Membre retiré")}
-                      className="text-muted-foreground hover:text-[#800020]"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <RowMenu testId={`team-menu-${m.member_id}`} items={[
+                      { label: "Retirer de l'équipe", icon: Trash2, danger: true, testId: `team-remove-${m.member_id}`,
+                        onSelect: async () => { if (!(await confirmDialog("Retirer ce membre de l'équipe ?"))) return;
+                          act(() => api.delete(`/projects/${projectId}/team/${m.member_id}`), "Membre retiré"); } }]} />
                   )}
                 </div>
               ))}
@@ -326,7 +320,7 @@ export default function ProjectDetail() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button size="sm" className="w-full rounded-full bg-[#002060] hover:bg-[#001740]"
+                <Button size="sm" className="w-full rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                   data-testid="team-add-button" disabled={!teamForm.member_id}
                   onClick={() => act(() => api.post(`/projects/${projectId}/team`, teamForm), "Membre ajouté")}>
                   <UserPlus className="mr-2 h-4 w-4" /> Ajouter à l'équipe
@@ -336,7 +330,7 @@ export default function ProjectDetail() {
           </div>
 
           <div className="rounded-xl border bg-card p-5">
-            <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Informations</h2>
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Informations</h2>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Responsable</dt><dd>{project.owner_name}</dd></div>
               <div className="flex justify-between"><dt className="text-muted-foreground">Priorité</dt><dd>{project.priority}</dd></div>
@@ -348,11 +342,11 @@ export default function ProjectDetail() {
 
           {history.taskId && (
             <div className="rounded-xl border bg-card p-5" data-testid="task-history-panel">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Historique de la tâche</h2>
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Historique de la tâche</h2>
               <div className="mt-4 space-y-3">
                 {history.items.map((h) => (
-                  <div key={h.history_id} className="border-l-2 border-[#800020]/40 pl-3">
-                    <p className="text-sm font-semibold text-[#002060]">{h.action}</p>
+                  <div key={h.history_id} className="border-l-2 border-[var(--bordeaux-a40)] pl-3">
+                    <p className="text-sm font-semibold text-[var(--marine)]">{h.action}</p>
                     <p className="text-xs text-muted-foreground">
                       {h.user_name} — {new Date(h.timestamp).toLocaleString("fr-FR")}
                     </p>
@@ -372,7 +366,7 @@ export default function ProjectDetail() {
               {dialog?.type === "submit" && "Terminer et soumettre à validation"}
               {dialog?.type === "validate" && "Valider la tâche"}
               {dialog?.type === "help" && "J'ai besoin d'aide"}
-              {dialog?.type === "comment" && "Ajouter un commentaire"}
+              {dialog?.type === "comment" && "Commentaires"}
               {dialog?.type === "join" && "Demander à rejoindre le projet"}
             </DialogTitle>
           </DialogHeader>
@@ -393,7 +387,7 @@ export default function ProjectDetail() {
           {dialog?.type === "validate" && (
             <div className="space-y-4">
               <div className="rounded-lg bg-muted/60 p-3 text-sm">
-                <p className="font-semibold text-[#002060]">{dialog.task.title}</p>
+                <p className="font-semibold text-[var(--marine)]">{dialog.task.title}</p>
                 <p className="text-xs text-muted-foreground">Preuve : {dialog.task.proof || "aucune"}</p>
               </div>
               <div className="space-y-2">
@@ -402,15 +396,18 @@ export default function ProjectDetail() {
               </div>
             </div>
           )}
-          {(dialog?.type === "help" || dialog?.type === "comment" || dialog?.type === "join") && (
+          {(dialog?.type === "help" || dialog?.type === "join") && (
             <div className="space-y-2">
               <Label>{dialog.type === "help" ? "Ce qui vous bloque (sans jugement)" : "Votre message"}</Label>
               <Textarea rows={4} value={text} data-testid="task-dialog-text" onChange={(e) => setText(e.target.value)} />
             </div>
           )}
+          {dialog?.type === "comment" && (
+            <CommentSection elementType="task" elementId={dialog.task.task_id} testId="task-comments" />
+          )}
           <DialogFooter className="flex-wrap gap-2">
             {dialog?.type === "submit" && (
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="task-submit-confirm"
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="task-submit-confirm"
                 onClick={() => act(() => api.post(`/tasks/${dialog.task.task_id}/submit`, { proof, comment: text }),
                   "Tâche soumise au Bureau")}>Soumettre</Button>
             )}
@@ -419,23 +416,18 @@ export default function ProjectDetail() {
                 <Button variant="outline" className="rounded-full" data-testid="task-request-changes"
                   onClick={() => act(() => api.post(`/tasks/${dialog.task.task_id}/validate`,
                     { decision: "CHANGES", comment: text }), "Modification demandée")}>Demander une modification</Button>
-                <Button className="rounded-full bg-[#002060] hover:bg-[#001740]" data-testid="task-validate-confirm"
+                <Button className="rounded-full bg-[var(--marine)] hover:bg-[#001740]" data-testid="task-validate-confirm"
                   onClick={() => act(() => api.post(`/tasks/${dialog.task.task_id}/validate`,
                     { decision: "ACCEPT", comment: text }), "Tâche validée")}>Valider</Button>
               </>
             )}
-            {dialog?.type === "comment" && (
-              <Button className="rounded-full bg-[#002060] hover:bg-[#001740]" data-testid="task-comment-confirm"
-                onClick={() => act(() => api.post(`/tasks/${dialog.task.task_id}/comment`, { comment: text }), "Commentaire ajouté")}>
-                Envoyer</Button>
-            )}
             {dialog?.type === "help" && (
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="task-help-confirm"
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="task-help-confirm"
                 onClick={() => act(() => api.post(`/tasks/${dialog.task.task_id}/help`, { comment: text }),
                   "Le Bureau est prévenu, quelqu'un va vous aider")}>Demander de l'aide</Button>
             )}
             {dialog?.type === "join" && (
-              <Button className="rounded-full bg-[#002060] hover:bg-[#001740]" data-testid="project-join-confirm"
+              <Button className="rounded-full bg-[var(--marine)] hover:bg-[#001740]" data-testid="project-join-confirm"
                 onClick={() => act(() => api.post(`/projects/${projectId}/join-request`, { comment: text }),
                   "Demande envoyée au Bureau")}>Envoyer ma demande</Button>
             )}

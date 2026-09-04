@@ -12,7 +12,10 @@ import { useAuth } from "@/context/AuthContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { HelpButton } from "@/components/HelpButton";
-import { QuickCreateButton } from "@/components/QuickCreatePanel";
+import { QuickActionsFab } from "@/components/QuickActionsFab";
+import { FocusToggle } from "@/components/FocusMode";
+import { OfflineIndicator } from "@/components/OfflineMode";
+import { useBlockVisibleFn } from "@/components/BlockVisibility";
 import { LogoLockup, Logo } from "@/components/Logo";
 import { Onboarding } from "@/components/Onboarding";
 import { Button } from "@/components/ui/button";
@@ -37,27 +40,28 @@ const BUREAU_NAV = [
       { to: "/events", label: "Événements", icon: PartyPopper },
       { to: "/terrains", label: "Terrains", icon: MapPinned },
       { to: "/admin/engagement", label: "Engagement", icon: Star },
-      { to: "/advantages", label: "Avantages", icon: Gift },
+      { to: "/advantages", block: "nav.advantages", label: "Avantages", icon: Gift },
     ],
   },
   {
     label: "Communication", icon: Newspaper, items: [
-      { to: "/blog", label: "Blog & contenus", icon: Newspaper },
-      { to: "/formations", label: "Formations & lives", icon: GraduationCap },
-      { to: "/library", label: "Bibliothèque", icon: Library },
-      { to: "/social", label: "Réseaux sociaux", icon: Send },
-      { to: "/contests", label: "Jeux-concours", icon: Trophy },
-      { to: "/advent", label: "Calendrier de l'Avent", icon: Gift },
+      { to: "/blog", block: "nav.blog", label: "Blog & contenus", icon: Newspaper },
+      { to: "/formations", block: "nav.formations", label: "Formations & lives", icon: GraduationCap },
+      { to: "/library", block: "nav.library", label: "Bibliothèque", icon: Library },
+      { to: "/social", block: "nav.social", label: "Réseaux sociaux", icon: Send },
+      { to: "/contests", block: "nav.contests", label: "Jeux-concours", icon: Trophy },
+      { to: "/advent", block: "nav.advent", label: "Calendrier de l'Avent", icon: Gift },
     ],
   },
   {
     label: "Gestion", icon: Wallet, items: [
       { to: "/finance", label: "Finances", icon: Wallet },
       { to: "/finance/reimbursements", label: "Remboursements", icon: Receipt },
+      { to: "/paiements", label: "Paiements", icon: Wallet },
       { to: "/stock", label: "Stocks", icon: Boxes },
       { to: "/partners", label: "Partenaires", icon: Handshake },
       { to: "/documents", label: "Documents", icon: FileText },
-      { to: "/forms", label: "Formulaires", icon: ClipboardList },
+      { to: "/forms", block: "nav.forms", label: "Formulaires", icon: ClipboardList },
     ],
   },
   {
@@ -85,6 +89,7 @@ const PRO_NAV = [
       { to: "/dogs", label: "Chiens suivis", icon: Dog },
       { to: "/finance/my-shares", label: "Mes parts & frais", icon: Wallet, permission: "finance.view_own" },
       { to: "/history", label: "Mon historique", icon: History, permission: "audit.view_own" },
+      { to: "/paiements", label: "Mes paiements", icon: Wallet },
       { to: "/my-space", label: "Mon espace & préférences", icon: Settings },
     ],
   },
@@ -100,18 +105,18 @@ const PRO_NAV = [
   },
   {
     label: "Contenus", icon: Newspaper, items: [
-      { to: "/blog", label: "Blog & contenus", icon: Newspaper, permission: "content.view" },
-      { to: "/formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
-      { to: "/library", label: "Bibliothèque", icon: Library, permission: "library.view" },
-      { to: "/social", label: "Réseaux sociaux", icon: Send, permission: "social.view" },
-      { to: "/forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
+      { to: "/blog", block: "nav.blog", label: "Blog & contenus", icon: Newspaper, permission: "content.view" },
+      { to: "/formations", block: "nav.formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
+      { to: "/library", block: "nav.library", label: "Bibliothèque", icon: Library, permission: "library.view" },
+      { to: "/social", block: "nav.social", label: "Réseaux sociaux", icon: Send, permission: "social.view" },
+      { to: "/forms", block: "nav.forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
     ],
   },
   {
     label: "Réseau", icon: HeartHandshake, items: [
       { to: "/directory", label: "Annuaire", icon: BookUser, permission: "members.view" },
       { to: "/partners", label: "Partenaires", icon: Handshake, permission: "partners.view" },
-      { to: "/advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
+      { to: "/advantages", block: "nav.advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
       { to: "/help", label: "Aide", icon: LifeBuoy },
       { to: "/aide", label: "Espace aide", icon: BookOpen },
       { to: "/profile", label: "Mon profil", icon: UserCircle },
@@ -132,18 +137,18 @@ const MEMBER_NAV = [
   },
   {
     label: "Mes avantages", icon: Gift, items: [
-      { to: "/advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
-      { to: "/loyalty", label: "Ma carte d'engagement", icon: Star, permission: "loyalty.view_own" },
-      { to: "/contests", label: "Jeux-concours", icon: Trophy, permission: "contests.view" },
-      { to: "/advent", label: "Calendrier de l'Avent", icon: Gift, permission: "advent.view" },
+      { to: "/advantages", block: "nav.advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
+      { to: "/loyalty", block: "nav.loyalty", label: "Ma carte d'engagement", icon: Star, permission: "loyalty.view_own" },
+      { to: "/contests", block: "nav.contests", label: "Jeux-concours", icon: Trophy, permission: "contests.view" },
+      { to: "/advent", block: "nav.advent", label: "Calendrier de l'Avent", icon: Gift, permission: "advent.view" },
     ],
   },
   {
     label: "Contenus", icon: Newspaper, items: [
-      { to: "/blog", label: "Blog & conseils", icon: Newspaper, permission: "content.view" },
-      { to: "/formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
-      { to: "/library", label: "Bibliothèque", icon: Library, permission: "library.view" },
-      { to: "/forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
+      { to: "/blog", block: "nav.blog", label: "Blog & conseils", icon: Newspaper, permission: "content.view" },
+      { to: "/formations", block: "nav.formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
+      { to: "/library", block: "nav.library", label: "Bibliothèque", icon: Library, permission: "library.view" },
+      { to: "/forms", block: "nav.forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
     ],
   },
   {
@@ -151,6 +156,7 @@ const MEMBER_NAV = [
       { to: "/profile", label: "Mon profil & mes chiens", icon: UserCircle },
       { to: "/dogs", label: "Suivi de mes chiens", icon: Dog },
       { to: "/my-space", label: "Mon espace & préférences", icon: Settings },
+      { to: "/paiements", label: "Mes paiements", icon: Wallet },
       { to: "/tasks", label: "Mes missions", icon: ListChecks, permission: "tasks.view" },
       { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
       { to: "/directory", label: "Professionnels", icon: BookUser, permission: "members.view" },
@@ -167,17 +173,23 @@ export const AppShell = ({ children }) => {
   const { user, profile, logout, can } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const blockVisible = useBlockVisibleFn();
 
   const base = user?.role === "ADMIN_BUREAU" ? BUREAU_NAV : user?.role === "PROFESSIONNEL" ? PRO_NAV : MEMBER_NAV;
   const nav = useMemo(() => base
     .map((group) => group.items
-      ? { ...group, items: group.items.filter((item) => !item.permission || can(item.permission)) }
+      ? { ...group, items: group.items.filter((item) => (!item.permission || can(item.permission)) && blockVisible(item.block)) }
       : group)
-    .filter((group) => !group.items || group.items.length > 0), [base, can]);
+    .filter((group) => !group.items || group.items.length > 0), [base, can, blockVisible]);
 
   const activeGroup = nav.find((group) => group.items?.some((item) => location.pathname.startsWith(item.to)));
   const [expanded, setExpanded] = useState(activeGroup?.label || nav[1]?.label);
   const roleLabel = { ADMIN_BUREAU: "Bureau", PROFESSIONNEL: "Professionnel", PARTICULIER: "Adhérent" }[user?.role];
+  const mobileItems = useMemo(() => {
+    const home = nav.find((g) => !g.items);
+    const rest = nav.filter((g) => g.items).flatMap((g) => g.items).slice(0, 3);
+    return [home, ...rest].filter(Boolean);
+  }, [nav]);
 
   const sidebar = (
     <div className="vdc-sidebar vdc-grain relative flex h-full w-64 shrink-0 flex-col text-white">
@@ -192,7 +204,7 @@ export const AppShell = ({ children }) => {
               <NavLink key={group.to} to={group.to} onClick={() => setOpen(false)}
                 data-testid={`nav-${slug(group.label)}`}
                 className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                  isActive ? "bg-[#800020] font-semibold text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
+                  isActive ? "bg-[var(--bordeaux)] font-semibold text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
                 <Icon className="h-4 w-4 shrink-0" /> <span className="truncate">{group.label}</span>
               </NavLink>
             );
@@ -215,7 +227,7 @@ export const AppShell = ({ children }) => {
                   {group.items.map(({ to, label, icon: ItemIcon }) => (
                     <NavLink key={to} to={to} onClick={() => setOpen(false)} data-testid={`nav-${slug(label)}`}
                       className={({ isActive }) => `flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] transition-colors ${
-                        isActive ? "bg-[#800020] font-semibold text-white" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>
+                        isActive ? "bg-[var(--bordeaux)] font-semibold text-white" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>
                       <ItemIcon className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{label}</span>
                     </NavLink>
                   ))}
@@ -238,7 +250,7 @@ export const AppShell = ({ children }) => {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="hidden lg:block">{sidebar}</div>
+      <div className="sticky top-0 hidden h-screen lg:block">{sidebar}</div>
       {open && (
         <div className="fixed inset-0 z-50 flex lg:hidden" data-testid="mobile-sidebar">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
@@ -252,23 +264,39 @@ export const AppShell = ({ children }) => {
         <header className="sticky top-0 z-40 flex items-center gap-2 border-b bg-card/90 px-4 py-3 backdrop-blur">
           <button className="lg:hidden" onClick={() => setOpen(true)} data-testid="mobile-menu-button"
             aria-label="Ouvrir le menu">
-            <Menu className="h-6 w-6 text-[#002060]" />
+            <Menu className="h-6 w-6 text-[var(--marine)]" />
           </button>
           <Link to="/" className="lg:hidden" data-testid="header-logo"><Logo size={32} /></Link>
           <div className="flex-1"><GlobalSearch /></div>
-          {user?.role === "ADMIN_BUREAU" && <QuickCreateButton />}
+          <OfflineIndicator />
+          <FocusToggle />
           <div className="hidden sm:block"><HelpButton /></div>
           <div className="sm:hidden"><HelpButton compact /></div>
           <NotificationBell />
           <Link to="/profile" data-testid="header-profile-link"
-            className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#002060] text-sm font-bold text-white">
+            className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[var(--marine)] text-sm font-bold text-white">
             {profile?.avatar
               ? <img src={profile.avatar} alt="Mon profil" className="h-full w-full object-cover" />
               : (profile?.display_name || user?.email || "?").slice(0, 1).toUpperCase()}
           </Link>
         </header>
-        <main key={location.pathname} className="vdc-reveal min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
         <Onboarding />
+        <QuickActionsFab />
+        <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t bg-card lg:hidden"
+          data-testid="mobile-bottom-nav" aria-label="Navigation principale">
+          {mobileItems.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} data-testid={`bottom-nav-${slug(label)}`}
+              className={({ isActive }) => `flex flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-semibold ${
+                isActive ? "text-[var(--bordeaux)]" : "text-muted-foreground"}`}>
+              <Icon className="h-5 w-5" /> <span className="truncate">{label}</span>
+            </NavLink>
+          ))}
+          <button type="button" onClick={() => setOpen(true)} data-testid="bottom-nav-menu"
+            className="flex flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[11px] font-semibold text-muted-foreground">
+            <Menu className="h-5 w-5" /> Menu
+          </button>
+        </nav>
       </div>
     </div>
   );
@@ -279,15 +307,15 @@ export const PendingScreen = () => {
   return (
     <div className="min-h-screen grid place-items-center bg-background px-5" data-testid="pending-approval-screen">
       <div className="max-w-md rounded-2xl border bg-card p-8 text-center">
-        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#800020]/10">
-          <ShieldCheck className="h-7 w-7 text-[#800020]" />
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--bordeaux-a10)]">
+          <ShieldCheck className="h-7 w-7 text-[var(--bordeaux)]" />
         </span>
-        <h1 className="mt-6 font-display text-2xl font-extrabold text-[#002060]">Demande en cours d'examen</h1>
+        <h1 className="mt-6 font-display text-2xl font-extrabold text-[var(--marine)]">Demande en cours d'examen</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           Merci {profile?.first_name || user?.email} ! Votre adhésion a été transmise au Bureau.
           Vous recevrez une notification dès sa validation.
         </p>
-        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-[#002060]">
+        <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-[var(--marine)]">
           <Sparkles className="h-3.5 w-3.5" /> Statut : {user?.status}
         </p>
         <Button variant="outline" onClick={logout} data-testid="pending-logout-button" className="mt-8 w-full rounded-full">

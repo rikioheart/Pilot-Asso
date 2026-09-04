@@ -40,7 +40,7 @@ export default function MyShares() {
       <PageHeader breadcrumb="Mon espace" title="Mes parts & mes frais"
         subtitle="Vos parts sur les activités encadrées et vos demandes de remboursement."
         actions={
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="my-reimbursement-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="my-reimbursement-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Demander un remboursement
           </Button>
@@ -65,14 +65,14 @@ export default function MyShares() {
               <li key={line.line_id} data-testid={`share-line-${line.line_id}`}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3 text-sm">
                 <span>
-                  <span className="font-semibold text-[#002060]">{line.label}</span>
+                  <span className="font-semibold text-[var(--marine)]">{line.label}</span>
                   <span className="ml-2 text-xs text-muted-foreground">
                     {new Date(line.date).toLocaleDateString("fr-FR")} ·
                     {line.mode === "PERCENT" ? ` ${line.value} %` : " montant fixe"}
                   </span>
                 </span>
                 <span className="flex items-center gap-3">
-                  <span className="font-display font-bold text-[#800020]">{line.computed_amount.toFixed(2)} €</span>
+                  <span className="font-display font-bold text-[var(--bordeaux)]">{line.computed_amount.toFixed(2)} €</span>
                   <Chip tone={line.status === "PAID" ? "green" : "amber"}>
                     {line.status === "PAID" ? "Réglée" : "En attente"}
                   </Chip>
@@ -95,13 +95,13 @@ export default function MyShares() {
                 <li key={item.reimbursement_id} data-testid={`my-reimbursement-${item.reimbursement_id}`}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3 text-sm">
                   <span>
-                    <span className="font-semibold text-[#002060]">{item.reason}</span>
+                    <span className="font-semibold text-[var(--marine)]">{item.reason}</span>
                     <span className="ml-2 text-xs text-muted-foreground">
                       {new Date(item.request_date).toLocaleDateString("fr-FR")}
                     </span>
                   </span>
                   <span className="flex items-center gap-3">
-                    <span className="font-display font-bold text-[#800020]">{item.amount.toFixed(2)} €</span>
+                    <span className="font-display font-bold text-[var(--bordeaux)]">{item.amount.toFixed(2)} €</span>
                     <Chip tone={tone}>{label}</Chip>
                   </span>
                 </li>
@@ -130,7 +130,7 @@ export default function MyShares() {
             <FileUpload usage="OTHER" testId="my-reimbursement-proof" value={form.proof_file_id}
               label="Joindre le justificatif" onChange={(id) => setForm({ ...form, proof_file_id: id })} />
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="my-reimbursement-save">Envoyer</Button>
             </DialogFooter>
           </form>

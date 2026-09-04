@@ -104,7 +104,7 @@ export const ProSpaceForm = () => {
 
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={busy} data-testid="pro-space-save-button"
-          className="rounded-full bg-[#800020] hover:bg-[#63001a]">
+          className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
           <Save className="mr-2 h-4 w-4" /> {busy ? "Enregistrement…" : "Enregistrer"}
         </Button>
         <Chip tone="muted">Visible selon les rôles autorisés</Chip>
@@ -145,9 +145,9 @@ export const FunctionDescription = () => {
         placeholder="Ex. J'encadre les balades collectives du samedi et j'accompagne les nouveaux adhérents."
         onChange={(e) => setValue(e.target.value)} />
       {profile?.function_description_comment && (
-        <p className="mt-2 text-xs text-[#800020]">Retour du Bureau : {profile.function_description_comment}</p>
+        <p className="mt-2 text-xs text-[var(--bordeaux)]">Retour du Bureau : {profile.function_description_comment}</p>
       )}
-      <Button onClick={save} disabled={busy || value.trim().length < 5} className="mt-4 rounded-full bg-[#002060] hover:bg-[#001740]"
+      <Button onClick={save} disabled={busy || value.trim().length < 5} className="mt-4 rounded-full bg-[var(--marine)] hover:bg-[#001740]"
         data-testid="function-description-save">Enregistrer ma description</Button>
     </SectionCard>
   );

@@ -56,7 +56,7 @@ export default function Forms() {
       <PageHeader breadcrumb="Outils" title="Formulaires & questionnaires"
         subtitle="Retours d'activité, ajout d'un chien, candidatures : les formulaires restent hébergés à l'extérieur."
         actions={data.is_manager && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="form-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="form-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouveau formulaire
           </Button>
@@ -71,7 +71,7 @@ export default function Forms() {
             <div key={item.form_id} data-testid={`form-card-${item.form_id}`}
               className="flex flex-col rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">
               <Chip tone="bordeaux">{USAGES[item.usage] || item.usage}</Chip>
-              <h3 className="mt-3 font-display font-bold text-[#002060]">{item.title}</h3>
+              <h3 className="mt-3 font-display font-bold text-[var(--marine)]">{item.title}</h3>
               <p className="mt-2 flex-1 text-sm text-muted-foreground">{item.description}</p>
               {item.activity_title && (
                 <p className="mt-2 text-xs text-muted-foreground">Lié à : {item.activity_title}</p>
@@ -81,7 +81,7 @@ export default function Forms() {
                   {(item.allowed_roles || []).map((role) => <Chip key={role} tone="muted">{ROLES[role] || role}</Chip>)}
                 </div>
               )}
-              <Button size="sm" className="mt-4 rounded-full bg-[#002060] hover:bg-[#001740]"
+              <Button size="sm" className="mt-4 rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                 data-testid={`form-open-${item.form_id}`} onClick={() => openForm(item)}>
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Ouvrir le formulaire
               </Button>
@@ -124,7 +124,7 @@ export default function Forms() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="form-save-button">Ajouter</Button>
             </DialogFooter>
           </form>

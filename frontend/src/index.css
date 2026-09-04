@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -154,3 +154,68 @@ html[data-motion="reduced"] *::after {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
 }
+
+/* --- Charte graphique paramétrable (Prompt 8) --- */
+:root {
+    --bordeaux-dark: #63001a;
+    --surface: #ffffff;
+    --surface-alt: #f4f6f8;
+    --status-ok: #1e7f4f;
+    --status-warn: #c2701a;
+    --status-error: #b3261e;
+    --bordeaux-a5: color-mix(in srgb, var(--bordeaux) 5%, transparent);
+    --bordeaux-a8: color-mix(in srgb, var(--bordeaux) 8%, transparent);
+    --bordeaux-a10: color-mix(in srgb, var(--bordeaux) 10%, transparent);
+    --bordeaux-a30: color-mix(in srgb, var(--bordeaux) 30%, transparent);
+    --bordeaux-a35: color-mix(in srgb, var(--bordeaux) 35%, transparent);
+    --bordeaux-a40: color-mix(in srgb, var(--bordeaux) 40%, transparent);
+    --marine-a5: color-mix(in srgb, var(--marine) 5%, transparent);
+    --marine-a8: color-mix(in srgb, var(--marine) 8%, transparent);
+    --marine-a10: color-mix(in srgb, var(--marine) 10%, transparent);
+    --marine-a20: color-mix(in srgb, var(--marine) 20%, transparent);
+    --marine-a25: color-mix(in srgb, var(--marine) 25%, transparent);
+    --marine-a30: color-mix(in srgb, var(--marine) 30%, transparent);
+    --marine-a40: color-mix(in srgb, var(--marine) 40%, transparent);
+}
+.vdc-sidebar { background: var(--marine) !important; }
+::selection { background: var(--bordeaux) !important; }
+.vdc-kpi:hover { border-color: var(--bordeaux-a35) !important; }
+
+/* Couleurs de statut : vert / orange / rouge paramétrables, réservées aux états fonctionnels */
+.text-emerald-700, .text-green-700, .text-emerald-600 { color: var(--status-ok) !important; }
+.text-amber-700, .text-orange-700 { color: var(--status-warn) !important; }
+.text-red-700, .text-red-600 { color: var(--status-error) !important; }
+.text-sky-700, .text-indigo-700 { color: var(--marine) !important; }
+.bg-emerald-50, .bg-emerald-500\/10 { background-color: color-mix(in srgb, var(--status-ok) 10%, transparent) !important; }
+.bg-amber-50, .bg-amber-500\/15 { background-color: color-mix(in srgb, var(--status-warn) 12%, transparent) !important; }
+.bg-red-50, .bg-red-500\/10 { background-color: color-mix(in srgb, var(--status-error) 10%, transparent) !important; }
+.bg-sky-50, .bg-indigo-50 { background-color: var(--marine-a8) !important; }
+.bg-emerald-500, .bg-emerald-600 { background-color: var(--status-ok) !important; }
+.bg-amber-500 { background-color: var(--status-warn) !important; }
+.bg-red-500 { background-color: var(--status-error) !important; }
+.border-emerald-300 { border-color: var(--status-ok) !important; }
+.border-amber-400, .border-amber-500 { border-color: var(--status-warn) !important; }
+.ring-red-400 { --tw-ring-color: var(--status-error) !important; }
+.hover\:bg-red-50:hover { background-color: color-mix(in srgb, var(--status-error) 10%, transparent) !important; }
+
+/* Accessibilité globale : polices lisibles, espacement généreux, stabilité au défilement */
+html[data-font="default"] body, html:not([data-font]) body { font-family: "Atkinson Hyperlegible", "DM Sans", sans-serif; line-height: 1.6; }
+html[data-font="lexend"] body, html[data-font="lexend"] .font-display { font-family: "Lexend", sans-serif !important; }
+html[data-font="serif"] body { font-family: "Atkinson Hyperlegible", sans-serif; }
+.vdc-reveal { animation: none; }
+* { scroll-behavior: auto; }
+main { scroll-margin-top: 4rem; }
+
+/* Mode focus (par page) : blocs secondaires, notifications et alertes masqués */
+html[data-focus="on"] [data-focus-secondary="true"],
+html[data-focus="on"] [data-testid="notification-bell"],
+html[data-focus="on"] [data-sonner-toaster],
+html[data-focus="on"] [role="alert"],
+html[data-focus="on"] .vdc-alert { display: none !important; }
+
+/* Barre de navigation inférieure (mobile) */
+@media (max-width: 1023px) { main { padding-bottom: 5.5rem !important; } }
+
+/* Mode hors connexion : créations / modifications désactivées visuellement */
+html[data-offline="on"] button[type="submit"], html[data-offline="on"] [data-testid="quick-actions-fab"] { opacity: .5; pointer-events: none; }
+html[data-offline="on"] [data-testid="loyalty-scanner"] button, html[data-offline="on"] [data-testid="loyalty-confirm-stamp"] { opacity: 1; pointer-events: auto; }

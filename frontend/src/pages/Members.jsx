@@ -137,12 +137,12 @@ export default function Members() {
                     <button type="button" data-testid={`member-collapse-${m.user_id}`}
                       onClick={() => setCollapsed((c) => ({ ...c, [m.user_id]: !c[m.user_id] }))}
                       className="text-left">
-                      <p className="font-semibold text-[#002060]">{m.profile?.display_name || "—"}</p>
+                      <p className="font-semibold text-[var(--marine)]">{m.profile?.display_name || "—"}</p>
                       {!collapsed[m.user_id] && (
                         <>
                           <p className="text-xs text-muted-foreground">{m.email}</p>
                           {m.profile?.pro_space?.company_name && (
-                            <p className="text-xs font-medium text-[#800020]">
+                            <p className="text-xs font-medium text-[var(--bordeaux)]">
                               {m.profile.pro_space.company_name}
                             </p>
                           )}
@@ -169,7 +169,7 @@ export default function Members() {
                       {m.status === "PENDING" && (
                         <>
                           <Button size="sm" data-testid={`member-approve-${m.user_id}`}
-                            className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                            className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                             onClick={() => update(m.user_id, { status: "ACTIVE" }, "Adhésion validée")}>Valider</Button>
                           <Button size="sm" variant="outline" data-testid={`member-reject-${m.user_id}`}
                             className="rounded-full"
@@ -244,7 +244,7 @@ export default function Members() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)} data-testid="member-role-cancel">Annuler</Button>
-            <Button data-testid="member-role-save" className="bg-[#800020] hover:bg-[#63001a]"
+            <Button data-testid="member-role-save" className="bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
               onClick={saveMember}>
               Enregistrer
             </Button>

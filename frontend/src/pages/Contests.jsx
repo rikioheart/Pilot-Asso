@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { confirmDialog } from "@/components/ConfirmDialog";
 import { Trophy, Plus, Users, Sparkles, ScrollText } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { PageHeader, EmptyState, Chip, SectionCard } from "@/components/Ui";
@@ -49,7 +50,7 @@ export default function Contests() {
   };
 
   const draw = async (contest) => {
-    if (!window.confirm("Lancer le tirage au sort ? Cette action est définitive.")) return;
+    if (!await confirmDialog("Lancer le tirage au sort ? Cette action est définitive.")) return;
     try {
       const { data } = await api.post(`/contests/${contest.contest_id}/draw`);
       toast.success(`Tirage effectué : ${(data.winners || []).map((w) => w.user_name).join(", ")}`);
@@ -79,7 +80,7 @@ export default function Contests() {
       <PageHeader breadcrumb="Animation" title="Jeux-concours"
         subtitle="Des animations simples pour la communauté : règlement clair, participants tracés, tirage au sort transparent."
         actions={data.is_manager && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="contest-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="contest-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouveau jeu-concours
           </Button>
@@ -100,10 +101,10 @@ export default function Contests() {
                   <Chip tone="bordeaux">{contest.participants_count} participant(s)</Chip>
                   {contest.is_participating && <Chip tone="green">Vous participez</Chip>}
                 </div>
-                <h3 className="mt-3 font-display text-base md:text-lg font-bold text-[#002060]">{contest.title}</h3>
+                <h3 className="mt-3 font-display text-base md:text-lg font-bold text-[var(--marine)]">{contest.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{contest.description}</p>
                 <div className="mt-4 rounded-lg bg-muted/50 p-3 text-sm">
-                  <p className="font-semibold text-[#800020]">À gagner : {contest.prize || "surprise"}</p>
+                  <p className="font-semibold text-[var(--bordeaux)]">À gagner : {contest.prize || "surprise"}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Jusqu'au {contest.end_date ? new Date(contest.end_date).toLocaleDateString("fr-FR") : "—"}
                     {contest.draw_date ? ` · tirage le ${new Date(contest.draw_date).toLocaleDateString("fr-FR")}` : ""}
@@ -121,7 +122,7 @@ export default function Contests() {
                     <ScrollText className="mr-1.5 h-3.5 w-3.5" /> Règlement
                   </Button>
                   {contest.status === "OPEN" && !contest.is_participating && (
-                    <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                    <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                       data-testid={`contest-participate-${contest.contest_id}`}
                       onClick={() => setParticipate(contest)}>Je participe</Button>
                   )}
@@ -133,7 +134,7 @@ export default function Contests() {
                         <Users className="mr-1.5 h-3.5 w-3.5" /> Participants
                       </Button>
                       {contest.status === "DRAFT" && (
-                        <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                        <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                           data-testid={`contest-open-${contest.contest_id}`}
                           onClick={() => setStatus(contest, "OPEN")}>Ouvrir</Button>
                       )}
@@ -143,7 +144,7 @@ export default function Contests() {
                           onClick={() => setStatus(contest, "CLOSED")}>Clore</Button>
                       )}
                       {["OPEN", "CLOSED"].includes(contest.status) && (
-                        <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                        <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                           data-testid={`contest-draw-${contest.contest_id}`} onClick={() => draw(contest)}>
                           <Trophy className="mr-1.5 h-3.5 w-3.5" /> Tirer au sort
                         </Button>
@@ -191,7 +192,7 @@ export default function Contests() {
               <Input value={form.question} data-testid="contest-question-input"
                 onChange={(e) => setForm({ ...form, question: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="contest-save-button">Créer</Button>
             </DialogFooter>
           </form>
@@ -213,7 +214,7 @@ export default function Contests() {
               <span className="text-muted-foreground">J'ai lu et j'accepte le règlement du jeu-concours.</span>
             </label>
             <DialogFooter>
-              <Button type="submit" disabled={!accepted} className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" disabled={!accepted} className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="contest-send-button">Valider ma participation</Button>
             </DialogFooter>
           </form>
@@ -237,7 +238,7 @@ export default function Contests() {
                 <ul className="space-y-2">
                   {participants?.items.map((p) => (
                     <li key={p.participation_id} className="rounded-lg border px-3 py-2 text-sm">
-                      <p className="font-semibold text-[#002060]">
+                      <p className="font-semibold text-[var(--marine)]">
                         {p.user_name} {p.is_winner && <Chip tone="green">Gagnant</Chip>}
                       </p>
                       {p.answer && <p className="mt-1 text-xs text-muted-foreground">« {p.answer} »</p>}

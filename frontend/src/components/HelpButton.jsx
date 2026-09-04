@@ -37,9 +37,9 @@ export const HelpButton = ({ compact = false }) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size={compact ? "icon" : "sm"} data-testid="help-button"
-          className={compact ? "h-10 w-10 rounded-full border-[#800020]/30" : "rounded-full border-[#800020]/30 text-[#800020]"}
+          className={compact ? "h-10 w-10 rounded-full border-[var(--bordeaux-a30)]" : "rounded-full border-[var(--bordeaux-a30)] text-[var(--bordeaux)]"}
           aria-label="J'ai besoin d'aide">
-          <LifeBuoy className={compact ? "h-4 w-4 text-[#800020]" : "mr-2 h-4 w-4"} />
+          <LifeBuoy className={compact ? "h-4 w-4 text-[var(--bordeaux)]" : "mr-2 h-4 w-4"} />
           {!compact && "J'ai besoin d'aide"}
         </Button>
       </DialogTrigger>
@@ -50,7 +50,7 @@ export const HelpButton = ({ compact = false }) => {
             {[["NEEDS_HELP", "J'ai besoin d'aide"], ["CAN_HELP", "Je peux aider sur…"]].map(([value, label]) => (
               <button key={value} type="button" onClick={() => setType(value)} data-testid={`help-type-${value}`}
                 className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
-                  type === value ? "border-[#800020] bg-[#800020]/5 font-semibold text-[#800020]" : "hover:border-[#002060]/40"
+                  type === value ? "border-[var(--bordeaux)] bg-[var(--bordeaux-a5)] font-semibold text-[var(--bordeaux)]" : "hover:border-[var(--marine-a40)]"
                 }`}>{label}</button>
             ))}
           </div>
@@ -68,7 +68,7 @@ export const HelpButton = ({ compact = false }) => {
               {SKILLS.map((s) => (
                 <button key={s} type="button" onClick={() => toggle(s)} data-testid={`help-skill-${s}`}
                   className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                    skills.includes(s) ? "border-[#002060] bg-[#002060] text-white" : "hover:border-[#002060]/40"
+                    skills.includes(s) ? "border-[var(--marine)] bg-[var(--marine)] text-white" : "hover:border-[var(--marine-a40)]"
                   }`}>{s}</button>
               ))}
             </div>
@@ -78,7 +78,7 @@ export const HelpButton = ({ compact = false }) => {
           </p>
         </div>
         <DialogFooter>
-          <Button onClick={send} className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="help-send-button">
+          <Button onClick={send} className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="help-send-button">
             Envoyer au Bureau
           </Button>
         </DialogFooter>

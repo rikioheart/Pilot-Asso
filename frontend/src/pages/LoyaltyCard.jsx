@@ -5,6 +5,7 @@ import { Star, RefreshCw, Gift, Download } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { PageHeader, EmptyState, Chip, SectionCard } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
+import { themeColor } from "@/components/ThemeProvider";
 
 export default function LoyaltyCard() {
   const [data, setData] = useState(null);
@@ -76,7 +77,7 @@ export default function LoyaltyCard() {
 
           <div className="mt-6 rounded-xl bg-white p-4 text-center" ref={qrRef}>
             <QRCodeSVG value={card.qr_token} size={168} level="M" includeMargin={false}
-              fgColor="#002060" data-testid="loyalty-qr" />
+              fgColor={themeColor("marine")} data-testid="loyalty-qr" />
             <p className="mt-3 text-[11px] text-[#333]/60">
               QR anonyme : il ne contient aucune donnée personnelle.
             </p>
@@ -89,7 +90,7 @@ export default function LoyaltyCard() {
                 <span>{card.total_points} / {next_reward.threshold}</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20">
-                <div className="h-full rounded-full bg-[#800020] transition-all"
+                <div className="h-full rounded-full bg-[var(--bordeaux)] transition-all"
                   style={{ width: `${Math.min(progress, 100)}%` }} data-testid="loyalty-progress" />
               </div>
               <p className="mt-2 text-sm font-semibold">{next_reward.reward || next_reward.label}</p>
@@ -144,7 +145,7 @@ export default function LoyaltyCard() {
                   className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm ${
                     card.total_points >= (r.threshold || 0) ? "border-emerald-300 bg-emerald-50" : ""}`}>
                   <span>
-                    <span className="font-semibold text-[#002060]">{r.reward || r.label}</span>
+                    <span className="font-semibold text-[var(--marine)]">{r.reward || r.label}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{r.threshold} tampons</span>
                   </span>
                   {card.total_points >= (r.threshold || 0) && (
@@ -165,18 +166,18 @@ export default function LoyaltyCard() {
                 <div key={s.stamp_id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3"
                   data-testid={`loyalty-stamp-${s.stamp_id}`}>
                   <div>
-                    <p className="text-sm font-semibold text-[#002060]">{s.activity_title}</p>
+                    <p className="text-sm font-semibold text-[var(--marine)]">{s.activity_title}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(s.created_at).toLocaleDateString("fr-FR")} · {s.validated_by_name}
                     </p>
-                    {s.reason && <p className="text-xs text-[#800020]">Motif : {s.reason}</p>}
+                    {s.reason && <p className="text-xs text-[var(--bordeaux)]">Motif : {s.reason}</p>}
                   </div>
                   <div className="flex items-center gap-2">
                     <Chip tone={s.is_manual ? "amber" : "muted"}>
                       {(source_labels || {})[s.source] || "Validation par un professionnel"}
                     </Chip>
                     <span className={`font-display text-lg font-extrabold ${
-                      s.points < 0 ? "text-red-700" : "text-[#800020]"}`}>
+                      s.points < 0 ? "text-red-700" : "text-[var(--bordeaux)]"}`}>
                       {s.points > 0 ? `+${s.points}` : s.points}
                     </span>
                   </div>

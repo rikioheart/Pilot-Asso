@@ -98,7 +98,7 @@ export default function Finance() {
               onClick={() => setShareOpen(true)}>
               <Users className="mr-2 h-4 w-4" /> Répartir des recettes
             </Button>
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="finance-create-button"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="finance-create-button"
               onClick={() => setOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Nouvelle écriture
             </Button>
@@ -128,8 +128,8 @@ export default function Finance() {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v) => `${v} €`} />
-                <Bar dataKey="in" name="Recettes" fill="#002060" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="out" name="Dépenses" fill="#800020" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="in" name="Recettes" fill="var(--marine)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="out" name="Dépenses" fill="var(--bordeaux)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -137,7 +137,7 @@ export default function Finance() {
             {summary.by_quarter.map((q) => (
               <div key={q.quarter} className="rounded-lg bg-muted/60 p-3" data-testid={`finance-quarter-${q.quarter}`}>
                 <p className="text-xs font-semibold uppercase text-muted-foreground">{q.quarter}</p>
-                <p className="mt-1 font-display text-lg font-extrabold text-[#002060]">{q.net.toFixed(2)} €</p>
+                <p className="mt-1 font-display text-lg font-extrabold text-[var(--marine)]">{q.net.toFixed(2)} €</p>
                 <p className="text-xs text-muted-foreground">{q.in.toFixed(0)} € / -{q.out.toFixed(0)} €</p>
               </div>
             ))}
@@ -151,10 +151,10 @@ export default function Finance() {
               <ul className="space-y-2">
                 {summary.by_category.map((c) => (
                   <li key={c.category} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                    <span className="font-semibold text-[#002060]">{c.label}</span>
+                    <span className="font-semibold text-[var(--marine)]">{c.label}</span>
                     <span className="text-xs">
                       <span className="text-emerald-700">+{c.in.toFixed(0)} €</span>{" "}
-                      <span className="text-[#800020]">-{c.out.toFixed(0)} €</span>
+                      <span className="text-[var(--bordeaux)]">-{c.out.toFixed(0)} €</span>
                     </span>
                   </li>
                 ))}
@@ -181,10 +181,10 @@ export default function Finance() {
                     <td className="py-2.5 pr-4 text-muted-foreground">
                       {new Date(t.date).toLocaleDateString("fr-FR")}
                     </td>
-                    <td className="pr-4 font-medium text-[#002060]">{t.description}</td>
+                    <td className="pr-4 font-medium text-[var(--marine)]">{t.description}</td>
                     <td className="pr-4"><Chip tone="muted">{t.category}</Chip></td>
                     <td className={`pr-4 text-right font-display font-bold ${
-                      t.direction === "IN" ? "text-emerald-700" : "text-[#800020]"}`}>
+                      t.direction === "IN" ? "text-emerald-700" : "text-[var(--bordeaux)]"}`}>
                       {t.direction === "IN" ? "+" : "-"}{t.amount.toFixed(2)} €
                     </td>
                   </tr>
@@ -205,7 +205,7 @@ export default function Finance() {
               <div key={d.distribution_id} className="rounded-lg border p-4"
                 data-testid={`distribution-${d.distribution_id}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-[#002060]">{d.label}</p>
+                  <p className="font-semibold text-[var(--marine)]">{d.label}</p>
                   <p className="text-sm text-muted-foreground">
                     Encaissé {d.total_amount.toFixed(2)} € · part association {d.association_amount.toFixed(2)} €
                   </p>
@@ -213,14 +213,14 @@ export default function Finance() {
                 <ul className="mt-3 space-y-2">
                   {(d.lines || []).map((line) => (
                     <li key={line.line_id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm">
-                      <span className="font-medium text-[#002060]">
+                      <span className="font-medium text-[var(--marine)]">
                         {line.professional_name}
                         <span className="ml-2 text-xs text-muted-foreground">
                           {line.mode === "PERCENT" ? `${line.value} %` : "montant fixe"}
                         </span>
                       </span>
                       <span className="flex items-center gap-3">
-                        <span className="font-display font-bold text-[#800020]">
+                        <span className="font-display font-bold text-[var(--bordeaux)]">
                           {line.computed_amount.toFixed(2)} €
                         </span>
                         {line.status === "PAID"
@@ -278,7 +278,7 @@ export default function Finance() {
               <Input value={form.description} required data-testid="finance-description-input"
                 onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="finance-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>
@@ -343,7 +343,7 @@ export default function Finance() {
               </p>
             </div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="share-save-button">Calculer et notifier</Button>
             </DialogFooter>
           </form>

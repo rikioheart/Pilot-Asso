@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Plus, AlertTriangle, Download, LayoutGrid, Table2, Tags, Pencil, Trash2 }
+import { useViewMode } from "@/components/ViewMode";
+import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
+import { FileText, Plus, AlertTriangle, Download, LayoutGrid, List, Table2, Tags, Pencil, Trash2 }
   from "lucide-react";
 import { api, apiError, fileUrl } from "@/lib/api";
 import { PageHeader, EmptyState, SectionCard, Chip, KpiCard } from "@/components/Ui";
@@ -26,7 +28,7 @@ export default function Documents() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
-  const [view, setView] = useState("kanban");
+  const [view, setView] = useViewMode("documents", "kanban");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [proofType, setProofType] = useState("");
@@ -90,7 +92,7 @@ export default function Documents() {
       ? `Supprimer DÉFINITIVEMENT « ${item.title} » ? Motif (tracé) :`
       : `Archiver « ${item.title} » ? Motif (tracé) :`);
     if (reason === null) return;
-    if (hard && !window.confirm("Confirmez-vous la suppression définitive ? Action irréversible.")) return;
+    if (hard && !await confirmDialog("Confirmez-vous la suppression définitive ? Action irréversible.")) return;
     try {
       const { data } = await api.delete(`/documents/${item.document_id}`,
         { params: { reason: reason || "Non précisé", hard } });
@@ -113,7 +115,7 @@ export default function Documents() {
   };
 
   const removeCategory = async (item) => {
-    if (!window.confirm(`Supprimer la catégorie « ${item.label} » ?`)) return;
+    if (!await confirmDialog(`Supprimer la catégorie « ${item.label} » ?`)) return;
     try {
       await api.delete(`/documents/categories/${item.doc_category_id}`);
       toast.success("Catégorie supprimée"); load();
@@ -128,7 +130,7 @@ export default function Documents() {
       <div key={item.document_id} data-testid={`document-${item.document_id}`}
         className="rounded-xl border bg-card p-4">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-[#002060]">{item.title}</p>
+          <p className="font-semibold text-[var(--marine)]">{item.title}</p>
           <Chip tone={tone}>{label}</Chip>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -145,7 +147,7 @@ export default function Documents() {
           {item.file_id && (
             <a href={fileUrl(item.file_id, true)} target="_blank" rel="noreferrer"
               data-testid={`document-download-${item.document_id}`}
-              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold text-[#002060] hover:bg-muted">
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold text-[var(--marine)] hover:bg-muted">
               <Download className="h-3.5 w-3.5" /> Ouvrir
             </a>
           )}
@@ -160,10 +162,9 @@ export default function Documents() {
                 data-testid={`document-edit-${item.document_id}`} onClick={() => openForm(item)}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full text-red-700 hover:bg-red-50"
-                data-testid={`document-delete-${item.document_id}`} onClick={() => remove(item, true)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              <RowMenu testId={`document-menu-${item.document_id}`} items={[
+                { label: "Supprimer définitivement", icon: Trash2, danger: true,
+                  testId: `document-delete-${item.document_id}`, onSelect: () => remove(item, true) }]} />
             </>
           )}
         </div>
@@ -176,7 +177,7 @@ export default function Documents() {
       <PageHeader breadcrumb="Gestion" title="Contrats & documents"
         subtitle="Classement par catégorie et type de preuve, visibilité par document, rappel 30 jours avant échéance."
         actions={data.is_manager && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="document-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="document-create-button"
             onClick={() => openForm()}>
             <Plus className="mr-2 h-4 w-4" /> Nouveau document
           </Button>
@@ -195,6 +196,9 @@ export default function Documents() {
           <TabsList>
             <TabsTrigger value="kanban" data-testid="documents-view-kanban">
               <LayoutGrid className="mr-1.5 h-3.5 w-3.5" /> Kanban
+            </TabsTrigger>
+            <TabsTrigger value="list" data-testid="documents-view-list">
+              <List className="mr-1.5 h-3.5 w-3.5" /> Liste
             </TabsTrigger>
             <TabsTrigger value="table" data-testid="documents-view-table">
               <Table2 className="mr-1.5 h-3.5 w-3.5" /> Tableau
@@ -235,14 +239,14 @@ export default function Documents() {
 
         <TabsContent value="kanban">
           {data.items.length === 0 ? (
-            <EmptyState testId="documents-empty" icon={FileText} title="Aucun document"
+            <EmptyState testId="documents-empty" module="documents" icon={FileText} title="Aucun document"
               description="Déposez les statuts, assurances et contrats de l'association (PDF ou texte)." />
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-4" data-testid="documents-kanban">
               {grouped.map(([code, items]) => (
                 <div key={code} className="w-80 shrink-0" data-testid={`documents-column-${code}`}>
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-widest text-[#800020]">
+                    <p className="text-xs font-bold uppercase tracking-widest text-[var(--bordeaux)]">
                       {labels[code] || code}
                     </p>
                     <Chip tone="muted">{items.length}</Chip>
@@ -260,6 +264,14 @@ export default function Documents() {
           )}
         </TabsContent>
 
+        <TabsContent value="list">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="documents-list">
+            {data.items.length === 0
+              ? <EmptyState testId="documents-list-empty" module="documents" icon={FileText} title="Aucun document" />
+              : data.items.map(renderCard)}
+          </div>
+        </TabsContent>
+
         <TabsContent value="table">
           <SectionCard title="Tous les documents" icon={Table2} testId="documents-table-card">
             <div className="overflow-x-auto">
@@ -275,7 +287,7 @@ export default function Documents() {
                   {data.items.map((item) => (
                     <tr key={item.document_id} className="border-b last:border-0"
                       data-testid={`documents-row-${item.document_id}`}>
-                      <td className="px-3 py-2 font-semibold text-[#002060]">{item.title}</td>
+                      <td className="px-3 py-2 font-semibold text-[var(--marine)]">{item.title}</td>
                       <td className="px-3 py-2 text-xs">{item.category_label}</td>
                       <td className="px-3 py-2 text-xs">{item.proof_label}</td>
                       <td className="px-3 py-2 text-xs">{item.visibility_label}</td>
@@ -295,12 +307,10 @@ export default function Documents() {
                                 onClick={() => openForm(item)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
-                              <Button size="sm" variant="outline"
-                                className="rounded-full text-red-700 hover:bg-red-50"
-                                data-testid={`documents-row-delete-${item.document_id}`}
-                                onClick={() => remove(item, true)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              <RowMenu testId={`documents-row-menu-${item.document_id}`} items={[
+                                { label: "Supprimer définitivement", icon: Trash2, danger: true,
+                                  testId: `documents-row-delete-${item.document_id}`,
+                                  onSelect: () => remove(item, true) }]} />
                             </>
                           )}
                         </span>
@@ -324,7 +334,7 @@ export default function Documents() {
                 <Input required value={newCategory} data-testid="documents-category-input"
                   onChange={(e) => setNewCategory(e.target.value)} />
               </div>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="documents-category-submit">
                 {editCategory ? "Enregistrer" : "Ajouter"}
               </Button>
@@ -352,19 +362,17 @@ export default function Documents() {
                   {meta.custom_categories.map((c) => (
                     <li key={c.doc_category_id} data-testid={`documents-category-${c.doc_category_id}`}
                       className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
-                      <span className="font-semibold text-[#002060]">{c.label}</span>
+                      <span className="font-semibold text-[var(--marine)]">{c.label}</span>
                       <span className="flex gap-1.5">
                         <Button size="sm" variant="outline" className="rounded-full"
                           data-testid={`documents-category-edit-${c.doc_category_id}`}
                           onClick={() => { setEditCategory(c); setNewCategory(c.label); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="sm" variant="outline"
-                          className="rounded-full text-red-700 hover:bg-red-50"
-                          data-testid={`documents-category-delete-${c.doc_category_id}`}
-                          onClick={() => removeCategory(c)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <RowMenu testId={`documents-category-menu-${c.doc_category_id}`} items={[
+                          { label: "Supprimer la catégorie", icon: Trash2, danger: true,
+                            testId: `documents-category-delete-${c.doc_category_id}`,
+                            onSelect: () => removeCategory(c) }]} />
                       </span>
                     </li>
                   ))}
@@ -446,7 +454,7 @@ export default function Documents() {
               <Textarea rows={2} value={form.notes} data-testid="document-notes-input"
                 onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="document-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>

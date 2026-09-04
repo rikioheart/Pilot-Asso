@@ -96,6 +96,7 @@ class TaskIn(BaseModel):
     is_volunteer_task: bool = False
     visibility: str = "PROJECT_TEAM"
     blocked_by_task_id: Optional[str] = None
+    google_forms_url: Optional[str] = None
 
 
 class TaskUpdate(BaseModel):
@@ -108,6 +109,7 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
     blocked_by_task_id: Optional[str] = None
     visibility: Optional[str] = None
+    google_forms_url: Optional[str] = None
 
 
 class SubmitIn(BaseModel):
@@ -386,6 +388,23 @@ async def remove_team_member(project_id: str, member_id: str, user: dict = Depen
     return {"ok": True}
 
 
+async def _notify_concerned(project_id: str, author: dict, *, title: str, message: str, link: str, extra=None):
+    """Notifie les membres concernés par le projet (équipe active + responsables) hors auteur."""
+    ids = {t["member_id"] async for t in db.project_teams.find(
+        {"project_id": project_id, "status": "ACTIVE"}, {"_id": 0, "member_id": 1})}
+    project = await db.projects.find_one({"project_id": project_id}, {"_id": 0, "owner_id": 1, "created_by": 1,
+                                                                    "referent_id": 1})
+    for k in ("owner_id", "created_by", "referent_id"):
+        if project and project.get(k):
+            ids.add(project[k])
+    ids.update([e for e in (extra or []) if e])
+    ids.discard(author["user_id"])
+    async for u in db.users.find({"user_id": {"$in": list(ids)}, "status": "ACTIVE", "role": {"$ne": ROLE_ADMIN}},
+                                 {"_id": 0, "user_id": 1}):
+        await notify(u["user_id"], type="HELP_REQUEST", title=title, message=message, level="ACTION",
+                     resource_type="project", resource_id=project_id, link=link)
+
+
 @router.post("/projects/{project_id}/join-request")
 async def request_join(project_id: str, payload: CommentIn, user: dict = Depends(active_user)):
     project = await get_visible_project(project_id, user)
@@ -394,6 +413,9 @@ async def request_join(project_id: str, payload: CommentIn, user: dict = Depends
                         message=f"{name} souhaite rejoindre « {project['title']} » : {payload.comment}",
                         level="ACTION", resource_type="project", resource_id=project_id,
                         link=f"/projects/{project_id}")
+    await _notify_concerned(project_id, user, title="Proposition sur un projet",
+                            message=f"{name} propose de rejoindre « {project['title']} » : {payload.comment}",
+                            link=f"/projects/{project_id}")
     await log_action(user, "JOIN_REQUEST", "projects", project_id, comment=payload.comment)
     return {"ok": True}
 
@@ -467,6 +489,7 @@ async def create_task(payload: TaskIn, user: dict = Depends(active_user)):
         "priority": payload.priority, "deadline": payload.deadline,
         "assigned_user_id": payload.assigned_user_id, "is_volunteer_task": payload.is_volunteer_task,
         "visibility": payload.visibility, "blocked_by_task_id": payload.blocked_by_task_id,
+        "google_forms_url": payload.google_forms_url,
     })
     await db.tasks.insert_one(doc)
     await task_history(doc["task_id"], user, "CREATE", new_value={"title": payload.title})
@@ -622,6 +645,10 @@ async def task_needs_help(task_id: str, payload: CommentIn, user: dict = Depends
     await notify_bureau(type="NEEDS_HELP", title="Un membre a besoin d'aide",
                         message=f"{doc['user_name']} sur « {task['title']} » : {payload.comment}",
                         level="ACTION", resource_type="task", resource_id=task_id, link="/admin/help")
+    await _notify_concerned(task["project_id"], user, extra=[task.get("assigned_user_id")],
+                            title="Demande d'aide sur une tâche",
+                            message=f"{doc['user_name']} demande de l'aide sur « {task['title']} » : {payload.comment}",
+                            link=f"/projects/{task['project_id']}")
     return {k: v for k, v in doc.items() if k != "_id"}
 
 

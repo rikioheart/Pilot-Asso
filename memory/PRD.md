@@ -97,8 +97,29 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   projets, séances, réservations, tâches, parts) consultable par le Bureau et **exportable en Excel**
   (7 feuilles)
 
+### Prompt 8C — Commentaires, intégrations Google, météo & paiements manuels (04/09/2026, testé 100 % — backend 12/12, frontend OK)
+- **Commentaires unifiés** (`comments.py`, collection `comments`) sur tâches, événements et activités :
+  CRUD + pagination, visibilité **Tous** / **Pros + Bureau**, **@mentions** (sélection des participants/équipe)
+  déclenchant une notification push ; composant réutilisable `<CommentSection>`. **Remplace** l'ancien
+  mini-système de commentaires des tâches (le bouton commentaire ouvre désormais le module unifié).
+- **Google Maps / Meet / Forms** (sans clé API) : champs `address` (événements), `google_meet_url`
+  (événements), `google_forms_url` (événements, activités, tâches) ; boutons « Rejoindre via Google Meet »
+  et « Ouvrir le formulaire Google » ; **aperçu Maps via iframe `output=embed` chargé uniquement au clic**
+  + lien « Itinéraire ».
+- **Météo OpenWeatherMap** (`weather.py`) à la demande, prévisions 3 jours pour activités/événements
+  avec adresse/lieu. **Construit sans clé** : la clé est saisie par le Bureau dans Réglages
+  (section « Météo (OpenWeatherMap) ») ; tant qu'aucune clé n'est saisie, le bloc affiche
+  « **Météo non configurée** ».
+- **Suivi manuel des paiements** (`payments.py`, collection `payments`) — **aucune passerelle en ligne** :
+  types cotisation/activité/autre, montant en €, statuts payé/en attente/en retard, mode de règlement,
+  vue Bureau `/paiements` (récap + tableau + filtres + CRUD) et historique en lecture seule pour le membre.
+  **Bascule automatique en « en retard » 21 jours (3 semaines) après la date de saisie** via
+  `sweep_overdue_payments()` branché sur le cron quotidien `rappels-quotidiens`.
+- Correctif : `.emergent/crons.yml` réparé (entrée `recap-lundi` corrompue → 4 crons valides).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
+`comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·
 `partners.py` · `terrain.py` · `stock.py` · `documents.py` · `exports.py` · `crons_api.py` ·
 `profiles_plus.py` · `dogs.py` · `activities.py` (+ taxonomies, participants, présences) · `loyalty.py`
 (engagement) · `records.py` (archivage / suppression tracés) · `help_center.py` (fiches de poste,

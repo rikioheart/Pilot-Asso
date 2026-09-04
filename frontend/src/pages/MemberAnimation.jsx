@@ -50,7 +50,7 @@ export default function MemberAnimation() {
             <li key={member.user_id} data-testid={`${testId}-${member.user_id}`}
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
               <span className="min-w-0">
-                <span className="font-semibold text-[#002060]">{member.display_name}</span>
+                <span className="font-semibold text-[var(--marine)]">{member.display_name}</span>
                 <span className="block text-xs text-muted-foreground">{member.email}</span>
                 {extra?.(member)}
               </span>
@@ -108,14 +108,14 @@ export default function MemberAnimation() {
             {SUGGESTIONS.map((suggestion, index) => (
               <button key={index} type="button" onClick={() => setMessage(suggestion)}
                 data-testid={`nudge-suggestion-${index}`}
-                className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-[#002060] hover:bg-muted/70">
+                className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-[var(--marine)] hover:bg-muted/70">
                 Modèle {index + 1}
               </button>
             ))}
           </div>
           <DialogFooter>
             <Button onClick={send} disabled={message.trim().length < 10} data-testid="nudge-send-button"
-              className="rounded-full bg-[#800020] hover:bg-[#63001a]">Envoyer</Button>
+              className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">Envoyer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

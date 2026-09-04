@@ -171,8 +171,30 @@ class WSHub:
 hub = WSHub()
 
 
+OPTIONAL_NOTIFICATION_TYPES = {
+    "ACTIVITY_REGISTRATION": "Inscription d'un membre à une de mes activités ou événements",
+    "HELP_REQUEST": "Proposition ou demande d'aide sur un projet ou une tâche qui me concerne",
+    "REGISTRATION_CONFIRMED": "Confirmation de mes propres inscriptions",
+    "GENTLE_NUDGE": "Petits mots et rappels du Bureau",
+}
+
+
+async def notification_allowed(recipient_id: str, type: str) -> bool:
+    """Le Bureau reçoit tout ; les autres profils peuvent désactiver certains types."""
+    if type not in OPTIONAL_NOTIFICATION_TYPES:
+        return True
+    target = await db.users.find_one({"user_id": recipient_id}, {"_id": 0, "role": 1})
+    if not target or target["role"] == rbac.ROLE_ADMIN:
+        return True
+    profile = await db.profiles.find_one({"user_id": recipient_id}, {"_id": 0, "preferences": 1})
+    prefs = ((profile or {}).get("preferences") or {}).get("notification_prefs") or {}
+    return prefs.get(type, True) is not False
+
+
 async def notify(recipient_id: str, type: str, title: str, message: str = "", level: str = "INFO",
                  resource_type: str = None, resource_id: str = None, link: str = None):
+    if not await notification_allowed(recipient_id, type):
+        return None
     doc = {
         "notification_id": new_id("ntf"), "recipient_id": recipient_id, "type": type, "title": title,
         "message": message, "level": level, "resource_type": resource_type, "resource_id": resource_id,

@@ -1,0 +1,27 @@
+{
+  "summary": "Prompt 8C (paiements manuels, commentaires unifiés, météo OpenWeatherMap sans clé, Google Maps embed sans clé, liens Meet/Forms sur événements) validé backend + frontend. Backend pytest 12/12 (test_prompt8c.py): payments — GET /api/payments interdit au membre (403), summary bureau OK ({by_status, total_amount}), création (25 € COTISATION EN_ATTENTE), lecture filtrée (status+type), PUT status→PAYE, /payments/me pour le membre montre le paiement, DELETE, type invalide=400, /api/cron/reminders 200 (sweep 21j exécuté sans erreur). Weather — GET /settings/weather bureau {configured:false}, membre 403, GET /weather?location=Nantes → {configured:false}. Comments — event créé avec address/google_meet_url/google_forms_url persistés, /comments/mentionable 200, element_type invalide=400, PROS_BUREAU non visible pour membre, membre ne peut poster PROS_BUREAU (403), suppression bureau OK, can_moderate=true. Frontend (Playwright, Bureau associationlavoixduchien@gmail.com) : /paiements affiche payments-page + payments-summary (4 cartes), payment-create-button ouvre payment-dialog, member-select (4 options), création OK, statut initial 'En attente', edit → PAYE → pill devient 'Payé', filtre EN_ATTENTE masque bien la ligne PAYE, delete OK. /admin/settings → weather-settings-card présente et texte 'non configuré'. /activities : 9 map-toggles, weather-fetch → -not-configured visible, map iframe + directions rendus, activity-comments-dialog + activity-comment-section OK, post commentaire visible dans list. /events : event-create-button, dialog contient event-title-input, event-address-input, event-meet-input, event-gforms-input, event-save-button. Création TEST_ UI event OK, /events/<id> affiche event-meet-link, event-gforms-link, event-map-toggle, event-weather-fetch (→ event-weather-not-configured), event-comments-section avec event-comments-visibility (admin) + post/list/delete OK. /projects/<id> : task-comment-<tid> ouvre dialog avec task-comments-section unifiée (plus l'ancien textarea), post + list fonctionnent. /paiements en tant que membre1.demo → my-payments-page (read-only), pas de payments-page bureau. Membre view et Bureau view correctement séparés. Événement TEST_ nettoyé via API.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_prompt8c.py",
+    "/app/test_reports/pytest/prompt8c.xml"
+  ],
+  "action_items": [
+    "Optionnel : nettoyage des commentaires 'TEST_ task comment' laissés sur une tâche du projet 'Recherche d'un terrain d'activités [DEMO]' (aucun endpoint de listing global, non bloquant)."
+  ],
+  "critical_code_review_comments": [
+    "payments.sweep_overdue_payments : correct, filtre {status:EN_ATTENTE, created_at<cutoff-21j} + notify PAYMENT_OVERDUE. Bien branché sur crons_api.send_reminders.",
+    "payments.create_payment : notify au membre 'PAYMENT_RECORDED' même en EN_ATTENTE ('paiement enregistré') — cohérent avec spec (visible côté membre).",
+    "comments._can_see_comment : logique OK — PROS_BUREAU visible uniquement pour admin/pro OU auteur OU mentionné.",
+    "weather.py : bonne gestion 401/403 (clé pas encore active jusqu'à ~1h après création) → 502 avec message explicite. Bien.",
+    "MapEmbed : intégration output=embed sans clé, chargement à la demande (bon pattern pour éviter fetch d'iframe non demandé).",
+    "CommentSection : côté frontend, isProOrBureau détermine visibilité du sélecteur — cohérent avec backend qui rejette membre → PROS_BUREAU en 403."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt8c.py"],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% (tous les flows testés OK)"},
+  "test_credentials": "Bureau + membre1 tels que test_credentials.md.",
+  "seed_data_creation": "Event TEST_ UI event <suffix> créé et supprimé via API. Paiement TEST_ créé/edit/delete côté UI. Commentaire 'TEST_ task comment' laissé sur une tâche du projet 'Recherche terrain [DEMO]' (nettoyage non-trivial via API sans lister tous les commentaires).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 8C validé end-to-end. Le sweep 21j est branché via /api/cron/reminders (Bearer WEBHOOK_CRON_SECRET). Météo intentionnellement non configurée — 'Météo non configurée' est le comportement attendu. Google Maps embed sans clé fonctionne via output=embed. Testids stables pour Payments/CommentSection/WeatherWidget/MapEmbed. La visibilité PROS_BUREAU est correctement filtrée côté API (les membres ne voient pas) — inutile de la recacher côté UI."
+}

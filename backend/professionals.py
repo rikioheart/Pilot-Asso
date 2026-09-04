@@ -165,6 +165,53 @@ async def get_professional(user_id: str, user: dict = Depends(require("members.v
             "status": target["status"], "projects": project_titles}
 
 
+PUBLIC_CARD_FIELDS = ["company_name", "professional_category", "secondary_categories", "description",
+                      "specialties", "services", "service_area", "departments", "website", "social_links",
+                      "phone", "email", "logo"]
+
+
+@router.get("/public/professionals/{user_id}")
+async def public_business_card(user_id: str):
+    """Carte de visite numérique : accessible sans connexion, champs publics uniquement."""
+    doc = await db.professional_details.find_one({"user_id": user_id}, {"_id": 0})
+    target = await db.users.find_one({"user_id": user_id}, {"_id": 0, "status": 1, "role": 1})
+    if not doc or not target or target["status"] != "ACTIVE" or target["role"] not in (ROLE_PRO, ROLE_ADMIN):
+        raise HTTPException(status_code=404, detail="Carte de visite introuvable")
+    profile = await db.profiles.find_one({"user_id": user_id}, {"_id": 0, "display_name": 1, "city": 1,
+                                                                 "department": 1, "avatar": 1})
+    card = {k: doc.get(k) for k in PUBLIC_CARD_FIELDS}
+    card["has_logo"] = bool(doc.get("logo"))
+    card.pop("logo", None)
+    return {**card, "user_id": user_id, "display_name": (profile or {}).get("display_name"),
+            "city": (profile or {}).get("city"), "department": (profile or {}).get("department"),
+            "has_avatar": bool((profile or {}).get("avatar"))}
+
+
+@router.get("/public/professionals/{user_id}/image")
+async def public_business_card_image(user_id: str, kind: str = "logo"):
+    from storage import get_object
+    from fastapi import Response
+    import httpx
+    target = await db.users.find_one({"user_id": user_id}, {"_id": 0, "status": 1})
+    if not target or target["status"] != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Image introuvable")
+    if kind == "avatar":
+        src = await db.profiles.find_one({"user_id": user_id}, {"_id": 0, "avatar": 1})
+        file_id = (src or {}).get("avatar")
+    else:
+        src = await db.professional_details.find_one({"user_id": user_id}, {"_id": 0, "logo": 1})
+        file_id = (src or {}).get("logo")
+    record = await db.files.find_one({"file_id": file_id, "is_deleted": False}, {"_id": 0}) if file_id else None
+    if not record:
+        raise HTTPException(status_code=404, detail="Image introuvable")
+    try:
+        data, content_type = await get_object(record["storage_path"])
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="Image momentanément indisponible")
+    return Response(content=data, media_type=record.get("content_type") or content_type,
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
 @router.put("/professionals/{user_id}")
 async def admin_update_professional(user_id: str, payload: ProAdminIn, admin: dict = Depends(require_admin)):
     existing = await db.professional_details.find_one({"user_id": user_id}, {"_id": 0})

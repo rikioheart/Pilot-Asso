@@ -25,7 +25,8 @@ export default function Events() {
   const [form, setForm] = useState({
     title: "", description: "", event_type: "ONE_OFF", start_date: "", end_date: "",
     location: "", capacity: "", status: "PLANNED", visibility: "MEMBERS",
-    google_maps_url: "", is_remote: false, visio_url: "", form_id: "", form_notify_date: "",
+    address: "", google_maps_url: "", is_remote: false, visio_url: "", google_meet_url: "",
+    google_forms_url: "", form_id: "", form_notify_date: "",
     eligible_for_loyalty: false, loyalty_points: 1,
   });
   const [forms, setForms] = useState([]);
@@ -53,8 +54,9 @@ export default function Events() {
     try {
       await api.post("/events", {
         ...form, capacity: form.capacity ? Number(form.capacity) : null,
-        end_date: form.end_date || null,
+        end_date: form.end_date || null, address: form.address || null,
         google_maps_url: form.google_maps_url || null, visio_url: form.visio_url || null,
+        google_meet_url: form.google_meet_url || null, google_forms_url: form.google_forms_url || null,
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success("Événement créé");
@@ -82,7 +84,7 @@ export default function Events() {
         actions={can("events.create") && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="event-create-button">
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="event-create-button">
                 <Plus className="mr-2 h-4 w-4" /> Nouvel événement
               </Button>
             </DialogTrigger>
@@ -142,6 +144,11 @@ export default function Events() {
                       onChange={(e) => setForm({ ...form, location: e.target.value })} />
                   </div>
                   <div className="space-y-2">
+                    <Label>Adresse (carte & météo)</Label>
+                    <Input value={form.address} placeholder="Ex. 12 rue des Prés, 45320 Nargis" data-testid="event-address-input"
+                      onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
                     <Label>Capacité</Label>
                     <Input type="number" min="1" value={form.capacity} data-testid="event-capacity-input"
                       onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
@@ -167,6 +174,20 @@ export default function Events() {
                   <Input placeholder="https://maps.google.com/…" value={form.google_maps_url}
                     data-testid="event-maps-input"
                     onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Lien Google Meet</Label>
+                    <Input placeholder="https://meet.google.com/…" value={form.google_meet_url}
+                      data-testid="event-meet-input"
+                      onChange={(e) => setForm({ ...form, google_meet_url: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Lien Google Forms</Label>
+                    <Input placeholder="https://forms.gle/…" value={form.google_forms_url}
+                      data-testid="event-gforms-input"
+                      onChange={(e) => setForm({ ...form, google_forms_url: e.target.value })} />
+                  </div>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={form.is_remote} data-testid="event-remote-checkbox"
@@ -210,7 +231,7 @@ export default function Events() {
                   </div>
                 )}
                 <DialogFooter>
-                  <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid="event-save-button">Créer l'événement</Button>
                 </DialogFooter>
               </form>
@@ -240,12 +261,12 @@ export default function Events() {
           </Select>
         </div>
         <Button size="sm" variant={filters.upcoming ? "default" : "outline"} data-testid="events-upcoming-filter"
-          className={`rounded-full ${filters.upcoming ? "bg-[#800020] hover:bg-[#63001a]" : ""}`}
+          className={`rounded-full ${filters.upcoming ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
           onClick={() => setFilters({ ...filters, upcoming: !filters.upcoming })}>À venir</Button>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState testId="events-empty" title="Aucun événement"
+        <EmptyState testId="events-empty" module="events" title="Aucun événement"
           description="Les événements visibles pour votre profil apparaîtront ici." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="events-list">
@@ -253,7 +274,7 @@ export default function Events() {
             <div key={e.event_id} className="flex flex-col rounded-xl border bg-card p-5"
               data-testid={`event-card-${e.event_id}`}>
               <div className="flex items-start justify-between gap-2">
-                <Link to={`/events/${e.event_id}`} className="font-display font-bold text-[#002060] hover:text-[#800020]"
+                <Link to={`/events/${e.event_id}`} className="font-display font-bold text-[var(--marine)] hover:text-[var(--bordeaux)]"
                   data-testid={`event-link-${e.event_id}`}>{e.title}</Link>
                 <StatusBadge status={e.status} testId={`event-status-${e.event_id}`} />
               </div>
@@ -282,7 +303,7 @@ export default function Events() {
                   </Button>
                 ) : (
                   <>
-                    <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                    <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                       data-testid={`event-register-${e.event_id}`} onClick={() => register(e.event_id, "PARTICIPANT")}>
                       <Check className="mr-1 h-3.5 w-3.5" /> M'inscrire
                     </Button>
@@ -293,7 +314,7 @@ export default function Events() {
                   </>
                 )}
                 <Link to={`/events/${e.event_id}`} data-testid={`event-detail-${e.event_id}`}
-                  className="rounded-full border px-4 py-1.5 text-sm font-semibold text-[#002060] transition-colors hover:bg-muted">
+                  className="rounded-full border px-4 py-1.5 text-sm font-semibold text-[var(--marine)] transition-colors hover:bg-muted">
                   Détails
                 </Link>
               </div>

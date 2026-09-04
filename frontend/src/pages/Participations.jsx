@@ -30,15 +30,15 @@ export default function Participations() {
         subtitle="Vos inscriptions aux activités et événements, et votre présence enregistrée." />
 
       {items.length === 0 ? (
-        <EmptyState testId="participations-empty" title="Aucune inscription"
+        <EmptyState testId="participations-empty" module="participations" title="Aucune inscription"
           description="Inscrivez-vous à une activité ou un événement depuis le calendrier." />
       ) : (
         <div className="space-y-2" data-testid="participations-list">
           {items.map((p) => (
             <Link key={p.participation_id} to={p.link || "/activities"} data-testid={`participation-${p.participation_id}`}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-[#800020]/40">
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-[var(--bordeaux-a40)]">
               <div>
-                <p className="font-semibold text-[#002060]">{p.title || "Inscription"}</p>
+                <p className="font-semibold text-[var(--marine)]">{p.title || "Inscription"}</p>
                 <p className="text-xs text-muted-foreground">
                   {ROLE_LABELS[p.role] || p.role}
                   {p.date && ` · ${new Date(p.date).toLocaleDateString("fr-FR")}`}

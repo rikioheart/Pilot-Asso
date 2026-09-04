@@ -32,6 +32,13 @@ async def claim_run(name: str, run_id: str) -> bool:
 async def send_reminders():
     today = now_utc().date()
     sent = 0
+    try:
+        from payments import sweep_overdue_payments
+        late = await sweep_overdue_payments()
+        if late:
+            logger.info(f"[CRON] Paiements basculés en retard : {late}")
+    except Exception as exc:  # ne bloque pas les rappels
+        logger.error(f"[CRON] Bascule paiements en retard échouée : {exc}")
     for offset, label in ((2, "J-2"), (1, "J-1")):
         target = (today + timedelta(days=offset)).isoformat()
         async for task in db.tasks.find({"deadline": {"$regex": f"^{target}"},

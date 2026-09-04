@@ -84,7 +84,7 @@ export default function Formations() {
       <PageHeader breadcrumb="Communication" title="Formations & lives"
         subtitle="Sessions en ligne, interviews et replays accessibles aux adhérents."
         actions={can("formations.create") && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="formation-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="formation-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouvelle session
           </Button>
@@ -108,20 +108,20 @@ export default function Formations() {
                   <Chip tone={tone}>{label}</Chip>
                   {formation.replay_url && <Chip tone="green">Replay disponible</Chip>}
                 </div>
-                <h3 className="mt-3 font-display text-base md:text-lg font-bold text-[#002060]">{formation.title}</h3>
+                <h3 className="mt-3 font-display text-base md:text-lg font-bold text-[var(--marine)]">{formation.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{formation.description}</p>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div><dt className="text-xs text-muted-foreground">Date</dt>
-                    <dd className="font-semibold text-[#002060]">
+                    <dd className="font-semibold text-[var(--marine)]">
                       {formation.date ? new Date(formation.date).toLocaleDateString("fr-FR") : "À définir"}
                       {formation.start_time ? ` · ${formation.start_time}` : ""}
                     </dd></div>
                   <div><dt className="text-xs text-muted-foreground">Intervenant</dt>
-                    <dd className="font-semibold text-[#002060]">{formation.speaker_name || "À confirmer"}</dd></div>
+                    <dd className="font-semibold text-[var(--marine)]">{formation.speaker_name || "À confirmer"}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Durée</dt>
-                    <dd className="font-semibold text-[#002060]">{formation.duration_minutes || "—"} min</dd></div>
+                    <dd className="font-semibold text-[var(--marine)]">{formation.duration_minutes || "—"} min</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Inscrits</dt>
-                    <dd className="font-semibold text-[#002060]">
+                    <dd className="font-semibold text-[var(--marine)]">
                       {formation.registered_count}{formation.capacity ? ` / ${formation.capacity}` : ""}
                     </dd></div>
                 </dl>
@@ -130,21 +130,21 @@ export default function Formations() {
                     <Button size="sm" onClick={() => toggle(formation)}
                       data-testid={`formation-register-${formation.formation_id}`}
                       className={`rounded-full ${formation.is_registered
-                        ? "bg-muted text-[#002060] hover:bg-muted/70" : "bg-[#800020] hover:bg-[#63001a]"}`}>
+                        ? "bg-muted text-[var(--marine)] hover:bg-muted/70" : "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"}`}>
                       {formation.is_registered ? "Annuler mon inscription" : "Je m'inscris"}
                     </Button>
                   )}
                   {formation.is_registered && formation.live_link && formation.status !== "DONE" && (
                     <a href={formation.live_link} target="_blank" rel="noreferrer"
                       data-testid={`formation-live-link-${formation.formation_id}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold text-[#002060] hover:bg-muted">
+                      className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold text-[var(--marine)] hover:bg-muted">
                       <Link2 className="h-3.5 w-3.5" /> Rejoindre
                     </a>
                   )}
                   {formation.replay_url && (
                     <a href={formation.replay_url} target="_blank" rel="noreferrer"
                       data-testid={`formation-replay-${formation.formation_id}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold text-[#002060] hover:bg-muted">
+                      className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold text-[var(--marine)] hover:bg-muted">
                       <Video className="h-3.5 w-3.5" /> Voir le replay
                     </a>
                   )}
@@ -212,7 +212,7 @@ export default function Formations() {
               <Input value={form.live_link} placeholder="https://" data-testid="formation-link-input"
                 onChange={(e) => setForm({ ...form, live_link: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="formation-save-button">Créer la session</Button>
             </DialogFooter>
           </form>
@@ -229,7 +229,7 @@ export default function Formations() {
                 <ul className="space-y-2">
                   {registrations?.items.map((r) => (
                     <li key={r.registration_id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                      <span className="font-semibold text-[#002060]">{r.user_name}</span>
+                      <span className="font-semibold text-[var(--marine)]">{r.user_name}</span>
                       <span className="text-xs text-muted-foreground">
                         {new Date(r.registered_at).toLocaleDateString("fr-FR")}
                       </span>

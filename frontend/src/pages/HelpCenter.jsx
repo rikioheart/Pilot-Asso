@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
 import { LifeBuoy, Plus, Search, BookOpen, IdCard, Check, X, Trash2, Pencil, ShieldCheck }
   from "lucide-react";
 import { api, apiError } from "@/lib/api";
@@ -14,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter }
   from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RichTextEditor, RichContent } from "@/components/RichTextEditor";
 
 const emptyGuide = { title: "", module: "AUTRE", role_scopes: ["PARTICULIER"], summary: "",
   content: "", visibility: "ALL" };
@@ -71,6 +73,8 @@ export default function HelpCenter() {
   const submitGuide = async (event) => {
     event.preventDefault();
     if (guide.role_scopes.length === 0) return toast.error("Choisissez au moins un rôle concerné");
+    const plain = (guide.content || "").replace(/<[^>]*>/g, "").trim();
+    if (plain.length < 10 && !guide.content?.includes("<img")) return toast.error("Le contenu doit faire au moins 10 caractères");
     try {
       if (editingGuide) await api.put(`/guides/${editingGuide}`, guide);
       else await api.post("/guides", guide);
@@ -109,7 +113,7 @@ export default function HelpCenter() {
   const removeGuide = async (item) => {
     const reason = window.prompt(`Supprimer « ${item.title} » ? Motif (tracé) :`);
     if (reason === null) return;
-    if (!window.confirm("Confirmez-vous la suppression ?")) return;
+    if (!await confirmDialog("Confirmez-vous la suppression ?")) return;
     try {
       const { data } = await api.delete(`/guides/${item.guide_id}`, { params: { reason } });
       toast.success(data.message); load();
@@ -119,7 +123,7 @@ export default function HelpCenter() {
   const removeSheet = async (item) => {
     const reason = window.prompt(`Supprimer la fiche « ${item.role_title} » ? Motif (tracé) :`);
     if (reason === null) return;
-    if (!window.confirm("Confirmez-vous la suppression définitive ?")) return;
+    if (!await confirmDialog("Confirmez-vous la suppression définitive ?")) return;
     try {
       const { data } = await api.delete(`/documents/${item.document_id}`,
         { params: { reason: reason || "Non précisé", hard: true } });
@@ -136,7 +140,7 @@ export default function HelpCenter() {
       className="rounded-xl border bg-card p-4 transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <button onClick={() => setReading(g)} data-testid={`guide-open-${g.guide_id}`}
-          className="text-left font-semibold text-[#002060] hover:underline">{g.title}</button>
+          className="text-left font-semibold text-[var(--marine)] hover:underline">{g.title}</button>
         <Chip tone={g.status === "PUBLISHED" ? "green" : g.status === "PENDING" ? "amber" : "muted"}>
           {g.status_label}
         </Chip>
@@ -150,12 +154,12 @@ export default function HelpCenter() {
         <Chip tone="muted">{g.visibility_label}</Chip>
       </div>
       {g.review_comment && g.status === "REFUSED" && (
-        <p className="mt-2 text-xs text-[#800020]">Motif : {g.review_comment}</p>
+        <p className="mt-2 text-xs text-[var(--bordeaux)]">Motif : {g.review_comment}</p>
       )}
       <div className="mt-3 flex flex-wrap gap-1.5">
         {isManager && g.status === "PENDING" && (
           <>
-            <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+            <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
               data-testid={`guide-publish-${g.guide_id}`} onClick={() => review(g, "PUBLISH")}>
               <Check className="mr-1.5 h-3.5 w-3.5" /> Publier
             </Button>
@@ -178,10 +182,9 @@ export default function HelpCenter() {
           </Button>
         )}
         {isManager && (
-          <Button size="sm" variant="outline" className="rounded-full text-red-700 hover:bg-red-50"
-            data-testid={`guide-delete-${g.guide_id}`} onClick={() => removeGuide(g)}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <RowMenu testId={`guide-menu-${g.guide_id}`} items={[
+            { label: "Supprimer", icon: Trash2, danger: true, testId: `guide-delete-${g.guide_id}`,
+              onSelect: () => removeGuide(g) }]} />
         )}
       </div>
     </div>
@@ -195,14 +198,14 @@ export default function HelpCenter() {
           <div className="flex flex-wrap gap-2">
             {canPropose && (
               <Button variant={isManager ? "outline" : "default"}
-                className={`rounded-full ${isManager ? "" : "bg-[#800020] hover:bg-[#63001a]"}`}
+                className={`rounded-full ${isManager ? "" : "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"}`}
                 data-testid="guide-create-button"
                 onClick={() => { setEditingGuide(null); setGuide(emptyGuide); setGuideOpen(true); }}>
                 <Plus className="mr-2 h-4 w-4" /> {isManager ? "Nouveau guide" : "Proposer une fiche"}
               </Button>
             )}
             {isManager && (
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="sheet-create-button"
                 onClick={() => { setEditingSheet(null); setSheet(emptySheet); setSheetOpen(true); }}>
                 <Plus className="mr-2 h-4 w-4" /> Fiche de poste
@@ -254,13 +257,13 @@ export default function HelpCenter() {
 
         <TabsContent value="guides">
           {guides.items.length === 0 ? (
-            <EmptyState testId="guides-empty" icon={LifeBuoy} title="Aucun guide disponible"
+            <EmptyState testId="guides-empty" module="guides" icon={LifeBuoy} title="Aucun guide disponible"
               description="Les guides d'utilisation publiés par le Bureau apparaîtront ici." />
           ) : (
             <div className="space-y-6" data-testid="guides-list">
               {grouped.map(([code, items]) => (
                 <section key={code} data-testid={`guides-module-${code}`}>
-                  <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#800020]">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--bordeaux)]">
                     {moduleLabels[code] || code}
                   </p>
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -283,7 +286,7 @@ export default function HelpCenter() {
                   className="rounded-xl border bg-card p-5">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-display text-base md:text-lg font-bold text-[#002060]">
+                      <p className="font-display text-base md:text-lg font-bold text-[var(--marine)]">
                         {s.role_title}
                       </p>
                       <p className="text-xs text-muted-foreground">{s.member_name}</p>
@@ -313,11 +316,9 @@ export default function HelpCenter() {
                         }}>
                         <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
                       </Button>
-                      <Button size="sm" variant="outline"
-                        className="rounded-full text-red-700 hover:bg-red-50"
-                        data-testid={`sheet-delete-${s.document_id}`} onClick={() => removeSheet(s)}>
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Supprimer
-                      </Button>
+                      <RowMenu testId={`sheet-menu-${s.document_id}`} items={[
+                        { label: "Supprimer", icon: Trash2, danger: true, testId: `sheet-delete-${s.document_id}`,
+                          onSelect: () => removeSheet(s) }]} />
                     </div>
                   )}
                 </div>
@@ -394,11 +395,14 @@ export default function HelpCenter() {
               <Input value={guide.summary} data-testid="guide-summary-input"
                 onChange={(e) => setGuide({ ...guide, summary: e.target.value })} /></div>
             <div><Label>Contenu *</Label>
-              <Textarea rows={8} required value={guide.content} data-testid="guide-content-input"
-                placeholder="Étape 1 : … Étape 2 : …"
-                onChange={(e) => setGuide({ ...guide, content: e.target.value })} /></div>
+              <RichTextEditor value={guide.content} testId="guide-content-input"
+                placeholder="Étape 1 : … Étape 2 : … (titres, gras, listes, liens, images)"
+                onChange={(html) => setGuide({ ...guide, content: html })} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Les images sont compressées automatiquement (1200 px, 350 Ko max chacune).
+              </p></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="guide-save-button">
                 {isManager ? "Publier" : "Envoyer au Bureau"}
               </Button>
@@ -468,7 +472,7 @@ export default function HelpCenter() {
                 </SelectContent>
               </Select></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="sheet-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>
@@ -483,9 +487,7 @@ export default function HelpCenter() {
               {reading?.module_label} · {(reading?.role_scope_labels || []).join(", ")}
             </DialogDescription>
           </DialogHeader>
-          <p className="whitespace-pre-wrap text-base leading-relaxed" data-testid="guide-reader-content">
-            {reading?.content}
-          </p>
+          <RichContent html={reading?.content} testId="guide-reader-content" />
         </DialogContent>
       </Dialog>
     </div>

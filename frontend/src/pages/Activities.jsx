@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, MapPin, Users, Star, Check, X } from "lucide-react";
+import { Plus, MapPin, Users, Star, Check, X, MessageSquare, FileText } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
@@ -14,6 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ACTIVITY_CATEGORY_LABELS, ACTIVITY_TYPE_LABELS, VISIBILITY_LABELS, label }
   from "@/lib/labels";
+import { MapEmbed } from "@/components/MapEmbed";
+import { WeatherWidget } from "@/components/WeatherWidget";
+import { CommentSection } from "@/components/CommentSection";
 
 export default function Activities() {
   const { user, can } = useAuth();
@@ -27,9 +30,10 @@ export default function Activities() {
     title: "", description: "", category: "BALADE", type: "COLLECTIVE", date: "", start_time: "",
     end_time: "", location: "", capacity: "", price_public: "", price_member: "",
     eligible_for_loyalty: false, loyalty_points: 1, visibility: "MEMBERS", event_id: "",
-    google_maps_url: "", is_remote: false, visio_url: "", form_id: "", form_notify_date: "",
+    google_maps_url: "", is_remote: false, visio_url: "", google_forms_url: "", form_id: "", form_notify_date: "",
   });
   const [forms, setForms] = useState([]);
+  const [commentFor, setCommentFor] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -61,6 +65,7 @@ export default function Activities() {
         loyalty_points: Number(form.loyalty_points) || 1,
         date: form.date || null, event_id: form.event_id || null,
         google_maps_url: form.google_maps_url || null, visio_url: form.visio_url || null,
+        google_forms_url: form.google_forms_url || null,
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success(isAdmin ? "Activité créée" : "Proposition envoyée au Bureau");
@@ -88,7 +93,7 @@ export default function Activities() {
         actions={can("activities.propose") && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="activity-create-button">
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="activity-create-button">
                 <Plus className="mr-2 h-4 w-4" /> {isAdmin ? "Nouvelle activité" : "Proposer une activité"}
               </Button>
             </DialogTrigger>
@@ -198,6 +203,12 @@ export default function Activities() {
                     data-testid="activity-maps-input"
                     onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} />
                 </div>
+                <div className="space-y-2">
+                  <Label>Lien Google Forms</Label>
+                  <Input placeholder="https://forms.gle/…" value={form.google_forms_url}
+                    data-testid="activity-gforms-input"
+                    onChange={(e) => setForm({ ...form, google_forms_url: e.target.value })} />
+                </div>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={form.is_remote} data-testid="activity-remote-checkbox"
                     onCheckedChange={(v) => setForm({ ...form, is_remote: !!v })} />
@@ -248,7 +259,7 @@ export default function Activities() {
                   </div>
                 )}
                 <DialogFooter>
-                  <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid="activity-save-button">
                     {isAdmin ? "Créer" : "Envoyer la proposition"}
                   </Button>
@@ -280,12 +291,12 @@ export default function Activities() {
           </Select>
         </div>
         <Button size="sm" variant={filters.upcoming ? "default" : "outline"} data-testid="activities-upcoming-filter"
-          className={`rounded-full ${filters.upcoming ? "bg-[#800020] hover:bg-[#63001a]" : ""}`}
+          className={`rounded-full ${filters.upcoming ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
           onClick={() => setFilters({ ...filters, upcoming: !filters.upcoming })}>À venir</Button>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState testId="activities-empty" title="Aucune activité"
+        <EmptyState testId="activities-empty" module="activities" title="Aucune activité"
           description="Les activités visibles pour votre profil apparaîtront ici." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="activities-list">
@@ -293,7 +304,7 @@ export default function Activities() {
             <div key={a.activity_id} className="flex flex-col rounded-xl border bg-card p-5"
               data-testid={`activity-card-${a.activity_id}`}>
               <div className="flex items-start justify-between gap-2">
-                <p className="font-display font-bold text-[#002060]">{a.title}</p>
+                <p className="font-display font-bold text-[var(--marine)]">{a.title}</p>
                 <StatusBadge status={a.status} testId={`activity-status-${a.activity_id}`} />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -311,33 +322,50 @@ export default function Activities() {
                   <p>Adhérent : {a.price_member ?? 0} € · Public : {a.price_public ?? 0} €</p>
                 )}
                 {a.eligible_for_loyalty && (
-                  <p className="inline-flex items-center gap-1 font-semibold text-[#800020]">
+                  <p className="inline-flex items-center gap-1 font-semibold text-[var(--bordeaux)]">
                     <Star className="h-3 w-3" /> +{a.loyalty_points || 1} tampon d'engagement
                   </p>
                 )}
                 {a.google_maps_url && (
                   <a href={a.google_maps_url} target="_blank" rel="noreferrer"
                     data-testid={`activity-maps-link-${a.activity_id}`}
-                    className="inline-flex items-center gap-1 font-semibold text-[#002060] hover:underline">
+                    className="inline-flex items-center gap-1 font-semibold text-[var(--marine)] hover:underline">
                     <MapPin className="h-3 w-3" /> Itinéraire Google Maps
                   </a>
                 )}
                 {a.is_remote && a.visio_url && (
                   <a href={a.visio_url} target="_blank" rel="noreferrer"
                     data-testid={`activity-visio-link-${a.activity_id}`}
-                    className="block font-semibold text-[#002060] hover:underline">
+                    className="block font-semibold text-[var(--marine)] hover:underline">
                     Rejoindre en visioconférence
                   </a>
                 )}
+                {a.google_forms_url && (
+                  <a href={a.google_forms_url} target="_blank" rel="noreferrer"
+                    data-testid={`activity-gforms-link-${a.activity_id}`}
+                    className="inline-flex items-center gap-1 font-semibold text-[var(--bordeaux)] hover:underline">
+                    <FileText className="h-3 w-3" /> Ouvrir le formulaire Google
+                  </a>
+                )}
               </div>
+              {a.location && (
+                <div className="mt-3 space-y-2" data-testid={`activity-logistics-${a.activity_id}`}>
+                  <MapEmbed address={a.location} testId={`activity-map-${a.activity_id}`} />
+                  <WeatherWidget location={a.location} testId={`activity-weather-${a.activity_id}`} />
+                </div>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
+                <Button size="sm" variant="ghost" className="rounded-full" data-testid={`activity-comments-${a.activity_id}`}
+                  onClick={() => setCommentFor(a)}>
+                  <MessageSquare className="mr-1 h-3.5 w-3.5" /> Discussion
+                </Button>
                 {a.is_registered ? (
                   <Button size="sm" variant="outline" className="rounded-full" data-testid={`activity-unregister-${a.activity_id}`}
                     onClick={() => act(() => api.delete(`/activities/${a.activity_id}/register`), "Inscription annulée")}>
                     <X className="mr-1 h-3.5 w-3.5" /> Me désinscrire
                   </Button>
                 ) : (
-                  <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                  <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                     data-testid={`activity-register-${a.activity_id}`}
                     onClick={() => act(() => api.post(`/activities/${a.activity_id}/register`, { role: "PARTICIPANT" }),
                       "Inscription confirmée")}>
@@ -346,7 +374,7 @@ export default function Activities() {
                 )}
                 {can("activities.validate") && a.status === "PROPOSED" && (
                   <>
-                    <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                    <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                       data-testid={`activity-accept-${a.activity_id}`}
                       onClick={() => act(() => api.post(`/activities/${a.activity_id}/review`, { decision: "ACCEPT" }),
                         "Activité acceptée")}>Accepter</Button>
@@ -361,6 +389,13 @@ export default function Activities() {
           ))}
         </div>
       )}
+
+      <Dialog open={!!commentFor} onOpenChange={(o) => !o && setCommentFor(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="activity-comments-dialog">
+          <DialogHeader><DialogTitle>Discussion — {commentFor?.title}</DialogTitle></DialogHeader>
+          {commentFor && <CommentSection elementType="activity" elementId={commentFor.activity_id} testId="activity-comment" />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

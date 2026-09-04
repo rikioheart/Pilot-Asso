@@ -52,7 +52,7 @@ export default function HelpRequests() {
         {[["OPEN", "Ouvertes"], ["HANDLED", "Prises en charge"], ["RESOLVED", "Résolues"], ["", "Toutes"]].map(([value, label]) => (
           <Button key={label} size="sm" variant={filter === value ? "default" : "outline"}
             data-testid={`help-filter-${label.toLowerCase()}`}
-            className={`rounded-full ${filter === value ? "bg-[#800020] hover:bg-[#63001a]" : ""}`}
+            className={`rounded-full ${filter === value ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
             onClick={() => setFilter(value)}>{label}</Button>
         ))}
       </div>
@@ -66,7 +66,7 @@ export default function HelpRequests() {
             <div key={h.help_id} className="rounded-xl border bg-card p-5" data-testid={`help-card-${h.help_id}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-display font-bold text-[#002060]">{h.user_name}</p>
+                  <p className="font-display font-bold text-[var(--marine)]">{h.user_name}</p>
                   <p className="text-xs text-muted-foreground">
                     {h.type === "NEEDS_HELP" ? "Besoin d'aide" : "Propose son aide"} ·{" "}
                     {new Date(h.created_at).toLocaleString("fr-FR")}
@@ -85,7 +85,7 @@ export default function HelpRequests() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" className="rounded-full" data-testid={`help-handle-${h.help_id}`}
                     onClick={() => setDialog({ help: h, status: "HANDLED" })}>Répondre</Button>
-                  <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                  <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                     data-testid={`help-resolve-${h.help_id}`}
                     onClick={() => setDialog({ help: h, status: "RESOLVED" })}>Marquer résolue</Button>
                 </div>
@@ -104,7 +104,7 @@ export default function HelpRequests() {
               onChange={(e) => setResponse(e.target.value)} />
           </div>
           <DialogFooter>
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="help-response-confirm"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="help-response-confirm"
               onClick={() => update(dialog.help, dialog.status)}>Envoyer</Button>
           </DialogFooter>
         </DialogContent>

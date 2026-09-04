@@ -38,7 +38,7 @@ export const GlobalSearch = () => {
                 <Link key={it.id} to={it.link} onClick={() => setQ("")}
                   data-testid={`search-result-${it.id}`}
                   className="block px-3 py-2 text-sm transition-colors hover:bg-muted">
-                  <span className="font-semibold text-[#002060]">{it.title}</span>
+                  <span className="font-semibold text-[var(--marine)]">{it.title}</span>
                   <span className="ml-2 text-xs text-muted-foreground">{it.subtitle}</span>
                 </Link>
               ))}

@@ -57,8 +57,8 @@ export const Onboarding = () => {
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-black/60 p-4" data-testid="onboarding-overlay">
       <div className="vdc-grain relative w-full max-w-lg overflow-hidden rounded-2xl bg-card">
-        <div className="relative bg-[#002060] px-6 py-7 text-white">
-          <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[#800020]/40 blur-3xl" />
+        <div className="relative bg-[var(--marine)] px-6 py-7 text-white">
+          <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-[var(--bordeaux-a40)] blur-3xl" />
           <button onClick={close} data-testid="onboarding-skip" aria-label="Ignorer la présentation"
             className="absolute right-4 top-4 text-white/60 transition-colors hover:text-white">
             <X className="h-5 w-5" />
@@ -78,13 +78,13 @@ export const Onboarding = () => {
           <div className="mt-6 flex items-center gap-1.5">
             {steps.map((_, index) => (
               <span key={index} className={`h-1.5 rounded-full transition-all duration-300 ${
-                index === step ? "w-8 bg-[#800020]" : "w-3 bg-muted"}`} />
+                index === step ? "w-8 bg-[var(--bordeaux)]" : "w-3 bg-muted"}`} />
             ))}
           </div>
           <div className="mt-6 flex items-center justify-between gap-3">
             <Button variant="ghost" onClick={close} data-testid="onboarding-close"
               className="text-muted-foreground">Ignorer</Button>
-            <Button data-testid="onboarding-next" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+            <Button data-testid="onboarding-next" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
               onClick={() => (last ? close() : setStep(step + 1))}>
               {last ? <><Sparkles className="mr-2 h-4 w-4" /> C'est parti !</>
                 : <>Suivant <ChevronRight className="ml-1 h-4 w-4" /></>}

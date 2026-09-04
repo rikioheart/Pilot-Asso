@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const LEVEL_COLORS = {
-  ACTION: "bg-[#800020]",
+  ACTION: "bg-[var(--bordeaux)]",
   WARNING: "bg-amber-500",
   SUCCESS: "bg-emerald-600",
-  INFO: "bg-[#002060]",
+  INFO: "bg-[var(--marine)]",
 };
 
 export const NotificationBell = () => {
@@ -66,10 +66,10 @@ export const NotificationBell = () => {
       <PopoverTrigger asChild>
         <button data-testid="notification-bell" aria-label="Notifications"
           className="relative grid h-10 w-10 place-items-center rounded-full transition-colors hover:bg-muted">
-          <Bell className="h-5 w-5 text-[#002060]" />
+          <Bell className="h-5 w-5 text-[var(--marine)]" />
           {unread > 0 && (
             <span data-testid="notification-unread-count"
-              className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#800020] px-1 text-[10px] font-bold text-white">
+              className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-[var(--bordeaux)] px-1 text-[10px] font-bold text-white">
               {unread}
             </span>
           )}
@@ -77,7 +77,7 @@ export const NotificationBell = () => {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] p-0" data-testid="notification-panel">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <p className="font-display text-sm font-bold text-[#002060]">Notifications</p>
+          <p className="font-display text-sm font-bold text-[var(--marine)]">Notifications</p>
           <Button variant="ghost" size="sm" onClick={markAll} data-testid="notification-mark-all-read">
             <Check className="mr-1 h-3.5 w-3.5" /> Tout lire
           </Button>
@@ -92,16 +92,16 @@ export const NotificationBell = () => {
             <Link key={n.notification_id} to={n.link || "/notifications"}
               data-testid={`notification-item-${n.notification_id}`}
               className={`flex gap-3 border-b px-4 py-3 transition-colors hover:bg-muted/60 ${n.is_read ? "opacity-60" : ""}`}>
-              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${LEVEL_COLORS[n.level] || "bg-[#002060]"}`} />
+              <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${LEVEL_COLORS[n.level] || "bg-[var(--marine)]"}`} />
               <span>
-                <span className="block text-sm font-semibold text-[#002060]">{n.title}</span>
+                <span className="block text-sm font-semibold text-[var(--marine)]">{n.title}</span>
                 <span className="block text-xs text-muted-foreground">{n.message}</span>
               </span>
             </Link>
           ))}
         </div>
         <Link to="/notifications" data-testid="notification-see-all"
-          className="block px-4 py-3 text-center text-sm font-semibold text-[#800020] hover:underline">
+          className="block px-4 py-3 text-center text-sm font-semibold text-[var(--bordeaux)] hover:underline">
           Voir toutes les notifications
         </Link>
       </PopoverContent>

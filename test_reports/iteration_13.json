@@ -1,0 +1,33 @@
+{
+  "summary": "Prompt 8 Lot C validé end-to-end. Backend 19/19 pytest (test_prompt8_lot_c.py) : (1) GET/PUT /api/settings/delegation — défauts corrects (enabled=true, PRO_COORDINATEUR dans levels, max_capacity=12, max_price=0, min_days_ahead=3, moderation_hours=48, require_association_terrain=true), PUT Bureau {max_capacity:10} → 200/10 puis restore 12, PUT pro1 → 403. (2) POST /api/activities par pro2 (PRO_COORDINATEUR) — payload conforme (location 'Prairie du Moulin [DEMO]', J+5, capacity 8, prix 0) → status=PLANNED, delegated_publication=true, moderation_until non nul + notif Bureau type DELEGATED_PUBLICATION présente ; capacity 30 → PROPOSED / delegated=false ; location 'Chez moi' → PROPOSED. (3) POST /api/events par pro2 avec status=PLANNED — conforme → PLANNED/delegated=true ; capacity 40 → DRAFT + pending_validation + delegation_reasons non vide ; POST Bureau (Chez moi, capacity 100) reste PLANNED sans délégation. (4) GET /api/settings/onboarding Bureau → available >0 guides ; PUT id inconnu → 400 ; PUT pro1 → 403 ; GET pro1 → 403 ; flow complet : POST /api/auth/register nouveau PARTICULIER PENDING → PUT /api/members/{id} {status:'ACTIVE'} par Bureau → login nouveau membre → GET /api/notifications contient bien un ONBOARDING_GUIDE avec link '/aide?guide=<id>'. Cleanup : reset guides={} + user ARCHIVED. (5) GET /api/settings/block-visibility (membre1) → blocks/roles/hidden, PUT bloc inconnu → 400, PUT membre1 → 403, PUT Bureau {'member.dogs':['PARTICULIER']} → 200 puis restore {}. (6) GET /api/dashboard/admin contient delegated_recent (liste). Frontend (Bureau) /admin/settings : delegation-card, onboarding-card, block-visibility-card visibles ; delegation-max-capacity 12 → 15 → save (toast 'Critères de délégation enregistrés') → reload → 15 conservé → restore 12. Frontend visibilité : via API hidden={} puis {member.dogs+nav.advantages:['PARTICULIER']} et cross-vérification côté membre1 → dogs=1/0 selon état, nav 'Avantages adhérents' présent/absent (après ouverture groupe 'Mes avantages'). Frontend cockpit : Bureau /admin/dashboard → cockpit-mode-activities → ca-delegated visible (l'activité [TEST] Balade déléguée était encore présente en base pendant le test, tuile 'Publications déléguées (modération 48 h)' visible). Toutes les valeurs par défaut ont été remises (delegation.max_capacity=12, onboarding.guides={}, block_visibility.hidden={}).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Sidebar membre1 (MEMBER_NAV)", "issues": ["Le groupe 'Mes avantages' est collapsible et fermé par défaut ; il faut cliquer sur le libellé du groupe pour voir 'Avantages adhérents' — attendu fonctionnellement mais à documenter pour les prochains scripts de test (utiliser un click sur le bouton 'Mes avantages' avant de chercher nav-avantages-adherents)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt8_lot_c.py",
+    "/app/test_reports/pytest/prompt8_lotc.xml"
+  ],
+  "action_items": [
+    "Nettoyage optionnel : plusieurs chiens 'TEST_dog_*' et 'TEST_admincreate_*' sont persistés côté seed/data (visibles sur /member/dashboard de membre1) — issus d'itérations précédentes ; non bloquant mais à purger si souhaité via cleanup_test_data.py."
+  ],
+  "critical_code_review_comments": [
+    "settings_api.delegation_check : la comparaison lieu vs terrain utilise `substring` bidirectionnel (`n in loc or loc in n`) — souple mais peut matcher trop large si un terrain a un nom court. OK ici (noms uniques longs [DEMO]).",
+    "activities.create_activity ligne 312 : `moderation_hours` est extrait de `delegated['settings']` — donc dépend de la valeur au moment de la publication ; bien.",
+    "activities.create_event : le status forcé DRAFT + pending_validation + delegation_reasons est bien renvoyé au client (utile pour l'UI). Bien.",
+    "BlockVisibility.jsx useEffect ne dépend que de [user] : si un admin change la visibilité pendant qu'un membre est déjà connecté, il faut que le membre rafraîchisse la page pour voir l'effet. Comportement acceptable pour un back-office (a posteriori). À noter si un besoin temps réel apparaît.",
+    "GovernanceSettings BlockVisibilityCard : la ligne 'Enregistrer' se contente d'appeler onSaved (parent reload). Le state 'data.hidden' peut donc rester temporairement désynchronisé après échec réseau — pas bloquant mais un rollback explicite serait plus safe.",
+    "server.py POST /auth/register accepte uniquement PROFESSIONNEL/PARTICULIER (Literal) ; conforme au flow onboarding testé."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt8_lot_c.py"],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% des flows demandés"},
+  "test_credentials": "Bureau/pro1/pro2/membre1 tels que documentés dans /app/memory/test_credentials.md",
+  "seed_data_creation": "Aucune donnée persistante attendue. Activités [TEST] créées par pytest → passées en status='ARCHIVED' via PUT /api/activities/{id}. Events [TEST] → DELETE /api/events/{id} (ARCHIVED). User TEST_onboarding_* → status='ARCHIVED'. Guides onboarding remis à {}. block-visibility remis à hidden={}. delegation.max_capacity remis à 12.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 8 Lot C validé. Pour tester la visibilité de nav-avantages-adherents côté membre1, ouvrir d'abord le groupe 'Mes avantages' du sidebar (button:has-text('Mes avantages')) car il est collapsible. La provider BlockVisibility ne se recharge qu'au changement d'utilisateur ; forcer un login/refresh entre chaque mutation. Les activités [TEST] ont bien été archivées mais 'ca-delegated' peut encore afficher une activité récente si moderation_until >= today — c'est bien le comportement voulu (fenêtre 48h)."
+}

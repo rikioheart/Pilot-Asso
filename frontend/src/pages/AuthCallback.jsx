@@ -27,7 +27,7 @@ export default function AuthCallback() {
   }, [applySession, navigate, refresh]);
 
   return (
-    <div className="min-h-screen grid place-items-center bg-[#002060] text-white" data-testid="auth-callback">
+    <div className="min-h-screen grid place-items-center bg-[var(--marine)] text-white" data-testid="auth-callback">
       Connexion en cours…
     </div>
   );

@@ -112,7 +112,7 @@ export default function Terrains() {
       <PageHeader breadcrumb="Terrain & équipements" title="Terrains"
         subtitle="Disponibilités, tarifs horaires, activités proposées et demandes de réservation."
         actions={data.is_manager && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="terrain-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="terrain-create-button"
             onClick={() => openTerrain()}>
             <Plus className="mr-2 h-4 w-4" /> Nouveau terrain
           </Button>
@@ -130,7 +130,7 @@ export default function Terrains() {
               <div key={item.terrain_id} data-testid={`terrain-card-${item.terrain_id}`}
                 className="rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-display text-base md:text-lg font-bold text-[#002060]">{item.name}</h3>
+                  <h3 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">{item.name}</h3>
                   <Chip tone={tone}>{label}</Chip>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{item.location}</p>
@@ -163,8 +163,8 @@ export default function Terrains() {
                     </p>
                     <ul className="mt-2 space-y-1 text-sm">
                       {item.activities.map((a) => (
-                        <li key={a.activity_id} className="flex items-center gap-2 text-[#002060]">
-                          <Sparkle className="h-3 w-3 text-[#800020]" /> {a.title}
+                        <li key={a.activity_id} className="flex items-center gap-2 text-[var(--marine)]">
+                          <Sparkle className="h-3 w-3 text-[var(--bordeaux)]" /> {a.title}
                           <span className="text-xs text-muted-foreground">
                             {new Date(a.date).toLocaleDateString("fr-FR")}
                           </span>
@@ -191,7 +191,7 @@ export default function Terrains() {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {can("terrain.reserve") && item.status === "DISPONIBLE" && (
-                    <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                    <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                       data-testid={`terrain-reserve-${item.terrain_id}`}
                       onClick={() => setRequest(item)}>
                       <CalendarCheck className="mr-1.5 h-3.5 w-3.5" /> Demander une réservation
@@ -224,13 +224,13 @@ export default function Terrains() {
                 <li key={res.reservation_id} data-testid={`reservation-${res.reservation_id}`}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3 text-sm">
                   <span>
-                    <span className="font-semibold text-[#002060]">{res.terrain_name}</span>
+                    <span className="font-semibold text-[var(--marine)]">{res.terrain_name}</span>
                     <span className="ml-2 text-xs text-muted-foreground">
                       {new Date(res.date).toLocaleDateString("fr-FR")} · {res.start_time}-{res.end_time} ·
                       {" "}{labels[res.category] || res.category}
                     </span>
                     <p className="text-xs text-muted-foreground">{res.requested_by_name} — {res.purpose}</p>
-                    <p className="mt-1 text-xs font-semibold text-[#800020]"
+                    <p className="mt-1 text-xs font-semibold text-[var(--bordeaux)]"
                       data-testid={`reservation-amount-${res.reservation_id}`}>
                       {res.amount > 0
                         ? `${res.amount.toFixed(2)} € (${res.hours} h × ${res.hourly_rate.toFixed(2)} €/h)`
@@ -242,7 +242,7 @@ export default function Terrains() {
                     {res.status === "CONFIRMED" && <Chip tone={payTone}>{payLabel}</Chip>}
                     {data.is_manager && res.status === "PENDING" && (
                       <>
-                        <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                        <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                           data-testid={`reservation-confirm-${res.reservation_id}`}
                           onClick={() => review(res, "CONFIRM")}>
                           <Check className="mr-1.5 h-3.5 w-3.5" /> Confirmer
@@ -323,7 +323,7 @@ export default function Terrains() {
               <Textarea rows={2} value={terrain.access_notes || ""} data-testid="terrain-access-input"
                 onChange={(e) => setTerrain({ ...terrain, access_notes: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="terrain-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>
@@ -378,7 +378,7 @@ export default function Terrains() {
                 Mise à disposition gratuite (aucune écriture financière)
               </label>
             )}
-            <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-[#002060]"
+            <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-[var(--marine)]"
               data-testid="request-estimate">
               Montant estimé : <strong>{estimated.toFixed(2)} €</strong>
               {" "}({hoursBetween(form.start_time, form.end_time)} h × {estimatedRate.toFixed(2)} €/h).
@@ -386,7 +386,7 @@ export default function Terrains() {
               après la séance.
             </p>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="request-save-button">Envoyer la demande</Button>
             </DialogFooter>
           </form>

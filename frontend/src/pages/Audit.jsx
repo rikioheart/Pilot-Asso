@@ -43,7 +43,7 @@ export default function Audit() {
                 <tr key={l.log_id} className="border-t" data-testid={`audit-row-${l.log_id}`}>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(l.timestamp).toLocaleString("fr-FR")}</td>
                   <td className="px-4 py-3">{l.user_email}</td>
-                  <td className="px-4 py-3 font-semibold text-[#800020]">{l.action}</td>
+                  <td className="px-4 py-3 font-semibold text-[var(--bordeaux)]">{l.action}</td>
                   <td className="px-4 py-3">{l.module}</td>
                   <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">{l.target || "—"}</td>
                 </tr>

@@ -7,9 +7,9 @@ import { PageHeader, EmptyState, Chip } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
 
 const KINDS = {
-  TERRAIN: { label: "Terrains", icon: MapPinned, tone: "bg-[#800020]/10 text-[#800020] border-[#800020]/30" },
+  TERRAIN: { label: "Terrains", icon: MapPinned, tone: "bg-[var(--bordeaux-a10)] text-[var(--bordeaux)] border-[var(--bordeaux-a30)]" },
   ACTIVITY: { label: "Activités", icon: Sparkle, tone: "bg-[#0f766e]/10 text-[#0f766e] border-[#0f766e]/30" },
-  EVENT: { label: "Événements", icon: PartyPopper, tone: "bg-[#002060]/10 text-[#002060] border-[#002060]/30" },
+  EVENT: { label: "Événements", icon: PartyPopper, tone: "bg-[var(--marine-a10)] text-[var(--marine)] border-[var(--marine-a30)]" },
   FORMATION: { label: "Formations", icon: GraduationCap, tone: "bg-amber-500/15 text-amber-700 border-amber-500/30" },
 };
 
@@ -78,13 +78,13 @@ export default function SharedCalendar() {
                   return (
                     <Link key={`${item.kind}-${item.id}`} to={item.link || "#"}
                       data-testid={`agenda-entry-${item.id}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-[#800020]/40">
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-[var(--bordeaux-a40)]">
                       <span className="flex min-w-0 items-start gap-3">
                         <span className={`mt-0.5 grid h-8 w-8 place-items-center rounded-lg border ${meta.tone}`}>
                           <Icon className="h-4 w-4" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block truncate font-semibold text-[#002060]">{item.title}</span>
+                          <span className="block truncate font-semibold text-[var(--marine)]">{item.title}</span>
                           <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
                           {item.description && (
                             <span className="block truncate text-xs text-muted-foreground">{item.description}</span>

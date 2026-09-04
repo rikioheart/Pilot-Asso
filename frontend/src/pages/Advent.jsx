@@ -79,7 +79,7 @@ export default function Advent() {
         <EmptyState testId="advent-empty" icon={Gift} title="Aucun calendrier préparé"
           description="Vingt-cinq cases à remplir d'astuces, de cadeaux et de codes promo pour les adhérents."
           action={data.is_manager && (
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="advent-create-button"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="advent-create-button"
               onClick={createCalendar}>Créer le calendrier de cette année</Button>
           )} />
       </div>
@@ -100,7 +100,7 @@ export default function Advent() {
               <Unlock className="mr-2 h-4 w-4" />
               {data.calendar.preview_unlocked ? "Reverrouiller les dates" : "Déverrouiller pour test"}
             </Button>
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="advent-status-toggle"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="advent-status-toggle"
               onClick={() => toggleCalendar({ status: data.calendar.status === "ACTIVE" ? "DRAFT" : "ACTIVE" })}>
               {data.calendar.status === "ACTIVE" ? "Mettre en brouillon" : "Activer"}
             </Button>
@@ -121,16 +121,16 @@ export default function Advent() {
               onClick={() => (data.is_manager && !unlocked ? editBox(box.day) : unlocked ? openBox(box) : null)}
               className={`group relative aspect-square overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-300 ${
                 unlocked
-                  ? "border-[#800020]/30 bg-gradient-to-br from-[#800020] to-[#4d0013] text-white hover:-translate-y-1 hover:shadow-xl"
+                  ? "border-[var(--bordeaux-a30)] bg-gradient-to-br from-[var(--bordeaux)] to-[#4d0013] text-white hover:-translate-y-1 hover:shadow-xl"
                   : prepared
-                    ? "border-dashed border-[#002060]/25 bg-[#002060]/5 text-[#002060]"
+                    ? "border-dashed border-[var(--marine-a25)] bg-[var(--marine-a5)] text-[var(--marine)]"
                     : "border-dashed border-muted bg-muted/40 text-muted-foreground"}`}>
               <span className="font-display text-2xl font-extrabold">{box.day}</span>
               {unlocked
                 ? <Sparkles className="absolute bottom-3 right-3 h-4 w-4 opacity-70 transition-transform group-hover:scale-125" />
                 : <Lock className="absolute bottom-3 right-3 h-4 w-4 opacity-40" />}
               {box.is_opened && (
-                <span className="absolute right-2 top-2 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[#800020]">
+                <span className="absolute right-2 top-2 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-bold text-[var(--bordeaux)]">
                   ouverte
                 </span>
               )}
@@ -169,7 +169,7 @@ export default function Advent() {
           )}
           {opened?.link && (
             <a href={opened.link} target="_blank" rel="noreferrer" data-testid="advent-open-link"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[#800020] hover:underline">
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--bordeaux)] hover:underline">
               <ExternalLink className="h-4 w-4" /> Ouvrir le lien
             </a>
           )}
@@ -205,7 +205,7 @@ export default function Advent() {
               <Input value={form.link} placeholder="https://" data-testid="advent-link-input"
                 onChange={(e) => setForm({ ...form, link: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="advent-save-button">Enregistrer la case</Button>
             </DialogFooter>
           </form>

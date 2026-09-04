@@ -16,19 +16,19 @@ export const ActivityFeed = ({ feed }) => {
       {feed.highlight && (
         <Link to={feed.highlight.link} data-testid="feed-highlight"
           className="group block overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-lg">
-          <div className="relative h-40 bg-[#002060]/8">
+          <div className="relative h-40 bg-[var(--marine-a8)]">
             {feed.highlight.cover_file_id ? (
               <img src={fileUrl(feed.highlight.cover_file_id)} alt=""
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
             ) : (
-              <div className="grid h-full place-items-center"><Newspaper className="h-10 w-10 text-[#002060]/20" /></div>
+              <div className="grid h-full place-items-center"><Newspaper className="h-10 w-10 text-[var(--marine-a20)]" /></div>
             )}
-            <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-[#800020] px-3 py-1 text-[11px] font-bold text-white">
+            <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-[var(--bordeaux)] px-3 py-1 text-[11px] font-bold text-white">
               <Pin className="h-3 w-3" /> À la une
             </span>
           </div>
           <div className="p-5">
-            <h3 className="font-display text-base md:text-lg font-bold text-[#002060]">{feed.highlight.title}</h3>
+            <h3 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">{feed.highlight.title}</h3>
             <p className="mt-2 text-sm text-muted-foreground">{feed.highlight.subtitle}</p>
           </div>
         </Link>
@@ -45,9 +45,9 @@ export const ActivityFeed = ({ feed }) => {
               return (
                 <li key={`${item.kind}-${item.id}`}>
                   <Link to={item.link} data-testid={`feed-item-${item.id}`}
-                    className="flex items-start gap-3 rounded-lg border px-4 py-3 transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
-                    <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#002060]/8">
-                      <Icon className="h-4 w-4 text-[#002060]" />
+                    className="flex items-start gap-3 rounded-lg border px-4 py-3 transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
+                    <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--marine-a8)]">
+                      <Icon className="h-4 w-4 text-[var(--marine)]" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
@@ -58,7 +58,7 @@ export const ActivityFeed = ({ feed }) => {
                           </span>
                         )}
                       </span>
-                      <span className="mt-1 block text-sm font-semibold text-[#002060]">{item.title}</span>
+                      <span className="mt-1 block text-sm font-semibold text-[var(--marine)]">{item.title}</span>
                       <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
                     </span>
                   </Link>
@@ -84,7 +84,7 @@ export const EngagementCard = ({ engagement }) => {
           {completion.missing.length > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
               À compléter : {completion.missing.join(", ")} —{" "}
-              <Link to="/profile" className="font-semibold text-[#800020] hover:underline"
+              <Link to="/profile" className="font-semibold text-[var(--bordeaux)] hover:underline"
                 data-testid="engagement-profile-link">compléter mon profil</Link>
             </p>
           )}

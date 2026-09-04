@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
 import { Star, Gift, Power, Plus, Minus, RefreshCw, Trash2, QrCode, Search, BarChart3, Mail }
   from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -65,7 +66,7 @@ export default function Engagement() {
   }, []);
 
   const sendRecaps = async () => {
-    if (!window.confirm("Envoyer maintenant le récap d'engagement à tous les adhérents ?")) return;
+    if (!await confirmDialog("Envoyer maintenant le récap d'engagement à tous les adhérents ?")) return;
     setSending(true);
     try {
       const { data } = await api.post("/exports/member-recaps");
@@ -142,7 +143,7 @@ export default function Engagement() {
   };
 
   const regenerate = async () => {
-    if (!window.confirm("Régénérer le QR Code ? L'ancien devient immédiatement invalide.")) return;
+    if (!await confirmDialog("Régénérer le QR Code ? L'ancien devient immédiatement invalide.")) return;
     try {
       const { data } = await api.post(`/loyalty/${detail.user_id}/regenerate`);
       toast.success("Nouveau QR Code généré, l'ancien est invalide");
@@ -163,7 +164,7 @@ export default function Engagement() {
               data-testid="send-recaps-button" onClick={sendRecaps}>
               <Mail className="mr-2 h-4 w-4" /> {sending ? "Envoi…" : "Envoyer les récaps"}
             </Button>
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="rule-create-button"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="rule-create-button"
               onClick={() => { setEditingRule(null); setRule(emptyRule); setRuleOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" /> Nouvelle règle / palier
             </Button>
@@ -189,7 +190,7 @@ export default function Engagement() {
                   data-testid={`engagement-member-${m.user_id}`}
                   className="rounded-xl border bg-card p-5 text-left transition-shadow hover:shadow-md">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-display font-bold text-[#002060]">{m.display_name}</p>
+                    <p className="font-display font-bold text-[var(--marine)]">{m.display_name}</p>
                     <Chip tone="bordeaux">{m.total_points} tampon(s)</Chip>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{m.stamps_count} ligne(s) d'historique</p>
@@ -260,7 +261,7 @@ export default function Engagement() {
                 ["activity", "Trier par activité"]].map(([value, text]) => (
                 <Button key={value} size="sm" variant={filters.sort === value ? "default" : "outline"}
                   data-testid={`history-sort-${value}`}
-                  className={`rounded-full ${filters.sort === value ? "bg-[#800020] hover:bg-[#63001a]" : ""}`}
+                  className={`rounded-full ${filters.sort === value ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
                   onClick={() => setFilters({ ...filters, sort: value })}>{text}</Button>
               ))}
             </div>
@@ -273,17 +274,17 @@ export default function Engagement() {
                   <li key={s.stamp_id} data-testid={`history-stamp-${s.stamp_id}`}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3">
                     <span>
-                      <span className="font-semibold text-[#002060]">{s.member_name}</span>
+                      <span className="font-semibold text-[var(--marine)]">{s.member_name}</span>
                       <p className="text-xs text-muted-foreground">
                         {s.activity_title} · {new Date(s.created_at).toLocaleString("fr-FR")} ·
                         {" "}{s.validated_by_name}
                       </p>
-                      {s.reason && <p className="text-xs text-[#800020]">Motif : {s.reason}</p>}
+                      {s.reason && <p className="text-xs text-[var(--bordeaux)]">Motif : {s.reason}</p>}
                     </span>
                     <span className="flex items-center gap-2">
                       <Chip tone={s.is_manual ? "amber" : "muted"}>{s.source_label}</Chip>
                       <span className={`font-display text-lg font-extrabold ${
-                        s.points < 0 ? "text-red-700" : "text-[#800020]"}`}>
+                        s.points < 0 ? "text-red-700" : "text-[var(--bordeaux)]"}`}>
                         {s.points > 0 ? `+${s.points}` : s.points}
                       </span>
                     </span>
@@ -306,7 +307,7 @@ export default function Engagement() {
                     <li key={r.rule_id} data-testid={`stamp-rule-${r.rule_id}`}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3">
                       <span>
-                        <span className="text-sm font-semibold text-[#002060]">{r.label}</span>
+                        <span className="text-sm font-semibold text-[var(--marine)]">{r.label}</span>
                         <p className="text-xs text-muted-foreground">
                           {r.activity_title || tr(ACTIVITY_CATEGORY_LABELS, r.activity_category)} ·
                           {" "}+{r.points} tampon(s){!r.is_active && " · inactive"}
@@ -332,7 +333,7 @@ export default function Engagement() {
                     <li key={r.rule_id} data-testid={`reward-rule-${r.rule_id}`}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3">
                       <span>
-                        <span className="text-sm font-semibold text-[#002060]">{r.reward || r.label}</span>
+                        <span className="text-sm font-semibold text-[var(--marine)]">{r.reward || r.label}</span>
                         <p className="text-xs text-muted-foreground">
                           {r.threshold} tampons{!r.is_active && " · inactif"}
                         </p>
@@ -369,7 +370,7 @@ export default function Engagement() {
                   ["Taux de participation", `${stats.totals.participation_rate} %`]].map(([text, value]) => (
                   <div key={text} className="rounded-xl border bg-card p-5" data-testid={`stat-${text}`}>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{text}</p>
-                    <p className="mt-2 font-display text-3xl font-extrabold text-[#002060]">{value}</p>
+                    <p className="mt-2 font-display text-3xl font-extrabold text-[var(--marine)]">{value}</p>
                   </div>
                 ))}
               </div>
@@ -384,11 +385,11 @@ export default function Engagement() {
                         <li key={r.user_id} data-testid={`stats-rank-${r.user_id}`}
                           className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3">
                           <span className="flex items-center gap-3">
-                            <span className="grid h-7 w-7 place-items-center rounded-full bg-[#002060] text-xs font-bold text-white">
+                            <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--marine)] text-xs font-bold text-white">
                               {index + 1}
                             </span>
                             <span>
-                              <span className="font-semibold text-[#002060]">{r.display_name}</span>
+                              <span className="font-semibold text-[var(--marine)]">{r.display_name}</span>
                               <p className="text-xs text-muted-foreground">
                                 {r.stamps} tampon(s) · {r.levels_reached} palier(s) atteint(s)
                                 {r.next_reward && ` · prochain : ${r.next_reward} (${r.next_threshold})`}
@@ -410,7 +411,7 @@ export default function Engagement() {
                       {stats.by_source.map((s) => (
                         <li key={s.source} data-testid={`stats-source-${s.source}`}>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-[#002060]">{s.label}</span>
+                            <span className="text-[var(--marine)]">{s.label}</span>
                             <span className="font-semibold">{s.count}</span>
                           </div>
                           <ProgressBar value={stats.totals.stamps ? s.count / stats.totals.stamps * 100 : 0} />
@@ -440,7 +441,7 @@ export default function Engagement() {
                       <li key={m.month} data-testid={`stats-month-${m.month}`}
                         className="rounded-lg border px-4 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-semibold text-[#002060]">{m.label}</span>
+                          <span className="font-semibold text-[var(--marine)]">{m.label}</span>
                           <span className="flex flex-wrap gap-2">
                             <Chip tone="muted">{m.stamps} tampon(s)</Chip>
                             <Chip tone="marine">{m.active_members} adhérent(s) actif(s)</Chip>
@@ -482,8 +483,8 @@ export default function Engagement() {
                     data-testid={`rule-kind-${value}`}
                     className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
                       rule.kind === value
-                        ? "border-[#800020] bg-[#800020]/5 font-semibold text-[#800020]"
-                        : "hover:border-[#002060]/40"}`}>{text}</button>
+                        ? "border-[var(--bordeaux)] bg-[var(--bordeaux-a5)] font-semibold text-[var(--bordeaux)]"
+                        : "hover:border-[var(--marine-a40)]"}`}>{text}</button>
                 ))}
               </div>
             )}
@@ -545,7 +546,7 @@ export default function Engagement() {
               </>
             )}
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="rule-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>
@@ -579,7 +580,7 @@ export default function Engagement() {
 
               {detail.qr_token && (
                 <div className="rounded-xl border bg-card p-4 text-center" data-testid="member-qr-preview">
-                  <QRCodeSVG value={detail.qr_token} size={120} fgColor="#002060" />
+                  <QRCodeSVG value={detail.qr_token} size={120} fgColor="var(--marine)" />
                   <p className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <QrCode className="h-3 w-3" /> Nouveau QR Code actif
                   </p>
@@ -603,7 +604,7 @@ export default function Engagement() {
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid="manual-add-button" onClick={() => applyManual(1)}>
                     <Plus className="mr-1.5 h-3.5 w-3.5" /> Ajouter
                   </Button>
@@ -627,24 +628,21 @@ export default function Engagement() {
                         <li key={s.stamp_id} data-testid={`member-stamp-${s.stamp_id}`}
                           className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
                           <span>
-                            <span className="font-semibold text-[#002060]">{s.activity_title}</span>
+                            <span className="font-semibold text-[var(--marine)]">{s.activity_title}</span>
                             <p className="text-xs text-muted-foreground">
                               {new Date(s.created_at).toLocaleString("fr-FR")} · {s.validated_by_name}
                             </p>
-                            {s.reason && <p className="text-xs text-[#800020]">Motif : {s.reason}</p>}
+                            {s.reason && <p className="text-xs text-[var(--bordeaux)]">Motif : {s.reason}</p>}
                           </span>
                           <span className="flex items-center gap-2">
                             <Chip tone={s.is_manual ? "amber" : "muted"}>{s.source_label}</Chip>
                             <span className={`font-display font-extrabold ${
-                              s.points < 0 ? "text-red-700" : "text-[#800020]"}`}>
+                              s.points < 0 ? "text-red-700" : "text-[var(--bordeaux)]"}`}>
                               {s.points > 0 ? `+${s.points}` : s.points}
                             </span>
-                            <Button size="sm" variant="outline"
-                              className="rounded-full text-red-700 hover:bg-red-50"
-                              data-testid={`member-stamp-cancel-${s.stamp_id}`}
-                              onClick={() => cancelStamp(s)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <RowMenu testId={`member-stamp-menu-${s.stamp_id}`} items={[
+                              { label: "Annuler ce tampon", icon: Trash2, danger: true,
+                                testId: `member-stamp-cancel-${s.stamp_id}`, onSelect: () => cancelStamp(s) }]} />
                           </span>
                         </li>
                       ))}

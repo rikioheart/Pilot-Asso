@@ -25,9 +25,9 @@ export default function MyHistory() {
         ) : (
           <ul className="space-y-3">
             {data.items.map((log) => (
-              <li key={log.log_id} className="border-l-2 border-[#800020]/40 pl-3"
+              <li key={log.log_id} className="border-l-2 border-[var(--bordeaux-a40)] pl-3"
                 data-testid={`history-item-${log.log_id}`}>
-                <p className="text-sm font-semibold text-[#002060]">{log.action} · {log.module}</p>
+                <p className="text-sm font-semibold text-[var(--marine)]">{log.action} · {log.module}</p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(log.timestamp).toLocaleString("fr-FR")}
                   {log.comment ? ` — ${log.comment}` : ""}

@@ -77,7 +77,7 @@ export default function LoyaltyRules() {
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="rule-create-button">
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="rule-create-button">
                 <Plus className="mr-2 h-4 w-4" /> Nouvelle règle
               </Button>
             </DialogTrigger>
@@ -89,7 +89,7 @@ export default function LoyaltyRules() {
                     <button key={value} type="button" onClick={() => setForm({ ...form, kind: value })}
                       data-testid={`rule-kind-${value}`}
                       className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
-                        form.kind === value ? "border-[#800020] bg-[#800020]/5 font-semibold text-[#800020]" : "hover:border-[#002060]/40"
+                        form.kind === value ? "border-[var(--bordeaux)] bg-[var(--bordeaux-a5)] font-semibold text-[var(--bordeaux)]" : "hover:border-[var(--marine-a40)]"
                       }`}>{label}</button>
                   ))}
                 </div>
@@ -150,7 +150,7 @@ export default function LoyaltyRules() {
                   </>
                 )}
                 <DialogFooter>
-                  <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid="rule-save-button">Enregistrer</Button>
                 </DialogFooter>
               </form>
@@ -161,8 +161,8 @@ export default function LoyaltyRules() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <div className="rounded-xl border bg-card p-5" data-testid="stamp-rules">
-            <h2 className="inline-flex items-center gap-2 font-display text-base md:text-lg font-bold text-[#002060]">
-              <Star className="h-4 w-4 text-[#800020]" /> Activités qui donnent un tampon
+            <h2 className="inline-flex items-center gap-2 font-display text-base md:text-lg font-bold text-[var(--marine)]">
+              <Star className="h-4 w-4 text-[var(--bordeaux)]" /> Activités qui donnent un tampon
             </h2>
             <div className="mt-4 space-y-2">
               {stampRules.length === 0 && (
@@ -173,7 +173,7 @@ export default function LoyaltyRules() {
                 <div key={r.rule_id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3"
                   data-testid={`stamp-rule-${r.rule_id}`}>
                   <div>
-                    <p className="text-sm font-semibold text-[#002060]">{r.label}</p>
+                    <p className="text-sm font-semibold text-[var(--marine)]">{r.label}</p>
                     <p className="text-xs text-muted-foreground">
                       {r.activity_title || (r.activity_category || "").replaceAll("_", " ")} · +{r.points} point(s)
                       {!r.is_active && " · inactive"}
@@ -189,8 +189,8 @@ export default function LoyaltyRules() {
           </div>
 
           <div className="rounded-xl border bg-card p-5" data-testid="reward-rules">
-            <h2 className="inline-flex items-center gap-2 font-display text-base md:text-lg font-bold text-[#002060]">
-              <Gift className="h-4 w-4 text-[#800020]" /> Récompenses par seuil
+            <h2 className="inline-flex items-center gap-2 font-display text-base md:text-lg font-bold text-[var(--marine)]">
+              <Gift className="h-4 w-4 text-[var(--bordeaux)]" /> Récompenses par seuil
             </h2>
             <div className="mt-4 space-y-2">
               {rewardRules.length === 0 && (
@@ -201,7 +201,7 @@ export default function LoyaltyRules() {
                 <div key={r.rule_id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3"
                   data-testid={`reward-rule-${r.rule_id}`}>
                   <div>
-                    <p className="text-sm font-semibold text-[#002060]">{r.reward || r.label}</p>
+                    <p className="text-sm font-semibold text-[var(--marine)]">{r.reward || r.label}</p>
                     <p className="text-xs text-muted-foreground">{r.threshold} points{!r.is_active && " · inactive"}</p>
                   </div>
                   <Button size="sm" variant="outline" className="rounded-full" data-testid={`reward-toggle-${r.rule_id}`}
@@ -215,7 +215,7 @@ export default function LoyaltyRules() {
         </div>
 
         <div className="rounded-xl border bg-card p-5" data-testid="loyalty-global-history">
-          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Historique complet des tampons</h2>
+          <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Historique complet des tampons</h2>
           <div className="mt-4 space-y-2">
             {history.length === 0 && (
               <EmptyState testId="loyalty-global-history-empty" title="Aucun tampon"
@@ -225,12 +225,12 @@ export default function LoyaltyRules() {
               <div key={s.stamp_id} className="flex items-center justify-between rounded-lg border px-4 py-3"
                 data-testid={`loyalty-global-stamp-${s.stamp_id}`}>
                 <div>
-                  <p className="text-sm font-semibold text-[#002060]">{s.member_name}</p>
+                  <p className="text-sm font-semibold text-[var(--marine)]">{s.member_name}</p>
                   <p className="text-xs text-muted-foreground">
                     {s.activity_title} · {new Date(s.created_at).toLocaleString("fr-FR")} · par {s.validated_by_name}
                   </p>
                 </div>
-                <span className="font-display text-lg font-extrabold text-[#800020]">+{s.points}</span>
+                <span className="font-display text-lg font-extrabold text-[var(--bordeaux)]">+{s.points}</span>
               </div>
             ))}
           </div>

@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 
 const KIND_TONES = {
   ACTIVITY: "bg-[#0f766e]/10 text-[#0f766e] border-[#0f766e]/30",
-  EVENT: "bg-[#800020]/10 text-[#800020] border-[#800020]/30",
-  TASK: "bg-[#002060]/10 text-[#002060] border-[#002060]/30",
+  EVENT: "bg-[var(--bordeaux-a10)] text-[var(--bordeaux)] border-[var(--bordeaux-a30)]",
+  TASK: "bg-[var(--marine-a10)] text-[var(--marine)] border-[var(--marine-a30)]",
 };
 
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
@@ -64,7 +64,7 @@ export default function Calendar() {
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="icon" className="rounded-full" data-testid="calendar-prev"
               onClick={() => shift(-1)} aria-label="Mois précédent"><ChevronLeft className="h-4 w-4" /></Button>
-            <span className="min-w-40 text-center font-display text-sm font-bold text-[#002060]" data-testid="calendar-month">
+            <span className="min-w-40 text-center font-display text-sm font-bold text-[var(--marine)]" data-testid="calendar-month">
               {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
             </span>
             <Button variant="outline" size="icon" className="rounded-full" data-testid="calendar-next"
@@ -128,9 +128,9 @@ export default function Calendar() {
         <div className="space-y-2" data-testid="calendar-list">
           {filtered.map((e) => (
             <Link key={`${e.kind}-${e.id}`} to={e.link} data-testid={`calendar-list-entry-${e.id}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-[#800020]/40">
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-[var(--bordeaux-a40)]">
               <span>
-                <span className="font-semibold text-[#002060]">{e.title}</span>
+                <span className="font-semibold text-[var(--marine)]">{e.title}</span>
                 <span className="ml-2 text-xs text-muted-foreground">{e.location || e.category}</span>
               </span>
               <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${KIND_TONES[e.kind]}`}>

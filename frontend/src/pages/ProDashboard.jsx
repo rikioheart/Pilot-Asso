@@ -1,115 +1,129 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FolderKanban, ListChecks, CheckCircle2, Send, CalendarDays, Sparkle, Star, Wallet } from "lucide-react";
+import { ListChecks, CalendarDays, Sparkle, Star, UserCircle, FileText, Boxes, Link2, Clock, MapPin } from "lucide-react";
 import { api } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
-import { PageHeader, KpiCard, EmptyState, WelcomeBanner } from "@/components/Ui";
-import { ActivityFeed, EngagementCard } from "@/components/ActivityFeed";
+import { PageHeader, KpiCard, EmptyState, SectionCard, Chip } from "@/components/Ui";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
+import { Button } from "@/components/ui/button";
+import { VisibleBlock } from "@/components/BlockVisibility";
+
+const fmt = (d) => new Date(d).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const short = (d) => new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+
+const Slot = ({ item, testId }) => (
+  <Link to={item.activity_id ? `/activities?focus=${item.activity_id}` : `/events/${item.event_id}`} data-testid={testId}
+    className="flex items-start gap-3 rounded-lg border px-4 py-3 transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
+    <div className="w-16 shrink-0 text-xs font-semibold text-[var(--bordeaux)]">
+      {item.start_time || (item.start_date || "").slice(11, 16) || "—"}
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="truncate text-sm font-semibold text-[var(--marine)]">{item.title}</p>
+      <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+        {item.date && !item.activity_id ? null : null}
+        <span>{short(item.date || item.start_date)}</span>
+        {item.location && <><MapPin className="ml-2 h-3 w-3" /> {item.location}</>}
+      </p>
+    </div>
+    <StatusBadge status={item.status} />
+  </Link>
+);
 
 export default function ProDashboard() {
-  const { user } = useAuth();
   const [data, setData] = useState(null);
-  const [feed, setFeed] = useState(null);
-  const [engagement, setEngagement] = useState(null);
-
-  useEffect(() => {
-    api.get("/dashboard/pro").then((r) => setData(r.data)).catch(() => setData(false));
-    api.get("/feed").then((r) => setFeed(r.data)).catch(() => {});
-    api.get("/me/engagement").then((r) => setEngagement(r.data)).catch(() => {});
-  }, []);
-
+  useEffect(() => { api.get("/dashboard/pro").then((r) => setData(r.data)).catch(() => setData(false)); }, []);
   if (!data) return <p className="text-muted-foreground">Chargement…</p>;
+
   const k = data.kpis;
+  const today = data.today_activities || [];
+  const week = [...(data.week_activities || []), ...(data.week_events || [])]
+    .sort((a, b) => (a.date || a.start_date).localeCompare(b.date || b.start_date));
+  const connected = Object.entries(data.connections || {}).filter(([, v]) => v);
 
   return (
     <div data-testid="pro-dashboard">
-      <WelcomeBanner testId="pro-welcome" greeting="Espace professionnel"
-        name={`Bonjour ${data.profile?.first_name || ""}`}
-        message="Vos projets, vos tâches, vos parts et les actualités de l'association."
-        badges={engagement?.badges} />
-
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
-        <KpiCard testId="pro-kpi-projects" label="Mes projets" value={k.projects} icon={FolderKanban} />
-        <KpiCard testId="pro-kpi-tasks" label="Mes tâches" value={k.tasks} icon={ListChecks} />
-        <KpiCard testId="pro-kpi-pending" label="En attente de validation" value={k.pending_validation}
-          icon={Send} tone="bordeaux" />
-        <KpiCard testId="pro-kpi-completed" label="Tâches validées" value={k.completed} icon={CheckCircle2} />
-        <KpiCard testId="pro-kpi-events" label="Mes événements" value={k.events} icon={CalendarDays} />
-        <KpiCard testId="pro-kpi-activities" label="Mes activités" value={k.activities} icon={Sparkle} />
-        <KpiCard testId="pro-kpi-stamps" label="Tampons validés" value={k.stamps} icon={Star} tone="bordeaux" />
-        <KpiCard testId="pro-kpi-revenue" label="Ma part" value={`${k.revenue_share} €`} icon={Wallet} tone="bordeaux" />
-      </section>
-
-      <section className="mt-6 grid gap-6 lg:grid-cols-2">
-        <EngagementCard engagement={engagement} />
-        <ActivityFeed feed={feed} />
-
-        <div className="rounded-xl border bg-card p-5" data-testid="pro-my-tasks">
-          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mes tâches en cours</h2>
-          <div className="mt-4 space-y-2">
-            {data.my_tasks.length === 0 && (
-              <EmptyState testId="pro-tasks-empty" title="Aucune tâche en cours"
-                description="Rejoignez un projet ou proposez votre aide au Bureau." />
-            )}
-            {data.my_tasks.map((t) => (
-              <Link key={t.task_id} to={`/projects/${t.project_id}`} data-testid={`pro-task-${t.task_id}`}
-                className="block rounded-lg border px-4 py-3 transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
-                <p className="text-sm font-semibold text-[#002060]">{t.title}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <StatusBadge status={t.status} />
-                  <DeadlineChip deadline={t.deadline} />
-                </div>
+      <PageHeader breadcrumb={fmt(data.today)} title={`Bonjour ${data.profile?.first_name || ""}`}
+        subtitle="Votre journée et votre semaine en un coup d'œil."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/profile" data-testid="pro-profile-link"><UserCircle className="mr-2 h-4 w-4" /> Ma fiche</Link>
+            </Button>
+            <Button asChild className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
+              <Link to="/documents" data-testid="pro-documents-link">
+                <FileText className="mr-2 h-4 w-4" /> Mes documents{data.my_documents_count ? ` (${data.my_documents_count})` : ""}
               </Link>
-            ))}
+            </Button>
           </div>
+        } />
+
+      {connected.length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-2" data-testid="pro-connections">
+          {connected.map(([key]) => (
+            <Chip key={key} tone="green"><Link2 className="h-3 w-3" />
+              {key === "google_calendar" ? "Google Calendar connecté" : "Rintintin Pro connecté"}</Chip>
+          ))}
+        </div>
+      )}
+
+      <VisibleBlock id="pro.kpis"><section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" data-focus-secondary="true">
+        <KpiCard testId="pro-kpi-today" label="Aujourd'hui" value={today.length} icon={Clock} tone="bordeaux" />
+        <KpiCard testId="pro-kpi-week" label="Cette semaine" value={week.length} icon={CalendarDays} />
+        <KpiCard testId="pro-kpi-tasks" label="Tâches assignées" value={k.tasks} icon={ListChecks} />
+        <KpiCard testId="pro-kpi-stamps" label="Participations validées" value={k.stamps} icon={Star} tone="bordeaux" />
+      </section></VisibleBlock>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">
+        <div className="space-y-6">
+          <VisibleBlock id="pro.today"><SectionCard title="Aujourd'hui" icon={Sparkle} testId="pro-today">
+            {today.length === 0 ? (
+              <EmptyState testId="pro-today-empty" module="activities" title="Rien de prévu aujourd'hui"
+                description="Profitez-en pour préparer la semaine ou proposer une nouvelle activité."
+                action={<Button asChild className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
+                  <Link to="/activities?new=1" data-testid="pro-create-activity">Proposer une activité</Link></Button>} />
+            ) : <div className="space-y-2">{today.map((a) => <Slot key={a.activity_id} item={a} testId={`pro-today-${a.activity_id}`} />)}</div>}
+          </SectionCard></VisibleBlock>
+
+          <VisibleBlock id="pro.week"><SectionCard title="Semaine en cours" icon={CalendarDays} testId="pro-week"
+            subtitle={`Jusqu'au ${short(data.week_end)}`}>
+            {week.length === 0 ? (
+              <p className="text-sm text-muted-foreground" data-testid="pro-week-empty">Aucune activité ni événement planifié sur les 7 prochains jours.</p>
+            ) : <div className="space-y-2">{week.map((a) => <Slot key={a.activity_id || a.event_id} item={a}
+              testId={`pro-week-${a.activity_id || a.event_id}`} />)}</div>}
+          </SectionCard></VisibleBlock>
         </div>
 
-        <div className="rounded-xl border bg-card p-5" data-testid="pro-my-projects">
-          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mes projets</h2>
-          <div className="mt-4 space-y-2">
-            {data.my_projects.length === 0 && (
-              <EmptyState testId="pro-projects-empty" title="Aucun projet"
-                description="Demandez à rejoindre un projet depuis la page Projets." />
-            )}
-            {data.my_projects.map((p) => (
-              <Link key={p.project_id} to={`/projects/${p.project_id}`} data-testid={`pro-project-${p.project_id}`}
-                className="block rounded-lg border px-4 py-3 transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
-                <p className="text-sm font-semibold text-[#002060]">{p.title}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <StatusBadge status={p.status} />
-                  <span className="text-xs text-muted-foreground">{p.completion_percentage} % avancé</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border bg-card p-5" data-testid="pro-permissions">
-          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mes droits</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Niveau : {user?.access_level}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {data.permissions.map((p) => (
-              <span key={p} data-testid={`permission-badge-${p}`}
-                className="rounded-full bg-[#002060]/8 px-3 py-1 text-xs font-medium text-[#002060]">{p}</span>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border bg-card p-5" data-testid="pro-history">
-          <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Mon historique</h2>
-          <div className="mt-4 space-y-3">
-            {data.history.length === 0 && (
-              <EmptyState testId="pro-history-empty" title="Aucune action encore"
-                description="Vos actions apparaîtront ici et resteront tracées." />
-            )}
-            {data.history.map((l) => (
-              <div key={l.log_id} className="border-l-2 border-[#800020]/40 pl-3">
-                <p className="text-sm font-semibold text-[#002060]">{l.action} · {l.module}</p>
-                <p className="text-xs text-muted-foreground">{new Date(l.timestamp).toLocaleString("fr-FR")}</p>
+        <div className="space-y-6">
+          <VisibleBlock id="pro.tasks"><SectionCard title="Mes tâches" icon={ListChecks} testId="pro-my-tasks"
+            actions={<Link to="/tasks" className="text-sm font-semibold text-[var(--bordeaux)] hover:underline">Tout voir</Link>}>
+            {data.my_tasks.length === 0 ? (
+              <EmptyState testId="pro-tasks-empty" module="tasks" title="Aucune tâche assignée"
+                description="Les tâches que le Bureau vous confie apparaîtront ici." />
+            ) : (
+              <div className="space-y-2">
+                {data.my_tasks.map((t) => (
+                  <Link key={t.task_id} to={`/projects/${t.project_id}`} data-testid={`pro-task-${t.task_id}`}
+                    className="block rounded-lg border px-4 py-3 transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
+                    <p className="text-sm font-semibold text-[var(--marine)]">{t.title}</p>
+                    <div className="mt-2 flex flex-wrap gap-2"><StatusBadge status={t.status} /><DeadlineChip deadline={t.deadline} /></div>
+                  </Link>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </SectionCard></VisibleBlock>
+
+          {(data.low_stock || []).length > 0 && (<VisibleBlock id="pro.low_stock">
+            <SectionCard title="Stock bas" icon={Boxes} testId="pro-low-stock" secondary
+              actions={<Link to="/stock" className="text-sm font-semibold text-[var(--bordeaux)] hover:underline">Stocks</Link>}>
+              <ul className="space-y-1.5 text-sm">
+                {data.low_stock.map((s) => (
+                  <li key={s.item_id} className="flex justify-between rounded-lg bg-muted/50 px-3 py-2" data-testid={`pro-low-${s.item_id}`}>
+                    <span className="font-semibold text-[var(--marine)]">{s.name}</span>
+                    <span className="text-amber-700">{s.quantity} restant(s)</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard></VisibleBlock>
+          )}
         </div>
       </section>
     </div>

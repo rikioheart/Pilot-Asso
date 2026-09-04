@@ -35,6 +35,8 @@ class StampIn(BaseModel):
     activity_id: Optional[str] = None
     event_id: Optional[str] = None
     comment: Optional[str] = None
+    scanned_at: Optional[str] = None
+    offline: bool = False
 
 
 class ManualStampIn(BaseModel):
@@ -407,6 +409,18 @@ async def scan(payload: dict, user: dict = Depends(require("loyalty.stamp"))):
     return await member_summary(card["user_id"])
 
 
+@router.get("/loyalty/eligible")
+async def eligible_catalog(user: dict = Depends(require("loyalty.stamp"))):
+    """Activités / événements éligibles, pré-chargés pour le scan hors connexion."""
+    acts = await eligible_activities(None)
+    events = await db.events.find({"eligible_for_loyalty": True, "status": {"$in": ["PLANNED", "CONFIRMED", "DONE"]}},
+                                  {"_id": 0, "event_id": 1, "title": 1, "start_date": 1, "loyalty_points": 1}) \
+        .sort("start_date", -1).limit(40).to_list(40)
+    return {"eligible_activities": [{**a, "already_stamped": False} for a in acts],
+            "eligible_events": [{"event_id": e["event_id"], "title": e["title"], "date": e.get("start_date"),
+                                 "points": e.get("loyalty_points") or 1, "already_stamped": False} for e in events]}
+
+
 @router.get("/loyalty/search")
 async def manual_search(q: str, user: dict = Depends(require("loyalty.stamp"))):
     if len(q) < 2:
@@ -434,13 +448,13 @@ async def add_stamp(payload: StampIn, user: dict = Depends(require("loyalty.stam
         card = await db.loyalty_cards.find_one({"qr_token": payload.qr_token}, {"_id": 0})
         if not card:
             raise HTTPException(status_code=404, detail="Carte inconnue")
-        source = "QR_SCAN"
+        source = "QR_SCAN_OFFLINE" if payload.offline else "QR_SCAN"
     elif payload.user_id:
         target = await db.users.find_one({"user_id": payload.user_id}, {"_id": 0, "role": 1, "status": 1})
         if not target or target["role"] != ROLE_MEMBER or target["status"] != "ACTIVE":
             raise HTTPException(status_code=404, detail="Adhérent introuvable")
         card = await ensure_card(payload.user_id)
-        source = "PRO_VALIDATION"
+        source = "PRO_VALIDATION_OFFLINE" if payload.offline else "PRO_VALIDATION"
     else:
         raise HTTPException(status_code=400, detail="Indiquez un QR code ou un adhérent")
 
@@ -460,7 +474,8 @@ async def add_stamp(payload: StampIn, user: dict = Depends(require("loyalty.stam
             "rule_id": None, "points": points, "comment": payload.comment, "reason": None,
             "source": source, "is_manual": False,
             "validated_by": user["user_id"], "validated_by_name": await display_name(user["user_id"]),
-            "created_at": iso(now_utc()),
+            "created_at": payload.scanned_at or iso(now_utc()),
+            "synced_at": iso(now_utc()) if payload.offline else None,
         }
     else:
         if not payload.activity_id:
@@ -489,7 +504,8 @@ async def add_stamp(payload: StampIn, user: dict = Depends(require("loyalty.stam
             "points": points, "comment": payload.comment, "reason": None,
             "source": source, "is_manual": False,
             "validated_by": user["user_id"], "validated_by_name": await display_name(user["user_id"]),
-            "created_at": iso(now_utc()),
+            "created_at": payload.scanned_at or iso(now_utc()),
+            "synced_at": iso(now_utc()) if payload.offline else None,
         }
 
     await db.loyalty_stamps.insert_one(dict(stamp))

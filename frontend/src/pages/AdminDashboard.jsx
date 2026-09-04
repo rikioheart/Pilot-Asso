@@ -10,12 +10,15 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { PriorityQueue } from "@/components/PriorityQueue";
 import { ExportsPanel } from "@/components/ExportsPanel";
 import { Button } from "@/components/ui/button";
+import { useViewMode } from "@/components/ViewMode";
+import { CockpitModes, MembersMode, ProsMode, ActivitiesMode } from "@/components/CockpitModes";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [feed, setFeed] = useState(null);
   const [queue, setQueue] = useState(null);
   const navigate = useNavigate();
+  const [mode, setMode] = useViewMode("cockpit", "global");
 
   useEffect(() => {
     api.get("/dashboard/admin").then((r) => setData(r.data)).catch(() => setData(false));
@@ -39,11 +42,18 @@ export default function AdminDashboard() {
             <Button variant="outline" data-testid="dashboard-projects-cta"
               className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20"
               onClick={() => navigate("/projects")}>Voir les projets</Button>
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="dashboard-validate-cta"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="dashboard-validate-cta"
               onClick={() => navigate("/admin/validation")}>Valider les actions</Button>
           </>
         } />
 
+      <CockpitModes value={mode} onChange={setMode} />
+
+      {mode === "members" && <MembersMode data={data} />}
+      {mode === "pros" && <ProsMode data={data} />}
+      {mode === "activities" && <ActivitiesMode data={data} />}
+
+      {mode === "global" && (<>
       <PriorityQueue data={queue} />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
@@ -79,8 +89,8 @@ export default function AdminDashboard() {
         <div className="space-y-6">
           <div className="rounded-xl border bg-card p-5" data-testid="weekly-progress-widget">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-[#800020]" />
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Progression cette semaine</h2>
+              <TrendingUp className="h-4 w-4 text-[var(--bordeaux)]" />
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Progression cette semaine</h2>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">Chaque petit progrès compte.</p>
             <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-5">
@@ -92,7 +102,7 @@ export default function AdminDashboard() {
                 ["Actions tracées", w.actions],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-lg bg-muted/60 p-4">
-                  <p className="font-display text-2xl font-extrabold text-[#800020]">{value}</p>
+                  <p className="font-display text-2xl font-extrabold text-[var(--bordeaux)]">{value}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{label}</p>
                 </div>
               ))}
@@ -101,8 +111,8 @@ export default function AdminDashboard() {
 
           <div className="rounded-xl border bg-card p-5" data-testid="validation-queue">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Actions à valider</h2>
-              <Link to="/admin/validation" className="text-sm font-semibold text-[#800020] hover:underline"
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Actions à valider</h2>
+              <Link to="/admin/validation" className="text-sm font-semibold text-[var(--bordeaux)] hover:underline"
                 data-testid="validation-queue-link">Tout voir</Link>
             </div>
             <div className="mt-4 space-y-2">
@@ -112,8 +122,8 @@ export default function AdminDashboard() {
               )}
               {data.validation_queue.map((t) => (
                 <Link key={t.task_id} to="/admin/validation" data-testid={`validation-queue-item-${t.task_id}`}
-                  className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
-                  <span className="font-semibold text-[#002060]">{t.title}</span>
+                  className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
+                  <span className="font-semibold text-[var(--marine)]">{t.title}</span>
                   <span className="text-xs text-muted-foreground">
                     {t.submitted_at ? new Date(t.submitted_at).toLocaleDateString("fr-FR") : ""}
                   </span>
@@ -124,8 +134,8 @@ export default function AdminDashboard() {
 
           <div className="rounded-xl border bg-card p-5" data-testid="pending-list">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Adhésions en attente</h2>
-              <Link to="/admin/members?status=PENDING" className="text-sm font-semibold text-[#800020] hover:underline">
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Adhésions en attente</h2>
+              <Link to="/admin/members?status=PENDING" className="text-sm font-semibold text-[var(--bordeaux)] hover:underline">
                 Gérer
               </Link>
             </div>
@@ -137,8 +147,8 @@ export default function AdminDashboard() {
               {data.pending_list.map((u) => (
                 <button key={u.user_id} onClick={() => navigate(`/admin/members?focus=${u.user_id}`)}
                   data-testid={`pending-item-${u.user_id}`}
-                  className="flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
-                  <span className="font-semibold text-[#002060]">{u.email}</span>
+                  className="flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
+                  <span className="font-semibold text-[var(--marine)]">{u.email}</span>
                   <span className="text-xs text-muted-foreground">{u.role}</span>
                 </button>
               ))}
@@ -152,8 +162,8 @@ export default function AdminDashboard() {
 
           <div className="rounded-xl border bg-card p-5" data-testid="help-widget">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Qui a besoin d'aide</h2>
-              <Link to="/admin/help" className="text-sm font-semibold text-[#800020] hover:underline"
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Qui a besoin d'aide</h2>
+              <Link to="/admin/help" className="text-sm font-semibold text-[var(--bordeaux)] hover:underline"
                 data-testid="help-widget-link">Tout voir</Link>
             </div>
             <div className="mt-4 space-y-3">
@@ -163,7 +173,7 @@ export default function AdminDashboard() {
               {data.help_list.map((h) => (
                 <div key={h.help_id} className="rounded-lg border-l-2 border-amber-400 bg-muted/40 px-3 py-2"
                   data-testid={`help-widget-item-${h.help_id}`}>
-                  <p className="text-sm font-semibold text-[#002060]">{h.user_name}</p>
+                  <p className="text-sm font-semibold text-[var(--marine)]">{h.user_name}</p>
                   <p className="text-xs text-muted-foreground">{h.message}</p>
                 </div>
               ))}
@@ -171,12 +181,12 @@ export default function AdminDashboard() {
           </div>
 
           <div className="rounded-xl border bg-card p-5" data-testid="activity-feed">
-            <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Fil d'activité</h2>
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Fil d'activité</h2>
             <div className="mt-4 space-y-3">
               {data.activity_feed.length === 0 && <p className="text-sm text-muted-foreground">Aucune action enregistrée.</p>}
               {data.activity_feed.map((l) => (
-                <div key={l.log_id} className="border-l-2 border-[#800020]/40 pl-3">
-                  <p className="text-sm font-semibold text-[#002060]">{l.action} · {l.module}</p>
+                <div key={l.log_id} className="border-l-2 border-[var(--bordeaux-a40)] pl-3">
+                  <p className="text-sm font-semibold text-[var(--marine)]">{l.action} · {l.module}</p>
                   <p className="text-xs text-muted-foreground">
                     {l.user_email} — {new Date(l.timestamp).toLocaleString("fr-FR")}
                   </p>
@@ -186,6 +196,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </section>
+      </>)}
     </div>
   );
 }

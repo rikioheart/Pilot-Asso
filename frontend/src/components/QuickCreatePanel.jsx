@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
 import { Zap, Trash2, ArchiveRestore, Archive } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -129,7 +130,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
     const reason = window.prompt(
       `Suppression DÉFINITIVE de « ${item.title} ». Motif obligatoire (tracé) :`);
     if (!reason || reason.trim().length < 3) return;
-    if (!window.confirm("Confirmez-vous la suppression définitive ? Cette action est irréversible.")) return;
+    if (!await confirmDialog("Confirmez-vous la suppression définitive ? Cette action est irréversible.")) return;
     try {
       const { data } = await api.delete(`/records/${recordType}/${item.id}`, { params: { reason } });
       toast.success(data.message); loadRecords();
@@ -141,7 +142,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
       <SheetContent side="right" data-testid="quick-create-panel"
         className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
-          <SheetTitle className="font-display text-[#002060]">Création rapide</SheetTitle>
+          <SheetTitle className="font-display text-[var(--marine)]">Création rapide</SheetTitle>
           <SheetDescription>
             Créez une activité, un événement, un partenaire, un avantage ou qualifiez un professionnel
             sans quitter votre page.
@@ -200,7 +201,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
                   onCheckedChange={(v) => setActivity({ ...activity, eligible_for_loyalty: !!v })} />
                 Éligible à la carte d'engagement
               </label>
-              <Button type="submit" className="w-full rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="quick-activity-submit">Créer l'activité</Button>
             </form>
           </TabsContent>
@@ -239,7 +240,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
               <Field label="Description">
                 <Textarea rows={3} value={event.description} data-testid="quick-event-description"
                   onChange={(e) => setEvent({ ...event, description: e.target.value })} /></Field>
-              <Button type="submit" className="w-full rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="quick-event-submit">Créer l'événement</Button>
             </form>
           </TabsContent>
@@ -272,7 +273,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
               <Field label="Nature du partenariat (courte description)">
                 <Textarea rows={2} value={partner.partnership_nature} data-testid="quick-partner-nature"
                   onChange={(e) => setPartner({ ...partner, partnership_nature: e.target.value })} /></Field>
-              <Button type="submit" className="w-full rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="quick-partner-submit">Créer le partenaire</Button>
             </form>
           </TabsContent>
@@ -302,7 +303,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
               <Field label="Description">
                 <Textarea rows={3} value={advantage.description} data-testid="quick-advantage-description"
                   onChange={(e) => setAdvantage({ ...advantage, description: e.target.value })} /></Field>
-              <Button type="submit" className="w-full rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="quick-advantage-submit">Créer l'avantage</Button>
             </form>
           </TabsContent>
@@ -337,7 +338,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
               <Field label="Réseaux sociaux (liens séparés par une virgule)">
                 <Input value={pro.social_links} data-testid="quick-pro-social"
                   onChange={(e) => setPro({ ...pro, social_links: e.target.value })} /></Field>
-              <Button type="submit" className="w-full rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="quick-pro-submit">Qualifier le professionnel</Button>
             </form>
           </TabsContent>
@@ -368,7 +369,7 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
                     <li key={item.id} data-testid={`quick-record-${item.id}`}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
                       <span className="min-w-0">
-                        <span className="block truncate font-semibold text-[#002060]">{item.title}</span>
+                        <span className="block truncate font-semibold text-[var(--marine)]">{item.title}</span>
                         {item.archive_reason && (
                           <span className="text-xs text-muted-foreground">Motif : {item.archive_reason}</span>
                         )}
@@ -386,11 +387,9 @@ export const QuickCreatePanel = ({ open, onOpenChange }) => {
                             <Archive className="h-3.5 w-3.5" />
                           </Button>
                         )}
-                        <Button size="sm" variant="outline"
-                          className="rounded-full text-red-700 hover:bg-red-50"
-                          data-testid={`quick-delete-${item.id}`} onClick={() => destroy(item)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <RowMenu testId={`quick-menu-${item.id}`} items={[
+                          { label: "Supprimer définitivement", icon: Trash2, danger: true,
+                            testId: `quick-delete-${item.id}`, onSelect: () => destroy(item) }]} />
                       </span>
                     </li>
                   ))}
@@ -408,7 +407,7 @@ export const QuickCreateButton = () => {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="quick-create-button"
+      <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="quick-create-button"
         onClick={() => setOpen(true)}>
         <Zap className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Création rapide</span>
       </Button>

@@ -86,7 +86,7 @@ export default function SocialPlanner() {
       <PageHeader breadcrumb="Communication" title="Planificateur réseaux sociaux"
         subtitle="Préparer, faire valider et programmer les publications. La publication reste manuelle sur chaque réseau."
         actions={can("social.manage") && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="social-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="social-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouvelle publication
           </Button>
@@ -102,21 +102,21 @@ export default function SocialPlanner() {
             return (
               <div key={status} className="rounded-xl border bg-muted/30 p-3" data-testid={`social-column-${status}`}>
                 <div className="mb-3 flex items-center justify-between px-1">
-                  <h2 className="font-display text-sm font-bold uppercase tracking-wide text-[#002060]">{label}</h2>
-                  <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-[#800020]">{items.length}</span>
+                  <h2 className="font-display text-sm font-bold uppercase tracking-wide text-[var(--marine)]">{label}</h2>
+                  <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-[var(--bordeaux)]">{items.length}</span>
                 </div>
                 <div className="space-y-3">
                   {items.length === 0 && <p className="px-1 text-xs text-muted-foreground">Rien ici pour l'instant.</p>}
                   {items.map((post) => (
                     <div key={post.post_id} data-testid={`social-card-${post.post_id}`}
                       className="rounded-lg border bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
-                      <p className="text-sm font-semibold text-[#002060]">{post.title}</p>
+                      <p className="text-sm font-semibold text-[var(--marine)]">{post.title}</p>
                       <p className="mt-1.5 text-xs text-muted-foreground line-clamp-3">{post.content}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {(post.networks || []).map((n) => <Chip key={n} tone="marine">{n}</Chip>)}
                       </div>
                       {post.scheduled_date && (
-                        <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#800020]">
+                        <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--bordeaux)]">
                           <CalendarClock className="h-3 w-3" />
                           {new Date(post.scheduled_date).toLocaleDateString("fr-FR")} · {post.scheduled_time || ""}
                         </p>
@@ -134,12 +134,12 @@ export default function SocialPlanner() {
                                 onClick={() => move(post, "TO_VALIDATE")}>Faire valider</Button>
                             )}
                             {status === "TO_VALIDATE" && (
-                              <Button size="sm" className="h-7 rounded-full bg-[#002060] px-2 text-xs hover:bg-[#001740]"
+                              <Button size="sm" className="h-7 rounded-full bg-[var(--marine)] px-2 text-xs hover:bg-[#001740]"
                                 data-testid={`social-schedule-${post.post_id}`}
                                 onClick={() => move(post, "SCHEDULED")}>Programmer</Button>
                             )}
                             {status === "SCHEDULED" && (
-                              <Button size="sm" className="h-7 rounded-full bg-[#800020] px-2 text-xs hover:bg-[#63001a]"
+                              <Button size="sm" className="h-7 rounded-full bg-[var(--bordeaux)] px-2 text-xs hover:bg-[var(--bordeaux-dark)]"
                                 data-testid={`social-published-${post.post_id}`}
                                 onClick={() => move(post, "PUBLISHED")}>Marquer publiée</Button>
                             )}
@@ -179,7 +179,7 @@ export default function SocialPlanner() {
                     data-testid={`social-network-${network}`}
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                       form.networks.includes(network)
-                        ? "bg-[#800020] text-white" : "bg-muted text-[#002060] hover:bg-muted/70"}`}>
+                        ? "bg-[var(--bordeaux)] text-white" : "bg-muted text-[var(--marine)] hover:bg-muted/70"}`}>
                     {network}
                   </button>
                 ))}
@@ -198,7 +198,7 @@ export default function SocialPlanner() {
                 data-testid="social-hashtags-input"
                 onChange={(e) => setForm({ ...form, hashtags: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="social-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>

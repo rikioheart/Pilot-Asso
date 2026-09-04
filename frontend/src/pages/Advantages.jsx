@@ -72,7 +72,7 @@ export default function Advantages() {
                 onClick={() => setProposeOpen(true)}>Proposer un avantage</Button>
             )}
             {data.is_manager && (
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="advantage-create-button"
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="advantage-create-button"
                 onClick={() => setOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Nouvel avantage
               </Button>
@@ -91,19 +91,19 @@ export default function Advantages() {
             return (
               <div key={advantage.advantage_id} data-testid={`advantage-card-${advantage.advantage_id}`}
                 className="flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md">
-                <div className="flex items-center gap-3 border-b bg-[#002060]/5 px-5 py-4">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#800020]/10">
-                    <KindIcon className="h-5 w-5 text-[#800020]" />
+                <div className="flex items-center gap-3 border-b bg-[var(--marine-a5)] px-5 py-4">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--bordeaux-a10)]">
+                    <KindIcon className="h-5 w-5 text-[var(--bordeaux)]" />
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{kindLabel}</p>
-                    <p className="truncate font-display font-bold text-[#002060]">{advantage.title}</p>
+                    <p className="truncate font-display font-bold text-[var(--marine)]">{advantage.title}</p>
                   </div>
                 </div>
                 <div className="flex flex-1 flex-col p-5">
                   <p className="text-sm text-muted-foreground">{advantage.description}</p>
                   {advantage.partner_name && (
-                    <p className="mt-2 text-sm font-semibold text-[#002060]">Partenaire : {advantage.partner_name}</p>
+                    <p className="mt-2 text-sm font-semibold text-[var(--marine)]">Partenaire : {advantage.partner_name}</p>
                   )}
                   {advantage.conditions && (
                     <p className="mt-2 text-xs text-muted-foreground">Conditions : {advantage.conditions}</p>
@@ -133,7 +133,7 @@ export default function Advantages() {
                         )}
                       </div>
                     ) : (
-                      <Button size="sm" disabled={!available} className="w-full rounded-full bg-[#800020] hover:bg-[#63001a]"
+                      <Button size="sm" disabled={!available} className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                         data-testid={`advantage-claim-${advantage.advantage_id}`} onClick={() => claim(advantage)}>
                         {advantage.kind === "CODE_PROMO" ? "Obtenir mon code" : "Je réserve"}
                       </Button>
@@ -184,7 +184,7 @@ export default function Advantages() {
               <Textarea rows={2} value={form.conditions} data-testid="advantage-conditions-input"
                 onChange={(e) => setForm({ ...form, conditions: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="advantage-save-button">Publier</Button>
             </DialogFooter>
           </form>
@@ -220,7 +220,7 @@ export default function Advantages() {
               Votre proposition sera publiée après validation du Bureau.
             </p>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="proposal-save-button">Envoyer au Bureau</Button>
             </DialogFooter>
           </form>
@@ -233,7 +233,7 @@ export default function Advantages() {
           {claimed?.code ? (
             <>
               <p className="text-sm text-muted-foreground">Voici votre code à présenter chez le partenaire :</p>
-              <p className="rounded-xl bg-[#800020]/8 py-5 text-center font-display text-2xl font-extrabold tracking-[0.2em] text-[#800020]"
+              <p className="rounded-xl bg-[var(--bordeaux-a8)] py-5 text-center font-display text-2xl font-extrabold tracking-[0.2em] text-[var(--bordeaux)]"
                 data-testid="advantage-claimed-code">{claimed.code}</p>
             </>
           ) : (

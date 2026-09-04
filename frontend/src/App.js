@@ -2,6 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AccessibilityProvider } from "@/components/AccessibilityProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ConfirmDialogHost } from "@/components/ConfirmDialog";
+import { EmptyStatesProvider } from "@/components/EmptyStates";
+import { BlockVisibilityProvider } from "@/components/BlockVisibility";
+import { OfflineProvider } from "@/components/OfflineMode";
 import { AppShell, PendingScreen } from "@/components/AppShell";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
@@ -51,7 +56,9 @@ import Forms from "@/pages/Forms";
 import MyHistory from "@/pages/MyHistory";
 import MySpace from "@/pages/MySpace";
 import MemberAnimation from "@/pages/MemberAnimation";
+import Payments from "@/pages/Payments";
 import Dogs from "@/pages/Dogs";
+import PublicProCard from "@/pages/PublicProCard";
 import "@/App.css";
 
 const HOME_BY_ROLE = {
@@ -97,6 +104,7 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginRoute />} />
+      <Route path="/carte/:userId" element={<PublicProCard />} />
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/admin/dashboard" element={<Protected adminOnly><AdminDashboard /></Protected>} />
       <Route path="/admin/members" element={<Protected adminOnly><Members /></Protected>} />
@@ -140,6 +148,7 @@ function AppRouter() {
       <Route path="/forms" element={<Protected permission="forms.view"><Forms /></Protected>} />
       <Route path="/history" element={<Protected permission="audit.view_own"><MyHistory /></Protected>} />
       <Route path="/my-space" element={<Protected><MySpace /></Protected>} />
+      <Route path="/paiements" element={<Protected><Payments /></Protected>} />
       <Route path="/dogs" element={<Protected><Dogs /></Protected>} />
       <Route path="/admin/animation" element={<Protected adminOnly><MemberAnimation /></Protected>} />
       <Route path="/help" element={<Protected><HelpRequests /></Protected>} />
@@ -155,9 +164,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ThemeProvider>
+        <EmptyStatesProvider>
+        <BlockVisibilityProvider>
+        <OfflineProvider>
         <AccessibilityProvider>
           <AppRouter />
         </AccessibilityProvider>
+        </OfflineProvider>
+        </BlockVisibilityProvider>
+        </EmptyStatesProvider>
+        <ConfirmDialogHost />
+        </ThemeProvider>
         <Toaster position="top-right" richColors />
       </AuthProvider>
     </BrowserRouter>

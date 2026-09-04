@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Boxes, Plus, LayoutGrid, Table2, Trash2, Pencil, ArrowDownUp, Tags, Euro, Link2 }
+import { useViewMode } from "@/components/ViewMode";
+import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
+import { Boxes, Plus, LayoutGrid, List, Table2, Trash2, Pencil, ArrowDownUp, Tags, Euro, Link2 }
   from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { PageHeader, EmptyState, SectionCard, Chip, KpiCard } from "@/components/Ui";
@@ -25,7 +27,7 @@ export default function Stock() {
   const [summary, setSummary] = useState(null);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [view, setView] = useState("kanban");
+  const [view, setView] = useViewMode("stock", "kanban");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [itemOpen, setItemOpen] = useState(false);
@@ -121,7 +123,7 @@ export default function Stock() {
       : `Archiver « ${source.name} » ? Motif (tracé) :`;
     const reason = window.prompt(question);
     if (reason === null) return;
-    if (hard && !window.confirm("Confirmez-vous la suppression définitive ? Action irréversible.")) return;
+    if (hard && !await confirmDialog("Confirmez-vous la suppression définitive ? Action irréversible.")) return;
     try {
       const { data } = await api.delete(`/stock/items/${source.item_id}`,
         { params: { reason: reason || "Non précisé", hard } });
@@ -150,7 +152,7 @@ export default function Stock() {
     <button key={i.item_id} onClick={() => openDetail(i)} data-testid={`stock-item-${i.item_id}`}
       className="w-full rounded-xl border bg-card p-4 text-left transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
-        <span className="font-semibold text-[#002060]">{i.name}</span>
+        <span className="font-semibold text-[var(--marine)]">{i.name}</span>
         <Chip tone={i.is_low ? "amber" : "muted"}>{i.quantity} {i.unit}</Chip>
       </div>
       {i.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{i.description}</p>}
@@ -176,7 +178,7 @@ export default function Stock() {
       <PageHeader breadcrumb="Terrain & équipements" title="Stocks et inventaire"
         subtitle="Inventaire catégorisé, mouvements datés avec mode de paiement, liens vers projets et tâches."
         actions={
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="stock-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="stock-create-button"
             onClick={() => openItem()}>
             <Plus className="mr-2 h-4 w-4" /> Nouvel article
           </Button>
@@ -195,6 +197,9 @@ export default function Stock() {
           <TabsList>
             <TabsTrigger value="kanban" data-testid="stock-view-kanban">
               <LayoutGrid className="mr-1.5 h-3.5 w-3.5" /> Kanban
+            </TabsTrigger>
+            <TabsTrigger value="list" data-testid="stock-view-list">
+              <List className="mr-1.5 h-3.5 w-3.5" /> Liste
             </TabsTrigger>
             <TabsTrigger value="table" data-testid="stock-view-table">
               <Table2 className="mr-1.5 h-3.5 w-3.5" /> Tableau
@@ -222,14 +227,14 @@ export default function Stock() {
 
         <TabsContent value="kanban">
           {data.items.length === 0 ? (
-            <EmptyState testId="stock-empty" icon={Boxes} title="Inventaire vide"
+            <EmptyState testId="stock-empty" module="stock" icon={Boxes} title="Inventaire vide"
               description="Ajoutez un premier article en choisissant sa catégorie." />
           ) : (
             <div className="flex gap-4 overflow-x-auto pb-4" data-testid="stock-kanban">
               {grouped.map(([name, items]) => (
                 <div key={name} className="w-72 shrink-0" data-testid={`stock-column-${name}`}>
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-widest text-[#800020]">{name}</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-[var(--bordeaux)]">{name}</p>
                     <Chip tone="muted">{items.length}</Chip>
                   </div>
                   <div className="space-y-3">
@@ -243,6 +248,14 @@ export default function Stock() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="list">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="stock-list">
+            {data.items.length === 0
+              ? <EmptyState testId="stock-list-empty" module="stock" icon={Boxes} title="Inventaire vide" />
+              : data.items.map(renderCard)}
+          </div>
         </TabsContent>
 
         <TabsContent value="table">
@@ -259,7 +272,7 @@ export default function Stock() {
                 <tbody>
                   {data.items.map((i) => (
                     <tr key={i.item_id} className="border-b last:border-0" data-testid={`stock-row-${i.item_id}`}>
-                      <td className="px-3 py-2 font-semibold text-[#002060]">{i.name}</td>
+                      <td className="px-3 py-2 font-semibold text-[var(--marine)]">{i.name}</td>
                       <td className="px-3 py-2 text-xs">{i.category}</td>
                       <td className="px-3 py-2">
                         <span className={i.is_low ? "font-bold text-amber-700" : ""}>
@@ -282,11 +295,9 @@ export default function Stock() {
                             data-testid={`stock-edit-${i.item_id}`} onClick={() => openItem(i)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button size="sm" variant="outline"
-                            className="rounded-full text-red-700 hover:bg-red-50"
-                            data-testid={`stock-delete-${i.item_id}`} onClick={() => removeItem(i, true)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <RowMenu testId={`stock-menu-${i.item_id}`} items={[
+                            { label: "Supprimer définitivement", icon: Trash2, danger: true,
+                              testId: `stock-delete-${i.item_id}`, onSelect: () => removeItem(i, true) }]} />
                         </span>
                       </td>
                     </tr>
@@ -309,7 +320,7 @@ export default function Stock() {
                   <Input required value={newCategory} data-testid="stock-category-input"
                     onChange={(e) => setNewCategory(e.target.value)} />
                 </div>
-                <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                   data-testid="stock-category-submit">
                   {editCategory ? "Enregistrer" : "Ajouter"}
                 </Button>
@@ -323,7 +334,7 @@ export default function Stock() {
                   <li key={c.category_id} data-testid={`stock-category-${c.category_id}`}
                     className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
                     <span>
-                      <span className="font-semibold text-[#002060]">{c.name}</span>
+                      <span className="font-semibold text-[var(--marine)]">{c.name}</span>
                       <span className="ml-2 text-xs text-muted-foreground">
                         {c.items_count || 0} article(s)
                       </span>
@@ -347,7 +358,7 @@ export default function Stock() {
                   {summary.by_method.map((m) => (
                     <li key={m.method} data-testid={`stock-method-${m.method}`}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
-                      <span className="font-semibold text-[#002060]">{m.label}</span>
+                      <span className="font-semibold text-[var(--marine)]">{m.label}</span>
                       <span className="flex flex-wrap gap-2">
                         <Chip tone="muted">{m.count} mouvement(s)</Chip>
                         <Chip tone="marine">+{m.in} / -{m.out}</Chip>
@@ -435,7 +446,7 @@ export default function Stock() {
                 </Select></div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="stock-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>
@@ -463,10 +474,9 @@ export default function Stock() {
                   data-testid="stock-detail-edit" onClick={() => { setDetail(null); openItem(detail); }}>
                   <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
                 </Button>
-                <Button size="sm" variant="outline" className="rounded-full text-red-700 hover:bg-red-50"
-                  data-testid="stock-detail-delete" onClick={() => removeItem(detail, true)}>
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Supprimer
-                </Button>
+                <RowMenu testId="stock-detail-menu" items={[
+                  { label: "Supprimer définitivement", icon: Trash2, danger: true,
+                    testId: "stock-detail-delete", onSelect: () => removeItem(detail, true) }]} />
               </div>
 
               <form onSubmit={addMovement} className="rounded-xl border bg-muted/40 p-4"
@@ -510,7 +520,7 @@ export default function Stock() {
                     <Input value={movement.reason} data-testid="movement-reason-input"
                       onChange={(e) => setMovement({ ...movement, reason: e.target.value })} /></div>
                 </div>
-                <Button type="submit" className="mt-3 rounded-full bg-[#002060] hover:bg-[#001740]"
+                <Button type="submit" className="mt-3 rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                   data-testid="movement-save-button">Enregistrer le mouvement</Button>
               </form>
 
@@ -526,7 +536,7 @@ export default function Stock() {
                       <li key={m.movement_id} data-testid={`movement-${m.movement_id}`}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
                         <span>
-                          <span className="font-semibold text-[#002060]">
+                          <span className="font-semibold text-[var(--marine)]">
                             {DIRECTIONS[m.direction]} · {m.quantity} {detail.unit}
                           </span>
                           <p className="text-xs text-muted-foreground">

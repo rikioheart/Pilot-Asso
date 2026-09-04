@@ -52,7 +52,7 @@ export const JoinRequestButton = ({ kind = "HELP_OFFER", targetId, targetTitle,
               Le Bureau reçoit une notification et vous répond directement dans la plateforme.
             </p>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid={`${testId}-send`}>Envoyer ma proposition</Button>
             </DialogFooter>
           </form>

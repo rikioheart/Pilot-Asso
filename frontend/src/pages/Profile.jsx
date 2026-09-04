@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { toast } from "sonner";
+import { RowMenu, confirmDialog } from "@/components/ConfirmDialog";
 import { Trash2, Plus } from "lucide-react";
 import { api, apiError, fileUrl } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
+import { ProCardQr } from "@/components/ProCardQr";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
@@ -117,7 +119,7 @@ export default function Profile() {
         subtitle={`${user?.role} · ${user?.access_level} · statut ${user?.status}`}
         actions={
           <Link to="/aide" data-testid="profile-help-link"
-            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold text-[#002060] transition-colors hover:bg-muted">
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold text-[var(--marine)] transition-colors hover:bg-muted">
             Mes guides et ma fiche de poste
           </Link>
         } />
@@ -177,7 +179,7 @@ export default function Profile() {
               <Textarea rows={4} value={form.bio || ""} data-testid="profile-bio-input"
                 onChange={(e) => setForm({ ...form, bio: e.target.value })} />
             </div>
-            <Button type="submit" data-testid="profile-save-button" className="rounded-full bg-[#800020] hover:bg-[#63001a]">
+            <Button type="submit" data-testid="profile-save-button" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
               Enregistrer
             </Button>
           </form>
@@ -277,16 +279,21 @@ export default function Profile() {
                 </div>
                 {pro.partnership_status && (
                   <div className="rounded-lg bg-muted/60 p-4 text-sm" data-testid="pro-partnership-readonly">
-                    <p className="font-semibold text-[#002060]">Partenariat (géré par le Bureau)</p>
+                    <p className="font-semibold text-[var(--marine)]">Partenariat (géré par le Bureau)</p>
                     <p className="text-xs text-muted-foreground">
                       Statut : {pro.partnership_status} · Contrat : {pro.contract_status || "—"}
                     </p>
                   </div>
                 )}
-                <Button type="submit" data-testid="pro-save-button" className="rounded-full bg-[#800020] hover:bg-[#63001a]">
+                <Button type="submit" data-testid="pro-save-button" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
                   Enregistrer ma fiche
                 </Button>
               </form>
+            )}
+            {pro && user?.role === "PROFESSIONNEL" && (
+              <div className="mt-6">
+                <ProCardQr userId={user.user_id} name={pro.company_name || profile?.display_name} />
+              </div>
             )}
           </TabsContent>
         )}
@@ -310,7 +317,7 @@ export default function Profile() {
                   onChange={(e) => setNewDog({ ...newDog, character: e.target.value })} />
               </div>
             </div>
-            <Button type="submit" data-testid="dog-add-button" className="rounded-full bg-[#002060] hover:bg-[#001740]">
+            <Button type="submit" data-testid="dog-add-button" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]">
               <Plus className="mr-2 h-4 w-4" /> Ajouter mon chien
             </Button>
           </form>
@@ -323,14 +330,14 @@ export default function Profile() {
                 <div key={d.dog_id} className="flex items-start justify-between rounded-xl border bg-card p-4"
                   data-testid={`dog-card-${d.dog_id}`}>
                   <div>
-                    <p className="font-display font-bold text-[#002060]">{d.name}</p>
+                    <p className="font-display font-bold text-[var(--marine)]">{d.name}</p>
                     <p className="text-xs text-muted-foreground">{d.breed || "Race non précisée"}</p>
                     {d.character && <p className="mt-2 text-sm">{d.character}</p>}
                   </div>
-                  <button onClick={() => removeDog(d.dog_id)} data-testid={`dog-delete-${d.dog_id}`}
-                    aria-label="Supprimer" className="text-muted-foreground transition-colors hover:text-[#800020]">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <RowMenu testId={`dog-menu-${d.dog_id}`} items={[
+                    { label: "Supprimer ce chien", icon: Trash2, danger: true, testId: `dog-delete-${d.dog_id}`,
+                      onSelect: async () => { if (!(await confirmDialog("Supprimer ce chien de votre profil ?"))) return;
+                        removeDog(d.dog_id); } }]} />
                 </div>
               ))}
             </div>
@@ -344,7 +351,7 @@ export default function Profile() {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {(user?.permissions || []).map((p) => (
-                <span key={p} className="rounded-full bg-[#002060]/8 px-3 py-1 text-xs font-medium text-[#002060]">{p}</span>
+                <span key={p} className="rounded-full bg-[var(--marine-a8)] px-3 py-1 text-xs font-medium text-[var(--marine)]">{p}</span>
               ))}
             </div>
           </div>

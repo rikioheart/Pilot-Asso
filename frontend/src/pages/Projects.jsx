@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { LayoutGrid, List, Plus, AlertTriangle, Users } from "lucide-react";
+import { Plus, AlertTriangle, Users } from "lucide-react";
+import { ViewModeSwitch, useViewMode } from "@/components/ViewMode";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
@@ -20,7 +21,7 @@ export default function Projects() {
   const [params, setParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
-  const [view, setView] = useState(params.get("view") || "kanban");
+  const [view, setView] = useViewMode("projects", "kanban");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", category: "AUTRE", status: "IDEA",
@@ -78,7 +79,7 @@ export default function Projects() {
       data-testid={`project-card-${p.project_id}`}
       className="rounded-xl border bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
       <Link to={`/projects/${p.project_id}`} className="block">
-        <p className="font-display text-sm font-bold text-[#002060]">{p.title}</p>
+        <p className="font-display text-sm font-bold text-[var(--marine)]">{p.title}</p>
         <p className="mt-1 text-xs text-muted-foreground">{p.category} · {p.owner_name || "—"}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <StatusBadge status={p.status} />
@@ -90,7 +91,7 @@ export default function Projects() {
           )}
         </div>
         <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-[#800020] transition-all"
+          <div className="h-full rounded-full bg-[var(--bordeaux)] transition-all"
             style={{ width: `${p.completion_percentage || 0}%` }} />
         </div>
         <p className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
@@ -107,15 +108,11 @@ export default function Projects() {
         subtitle="Vue Kanban ou liste. Faites glisser une carte pour changer son statut."
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="rounded-full" data-testid="projects-view-toggle"
-              onClick={() => setView(view === "kanban" ? "list" : "kanban")}>
-              {view === "kanban" ? <List className="mr-2 h-4 w-4" /> : <LayoutGrid className="mr-2 h-4 w-4" />}
-              {view === "kanban" ? "Liste" : "Kanban"}
-            </Button>
+            <ViewModeSwitch value={view} onChange={setView} testId="projects-view" />
             {can("projects.create") && (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="project-create-button">
+                  <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="project-create-button">
                     <Plus className="mr-2 h-4 w-4" /> Nouveau projet
                   </Button>
                 </DialogTrigger>
@@ -188,7 +185,7 @@ export default function Projects() {
                       </Select>
                     </div>
                     <DialogFooter>
-                      <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                      <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                         data-testid="project-save-button">Créer le projet</Button>
                     </DialogFooter>
                   </form>
@@ -221,7 +218,7 @@ export default function Projects() {
           </Select>
         </div>
         <Button variant={overdue ? "default" : "outline"} size="sm" data-testid="projects-overdue-filter"
-          className={`rounded-full ${overdue ? "bg-[#800020] hover:bg-[#63001a]" : ""}`}
+          className={`rounded-full ${overdue ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
           onClick={() => {
             const next = new URLSearchParams(params);
             overdue ? next.delete("overdue") : next.set("overdue", "1");
@@ -230,7 +227,7 @@ export default function Projects() {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState testId="projects-empty" title="Aucun projet"
+        <EmptyState testId="projects-empty" module="projects" title="Aucun projet"
           description="Créez un premier projet, éventuellement depuis un modèle (journée thématique, article, formation)." />
       ) : view === "kanban" ? (
         <div className="flex gap-4 overflow-x-auto pb-4" data-testid="projects-kanban">
@@ -249,9 +246,27 @@ export default function Projects() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : view === "list" ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="projects-list">
           {items.map(card)}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border bg-card" data-testid="projects-table">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead><tr className="border-b text-left text-xs uppercase text-muted-foreground">
+              <th className="px-3 py-2">Projet</th><th className="px-3 py-2">Statut</th>
+              <th className="px-3 py-2">Avancement</th><th className="px-3 py-2">Équipe</th></tr></thead>
+            <tbody>
+              {items.map((p) => (
+                <tr key={p.project_id} className="border-b last:border-0 hover:bg-muted/50" data-testid={`projects-row-${p.project_id}`}>
+                  <td className="px-3 py-2 font-semibold text-[var(--marine)]"><Link to={`/projects/${p.project_id}`}>{p.title}</Link></td>
+                  <td className="px-3 py-2"><StatusBadge status={p.status} /></td>
+                  <td className="px-3 py-2">{p.completion_percentage ?? p.progress ?? 0} %</td>
+                  <td className="px-3 py-2">{p.team_count ?? p.team_size ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

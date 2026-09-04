@@ -1,0 +1,44 @@
+{
+  "summary": "Prompt 8B validé end-to-end. Backend 6/6 pytest (test_prompt8b_offline_prefs.py) : (1) GET /api/settings/notification-types — pro1 renvoie les 4 types (ACTIVITY_REGISTRATION, HELP_REQUEST, REGISTRATION_CONFIRMED, GENTLE_NUDGE) et locked=false ; Bureau → locked=true. (2) Inscription activité pro2 (activité PLANNED existante 'Grande balade collective… [DEMO]' déjà créée par pro2, catégorie BALADE, location Prairie du Moulin) : POST /api/activities/{id}/register par m1 → pro2 (créateur) ET Bureau reçoivent une notif ACTIVITY_REGISTRATION mentionnant l'activité. PUT /api/profiles/me/preferences {notification_prefs:{ACTIVITY_REGISTRATION:false}} par pro2 → réinscription (via unregister m1 + register m1 en fallback car membre2.demo n'existe pas dans le seed) → pro2 ne reçoit PLUS de nouvelle notif ACTIVITY_REGISTRATION alors que le Bureau en reçoit une (locked=true respecté). Préférence restaurée à true et inscriptions nettoyées. (3) HELP_REQUEST : Bureau a ajouté m1 à l'équipe d'un projet via POST /api/projects/{id}/team ; POST /api/projects/{id}/join-request par pro1 (fallback, m2 absent) → m1 reçoit HELP_REQUEST 'Proposition sur un projet' avec resource_id=project_id, pro1 (auteur) NE se notifie pas. POST /api/tasks/{task_id}/help par Bureau (ROLE_ADMIN exclu du fan-out) → m1 (équipe) reçoit HELP_REQUEST avec link contenant /projects/{project_id}. (4) Loyalty offline : GET /api/loyalty/eligible (pro1) → eligible_activities + eligible_events. QR m1 récupéré via /loyalty/me ; POST /api/loyalty/stamp {qr_token, activity_id, scanned_at:'2026-06-01T10:00:00+00:00', offline:true} → 200, stamp.source='QR_SCAN_OFFLINE', stamp.created_at == scanned_at ; GET /api/loyalty/history vérifie la persistance ; DELETE /api/loyalty/stamps/{id}?reason=... par Bureau nettoie. Frontend (Playwright) : TEST 1 pro1 /my-space tab 'Affichage & accessibilité' → notification-preferences-card visible avec les 4 switches notif-pref-*, toggle GENTLE_NUDGE → save → reload → state persisté (checked→unchecked confirmé), restauration OK. TEST 2 Bureau /my-space → notification-preferences-card absente (locked). TEST 4 pro1 /loyalty/scan : online 3 s (cache activités éligibles), passage offline → offline-indicator + loyalty-offline-banner visibles ; saisie 'abcdefgh12345' + submit → 'QR mémorisé (hors connexion)' affiché, loyalty-activity-select propose 3 activités depuis le cache /loyalty/eligible ; loyalty-confirm-stamp → localStorage.vdc_offline_stamps contient 1 entrée avec qr_token/activity_id/scanned_at ; retour online → 5 s plus tard vdc_offline_stamps = [] (POST /api/loyalty/stamp a répondu 404 sur token bidon, compté 'refusé' comme attendu). TEST 3 (offline /dogs read-only) : online OK (body 950), offline-indicator visible, mais page.goto en mode offline lève net::ERR_INTERNET_DISCONNECTED (limitation harness Playwright — navigation dure requiert le réseau) ; le cache localStorage 'vdc_cache:*' est bien alimenté (visible dans les XHR de Test 4) mais la validation UI SPA-nav offline n'a pas été exécutable dans ce harness. Comportement fonctionnel du cache non contredit ; à vérifier manuellement ou via évaluation directe des interceptors si besoin.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "loyalty.auto_stamp (backend/loyalty.py:549-550)",
+        "issue": "auto_stamp() référence 'payload.scanned_at' et 'payload.offline' alors que 'payload' n'est pas défini dans cette fonction (paramètres: user_id, validator, activity, event). Toute présence validée sur activité/événement éligible via loyalty.auto_stamp() plantera avec NameError. À corriger : utiliser iso(now_utc()) directement et retirer synced_at (ou passer scanned_at/offline en paramètres).",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt8b_offline_prefs.py",
+    "/app/test_reports/pytest/prompt8b.xml"
+  ],
+  "action_items": [
+    "Corriger loyalty.auto_stamp (backend/loyalty.py lignes 549-550) : NameError sur 'payload' — hériter created_at = iso(now_utc()) et supprimer synced_at (source AUTO_PARTICIPATION est intrinsèquement en ligne).",
+    "Optionnel : créer/activer membre2.demo@lavoixduchien.fr dans seed_demo.py — la doc test_credentials.md le mentionne comme 'si existant' mais son absence oblige les tests à des fallbacks (m1 unregister/register, pro1 comme auteur join-request)."
+  ],
+  "critical_code_review_comments": [
+    "loyalty.py auto_stamp : bug bloquant NameError 'payload' — non exercé par les tests demandés mais tout appel réel (validation de présence sur activité/événement éligible) plantera. À corriger immédiatement.",
+    "deps.notification_allowed : la logique est correcte (ROLE_ADMIN reçoit tout, autres profils lisent profile.preferences.notification_prefs). Bien.",
+    "activities._notify_registration : filtre correctement (candidates ≠ auteur, role=PROFESSIONNEL, ACTIVE) puis notify_bureau. OK.",
+    "projects._notify_concerned : exclut ROLE_ADMIN via {role: {$ne: ROLE_ADMIN}} et l'auteur via ids.discard — conforme au spec (le Bureau reçoit sa notif via notify_bureau distinct dans join-request, mais /tasks/help ne fait pas de notify_bureau ciblé sur HELP_REQUEST ; il fait notify_bureau NEEDS_HELP. Conforme si le Bureau doit uniquement recevoir NEEDS_HELP pour ce cas — à confirmer avec la spec produit).",
+    "loyalty.add_stamp : bien gère scanned_at → created_at et source QR_SCAN_OFFLINE / PRO_VALIDATION_OFFLINE selon offline flag. OK.",
+    "settings_api.notification_types : locked basé sur user['role'] == 'ADMIN_BUREAU' — OK et cohérent avec deps.notification_allowed.",
+    "DisplayPreferences.jsx : la carte notification-preferences-card est bien masquée pour le Bureau (à vérifier côté code, mais comportement observé conforme)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_prompt8b_offline_prefs.py"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "3/4 flows validés — TEST 3 offline SPA-nav non exécutable dans harness (page.goto offline → ERR_INTERNET_DISCONNECTED). Le cache localStorage est fonctionnel (démontré indirectement par TEST 4 loyalty offline)"},
+  "test_credentials": "pro1/pro2/m1/Bureau tels que test_credentials.md. m2 (membre2.demo) INEXISTANT dans le seed ; benevole.demo est status='DESACTIVE'.",
+  "seed_data_creation": "Aucune donnée persistante ajoutée. Activité utilisée est celle déjà créée par pro2 dans le seed. Tampon offline créé lors du test loyalty a été supprimé via DELETE /api/loyalty/stamps/{id}. Préférence pro2 remise à ACTIVITY_REGISTRATION:true. Préférence pro1 GENTLE_NUDGE remise à ON. Inscriptions m1/m2 sur l'activité de test nettoyées via DELETE /api/activities/{id}/register.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 8B validé. Le bug auto_stamp (loyalty.py:549) est à surveiller — non exercé par ces tests mais bloquant si un pro clique 'valider présence' sur activité éligible. Pour tester l'offline SPA-nav /dogs, préférer une évaluation directe des interceptors axios (window.localStorage.getItem('vdc_cache:/dogs')) plutôt que page.goto offline. m2 doit être créé dans seed_demo.py pour dérisqu er les tests futurs."
+}

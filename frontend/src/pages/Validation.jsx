@@ -52,9 +52,9 @@ export default function Validation() {
             <div key={t.task_id} className="rounded-xl border bg-card p-5" data-testid={`validation-card-${t.task_id}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-display font-bold text-[#002060]">{t.title}</p>
+                  <p className="font-display font-bold text-[var(--marine)]">{t.title}</p>
                   <Link to={`/projects/${t.project_id}`} data-testid={`validation-project-${t.task_id}`}
-                    className="text-xs text-muted-foreground hover:text-[#800020]">{t.project_title}</Link>
+                    className="text-xs text-muted-foreground hover:text-[var(--bordeaux)]">{t.project_title}</Link>
                 </div>
                 <DeadlineChip deadline={t.deadline} />
               </div>
@@ -68,12 +68,12 @@ export default function Validation() {
               {t.comments?.length > 0 && (
                 <div className="mt-3 rounded-lg bg-muted/60 p-3 text-xs">
                   {t.comments.slice(-2).map((c) => (
-                    <p key={c.comment_id}><b className="text-[#002060]">{c.user_name}</b> : {c.text}</p>
+                    <p key={c.comment_id}><b className="text-[var(--marine)]">{c.user_name}</b> : {c.text}</p>
                   ))}
                 </div>
               )}
               <div className="mt-5 flex flex-wrap gap-2">
-                <Button className="rounded-full bg-[#002060] hover:bg-[#001740]" data-testid={`validation-accept-${t.task_id}`}
+                <Button className="rounded-full bg-[var(--marine)] hover:bg-[#001740]" data-testid={`validation-accept-${t.task_id}`}
                   onClick={() => decide(t, "ACCEPT")}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Valider
                 </Button>
@@ -99,7 +99,7 @@ export default function Validation() {
             </p>
           </div>
           <DialogFooter>
-            <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="validation-changes-confirm"
+            <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="validation-changes-confirm"
               onClick={() => decide(dialog, "CHANGES")}>Envoyer</Button>
           </DialogFooter>
         </DialogContent>

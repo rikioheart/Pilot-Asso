@@ -75,7 +75,7 @@ export default function Partners() {
       <PageHeader breadcrumb="Réseau externe" title="Partenariats"
         subtitle="Mairies, associations et commerces qui soutiennent l'association."
         actions={data.is_manager && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="partner-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="partner-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouveau partenaire
           </Button>
@@ -89,11 +89,11 @@ export default function Partners() {
               <li key={proposal.proposal_id} data-testid={`proposal-${proposal.proposal_id}`}
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3 text-sm">
                 <span>
-                  <span className="font-semibold text-[#002060]">{proposal.title}</span>
+                  <span className="font-semibold text-[var(--marine)]">{proposal.title}</span>
                   <span className="ml-2 text-xs text-muted-foreground">par {proposal.proposed_by_name}</span>
                 </span>
                 <span className="flex gap-2">
-                  <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid={`proposal-accept-${proposal.proposal_id}`}
                     onClick={() => reviewProposal(proposal, "ACCEPT")}>
                     <Check className="mr-1.5 h-3.5 w-3.5" /> Publier
@@ -114,7 +114,7 @@ export default function Partners() {
         {[["ALL", "Tous"], ...Object.entries(CATEGORIES).map(([k, [label]]) => [k, label])].map(([value, label]) => (
           <button key={value} onClick={() => setTab(value)} data-testid={`partner-tab-${value}`}
             className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-              tab === value ? "bg-[#002060] text-white" : "bg-muted text-[#002060] hover:bg-muted/70"}`}>
+              tab === value ? "bg-[var(--marine)] text-white" : "bg-muted text-[var(--marine)] hover:bg-muted/70"}`}>
             {label}
           </button>
         ))}
@@ -133,12 +133,12 @@ export default function Partners() {
                 data-testid={`partner-card-${partner.partner_id}`}
                 className="rounded-xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#002060]/8">
-                    <CategoryIcon className="h-5 w-5 text-[#002060]" />
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-[var(--marine-a8)]">
+                    <CategoryIcon className="h-5 w-5 text-[var(--marine)]" />
                   </span>
                   <Chip tone={tone}>{label}</Chip>
                 </div>
-                <h3 className="mt-3 font-display font-bold text-[#002060]">{partner.name}</h3>
+                <h3 className="mt-3 font-display font-bold text-[var(--marine)]">{partner.name}</h3>
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">{categoryLabel}</p>
                 <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{partner.partnership_nature}</p>
                 <p className="mt-3 text-xs text-muted-foreground">{partner.geographic_zone}</p>
@@ -210,7 +210,7 @@ export default function Partners() {
               </div>
             )}
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="partner-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>
@@ -230,7 +230,7 @@ export default function Partners() {
                 ].filter(([, v]) => v).map(([label, value]) => (
                   <div key={label}>
                     <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="font-semibold text-[#002060]">{value}</dd>
+                    <dd className="font-semibold text-[var(--marine)]">{value}</dd>
                   </div>
                 ))}
               </dl>
@@ -250,12 +250,12 @@ export default function Partners() {
                     : (
                       <ul className="mb-4 space-y-2">
                         {detail.exchanges.map((ex) => (
-                          <li key={ex.exchange_id} className="border-l-2 border-[#800020]/40 pl-3 text-sm">
-                            <p className="font-semibold text-[#002060]">
+                          <li key={ex.exchange_id} className="border-l-2 border-[var(--bordeaux-a40)] pl-3 text-sm">
+                            <p className="font-semibold text-[var(--marine)]">
                               {new Date(ex.date).toLocaleDateString("fr-FR")} · {ex.channel}
                             </p>
                             <p className="text-muted-foreground">{ex.summary}</p>
-                            {ex.next_step && <p className="text-xs text-[#800020]">Prochaine étape : {ex.next_step}</p>}
+                            {ex.next_step && <p className="text-xs text-[var(--bordeaux)]">Prochaine étape : {ex.next_step}</p>}
                           </li>
                         ))}
                       </ul>
@@ -267,7 +267,7 @@ export default function Partners() {
                     <Input value={exchange.next_step} placeholder="Prochaine étape (facultatif)"
                       data-testid="partner-next-step-input"
                       onChange={(e) => setExchange({ ...exchange, next_step: e.target.value })} />
-                    <Button type="submit" size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                    <Button type="submit" size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                       data-testid="partner-exchange-save">Consigner l'échange</Button>
                   </form>
                 </SectionCard>

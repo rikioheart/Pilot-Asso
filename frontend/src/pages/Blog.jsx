@@ -90,7 +90,7 @@ export default function Blog() {
       <PageHeader breadcrumb="Communication" title="Blog & contenus"
         subtitle="Écrire, faire relire, publier. Chaque article passe par le Bureau avant la mise en ligne."
         actions={can("content.create") && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="blog-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="blog-create-button"
             onClick={() => { setEditing(null); setForm(EMPTY); setOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Nouvel article
           </Button>
@@ -101,7 +101,7 @@ export default function Blog() {
           ["DRAFT", "Brouillons"], ["MINE", "Mes articles"]].map(([value, label]) => (
           <button key={value} onClick={() => setFilter(value)} data-testid={`blog-filter-${value}`}
             className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-              filter === value ? "bg-[#002060] text-white" : "bg-muted text-[#002060] hover:bg-muted/70"}`}>
+              filter === value ? "bg-[var(--marine)] text-white" : "bg-muted text-[var(--marine)] hover:bg-muted/70"}`}>
             {label}
           </button>
         ))}
@@ -117,15 +117,15 @@ export default function Blog() {
             return (
               <article key={article.article_id} data-testid={`blog-card-${article.article_id}`}
                 className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-lg">
-                <div className="relative h-36 overflow-hidden bg-[#002060]/8">
+                <div className="relative h-36 overflow-hidden bg-[var(--marine-a8)]">
                   {article.cover_file_id ? (
                     <img src={fileUrl(article.cover_file_id)} alt="" className="h-full w-full object-cover
                       transition-transform duration-500 group-hover:scale-105" />
                   ) : (
-                    <div className="grid h-full place-items-center"><Newspaper className="h-8 w-8 text-[#002060]/25" /></div>
+                    <div className="grid h-full place-items-center"><Newspaper className="h-8 w-8 text-[var(--marine-a25)]" /></div>
                   )}
                   {article.is_pinned && (
-                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#800020] px-2.5 py-1 text-[11px] font-bold text-white">
+                    <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-[var(--bordeaux)] px-2.5 py-1 text-[11px] font-bold text-white">
                       <Pin className="h-3 w-3" /> À la une
                     </span>
                   )}
@@ -135,7 +135,7 @@ export default function Blog() {
                     <Chip tone={tone} testId={`blog-status-${article.article_id}`}>{label}</Chip>
                     <Chip tone="marine">{article.category}</Chip>
                   </div>
-                  <h3 className="mt-3 font-display text-base font-bold text-[#002060]">{article.title}</h3>
+                  <h3 className="mt-3 font-display text-base font-bold text-[var(--marine)]">{article.title}</h3>
                   <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">{article.excerpt}</p>
                   <p className="mt-3 text-xs text-muted-foreground">
                     {article.author_name} · {article.views || 0} lecture(s)
@@ -151,7 +151,7 @@ export default function Blog() {
                           data-testid={`blog-edit-${article.article_id}`} onClick={() => edit(article)}>
                           <PenLine className="mr-1.5 h-3.5 w-3.5" /> Modifier
                         </Button>
-                        <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                        <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                           data-testid={`blog-submit-${article.article_id}`}
                           onClick={() => act(article, { status: "PENDING_REVIEW" }, "Article envoyé au Bureau")}>
                           <Send className="mr-1.5 h-3.5 w-3.5" /> Proposer
@@ -160,7 +160,7 @@ export default function Blog() {
                     )}
                     {data.is_manager && article.status === "PENDING_REVIEW" && (
                       <>
-                        <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                        <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                           data-testid={`blog-publish-${article.article_id}`} onClick={() => review(article, "PUBLISH")}>
                           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Publier
                         </Button>
@@ -227,7 +227,7 @@ export default function Blog() {
                 onChange={(id) => setForm({ ...form, cover_file_id: id })} />
             </div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="blog-save-button">Enregistrer le brouillon</Button>
             </DialogFooter>
           </form>
@@ -242,7 +242,7 @@ export default function Blog() {
               {reading.cover_file_id && (
                 <img src={fileUrl(reading.cover_file_id)} alt="" className="h-48 w-full rounded-lg object-cover" />
               )}
-              <p className="text-sm font-semibold text-[#800020]">{reading.excerpt}</p>
+              <p className="text-sm font-semibold text-[var(--bordeaux)]">{reading.excerpt}</p>
               <p className="whitespace-pre-line text-sm text-muted-foreground">{reading.body}</p>
               {reading.review_comment && (
                 <SectionCard title="Retour du Bureau" testId="blog-review-comment">

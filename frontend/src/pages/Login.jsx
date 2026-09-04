@@ -86,7 +86,7 @@ export default function Login() {
           <p className="mt-6 text-base text-white/70">
             Nous savons où nous allons, chacun peut contribuer à son niveau, et chaque petit progrès compte.
           </p>
-          <div className="mt-10 h-px w-24 bg-[#800020]" />
+          <div className="mt-10 h-px w-24 bg-[var(--bordeaux)]" />
           <p className="mt-6 text-sm text-white/50">
             Action → Preuve → Validation → Historique → Progression
           </p>
@@ -98,7 +98,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           <div className="lg:hidden mb-8 flex items-center gap-3">
             <Logo size={52} />
-            <p className="font-display font-extrabold text-[#002060]">LA VOIX DU CHIEN</p>
+            <p className="font-display font-extrabold text-[var(--marine)]">LA VOIX DU CHIEN</p>
           </div>
 
           <Tabs defaultValue="login">
@@ -108,7 +108,7 @@ export default function Login() {
             </TabsList>
 
             <TabsContent value="login" className="mt-6">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Content de vous revoir</h2>
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Content de vous revoir</h2>
               <form onSubmit={submitLogin} className="mt-6 space-y-4" data-testid="login-form">
                 <div className="space-y-2">
                   <Label htmlFor="email">E-mail *</Label>
@@ -121,11 +121,11 @@ export default function Login() {
                     value={login.password} onChange={(e) => setLogin({ ...login, password: e.target.value })} />
                 </div>
                 <Button type="submit" disabled={busy} data-testid="login-submit-button"
-                  className="w-full rounded-full bg-[#800020] hover:bg-[#63001a] transition-colors">
+                  className="w-full rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)] transition-colors">
                   <LogIn className="mr-2 h-4 w-4" /> {busy ? "Connexion…" : "Se connecter"}
                 </Button>
                 <button type="button" onClick={forgot} data-testid="forgot-password-link"
-                  className="w-full text-center text-sm text-muted-foreground hover:text-[#800020] transition-colors">
+                  className="w-full text-center text-sm text-muted-foreground hover:text-[var(--bordeaux)] transition-colors">
                   Mot de passe oublié ?
                 </button>
               </form>
@@ -133,13 +133,13 @@ export default function Login() {
                 <span className="h-px flex-1 bg-border" /> OU <span className="h-px flex-1 bg-border" />
               </div>
               <Button variant="outline" onClick={google} data-testid="google-login-button"
-                className="w-full rounded-full border-[#002060]/25">
+                className="w-full rounded-full border-[var(--marine-a25)]">
                 <Mail className="mr-2 h-4 w-4" /> Continuer avec Google
               </Button>
             </TabsContent>
 
             <TabsContent value="register" className="mt-6">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Rejoindre l'association</h2>
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Rejoindre l'association</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Votre compte sera examiné par le Bureau avant activation.
               </p>
@@ -173,7 +173,7 @@ export default function Login() {
                       <button key={r.value} type="button" data-testid={`register-role-${r.value.toLowerCase()}`}
                         onClick={() => setReg({ ...reg, role: r.value })}
                         className={`rounded-lg border px-4 py-3 text-left text-sm transition-colors ${
-                          reg.role === r.value ? "border-[#800020] bg-[#800020]/5 text-[#800020]" : "hover:border-[#002060]/40"
+                          reg.role === r.value ? "border-[var(--bordeaux)] bg-[var(--bordeaux-a5)] text-[var(--bordeaux)]" : "hover:border-[var(--marine-a40)]"
                         }`}>
                         {r.label}
                       </button>
@@ -193,7 +193,7 @@ export default function Login() {
                   </div>
                 </div>
                 <Button type="submit" disabled={busy} data-testid="register-submit-button"
-                  className="w-full rounded-full bg-[#002060] hover:bg-[#001740] transition-colors">
+                  className="w-full rounded-full bg-[var(--marine)] hover:bg-[#001740] transition-colors">
                   <ShieldCheck className="mr-2 h-4 w-4" /> {busy ? "Envoi…" : "Envoyer ma demande"}
                 </Button>
               </form>

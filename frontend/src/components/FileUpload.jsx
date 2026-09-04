@@ -39,7 +39,7 @@ export const FileUpload = ({ usage = "OTHER", value, onChange, label = "Ajouter 
           {busy ? "Envoi…" : label}
         </Button>
         {value && (
-          <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-medium text-[#002060]">
+          <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-medium text-[var(--marine)]">
             <Paperclip className="h-3 w-3" /> {name || "Fichier joint"}
             <button type="button" onClick={() => { setName(""); onChange?.(null); }}
               data-testid={`${testId}-clear`} aria-label="Retirer le fichier">

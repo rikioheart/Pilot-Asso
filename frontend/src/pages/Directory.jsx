@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
 import { ExternalLink, MapPin, Gift, X, NotebookPen, FileSpreadsheet, Trash2 } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState, Chip } from "@/components/Ui";
+import { ProCardQr } from "@/components/ProCardQr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,7 +71,7 @@ export default function Directory() {
   };
 
   const removeReview = async (item) => {
-    if (!window.confirm("Supprimer ce retour qualitatif ?")) return;
+    if (!await confirmDialog("Supprimer ce retour qualitatif ?")) return;
     try {
       await api.delete(`/professionals/reviews/${item.review_id}`);
       toast.success("Retour supprimé");
@@ -122,9 +124,9 @@ export default function Directory() {
           {items.map((p) => (
             <button key={p.user_id} onClick={() => openDetail(p.user_id)} data-testid={`directory-card-${p.user_id}`}
               className="rounded-xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <p className="font-display font-bold text-[#002060]">{p.company_name || p.display_name}</p>
+              <p className="font-display font-bold text-[var(--marine)]">{p.company_name || p.display_name}</p>
               <p className="text-xs text-muted-foreground">{p.display_name}</p>
-              <p className="mt-2 inline-block rounded-full bg-[#800020]/8 px-2.5 py-0.5 text-xs font-semibold text-[#800020]">
+              <p className="mt-2 inline-block rounded-full bg-[var(--bordeaux-a8)] px-2.5 py-0.5 text-xs font-semibold text-[var(--bordeaux)]">
                 {(p.professional_category || "AUTRE").replaceAll("_", " ")}
               </p>
               {p.description && <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{p.description}</p>}
@@ -138,7 +140,7 @@ export default function Directory() {
                 {p.departments?.length > 0 && ` · ${p.departments.join(", ")}`}
               </p>
               {p.member_advantages && (
-                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[#002060]">
+                <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--marine)]">
                   <Gift className="h-3 w-3" /> Avantage adhérent
                 </p>
               )}
@@ -152,11 +154,11 @@ export default function Directory() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setFocus(null)} />
           <div className="relative h-full w-full max-w-lg overflow-y-auto bg-card p-6">
             <button onClick={() => setFocus(null)} data-testid="directory-detail-close"
-              className="absolute right-4 top-4 text-muted-foreground hover:text-[#800020]" aria-label="Fermer">
+              className="absolute right-4 top-4 text-muted-foreground hover:text-[var(--bordeaux)]" aria-label="Fermer">
               <X className="h-5 w-5" />
             </button>
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Fiche professionnelle</p>
-            <h2 className="mt-2 font-display text-2xl font-extrabold text-[#002060]">
+            <h2 className="mt-2 font-display text-2xl font-extrabold text-[var(--marine)]">
               {focus.details.company_name || focus.profile?.display_name}
             </h2>
             <p className="text-sm text-muted-foreground">{focus.profile?.display_name} · {focus.access_level}</p>
@@ -164,7 +166,7 @@ export default function Directory() {
 
             {focus.details.services?.length > 0 && (
               <section className="mt-6">
-                <h3 className="font-display text-sm font-bold uppercase tracking-wide text-[#002060]">Services</h3>
+                <h3 className="font-display text-sm font-bold uppercase tracking-wide text-[var(--marine)]">Services</h3>
                 <ul className="mt-2 list-inside list-disc text-sm text-muted-foreground">
                   {focus.details.services.map((s) => <li key={s}>{s}</li>)}
                 </ul>
@@ -172,7 +174,7 @@ export default function Directory() {
             )}
             {focus.details.specialties?.length > 0 && (
               <section className="mt-6">
-                <h3 className="font-display text-sm font-bold uppercase tracking-wide text-[#002060]">Spécialités</h3>
+                <h3 className="font-display text-sm font-bold uppercase tracking-wide text-[var(--marine)]">Spécialités</h3>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {focus.details.specialties.map((s) => (
                     <span key={s} className="rounded-full bg-muted px-2.5 py-1 text-xs">{s}</span>
@@ -181,8 +183,8 @@ export default function Directory() {
               </section>
             )}
             {focus.details.member_advantages && (
-              <section className="mt-6 rounded-xl bg-[#800020]/5 p-4">
-                <h3 className="font-display text-sm font-bold text-[#800020]">Avantage adhérent</h3>
+              <section className="mt-6 rounded-xl bg-[var(--bordeaux-a5)] p-4">
+                <h3 className="font-display text-sm font-bold text-[var(--bordeaux)]">Avantage adhérent</h3>
                 <p className="mt-1 text-sm">{focus.details.member_advantages}</p>
               </section>
             )}
@@ -194,22 +196,28 @@ export default function Directory() {
               {focus.details.website && (
                 <a href={focus.details.website} target="_blank" rel="noopener noreferrer"
                   data-testid="directory-detail-website"
-                  className="inline-flex items-center gap-1 font-semibold text-[#800020] hover:underline">
+                  className="inline-flex items-center gap-1 font-semibold text-[var(--bordeaux)] hover:underline">
                   Site internet <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </section>
             {user?.role === "ADMIN_BUREAU" && (
-              <section className="mt-6 rounded-xl border p-4 text-sm" data-testid="directory-detail-partnership">
-                <h3 className="font-display text-sm font-bold text-[#002060]">Partenariat (Bureau)</h3>
+              <>
+                <div className="mt-6">
+                  <ProCardQr userId={focus.details.user_id} testId="directory-pro-card-qr"
+                    name={focus.details.company_name || focus.profile?.display_name} />
+                </div>
+                <section className="mt-6 rounded-xl border p-4 text-sm" data-testid="directory-detail-partnership">
+                <h3 className="font-display text-sm font-bold text-[var(--marine)]">Partenariat (Bureau)</h3>
                 <p className="mt-1">Statut : {focus.details.partnership_status || "—"}</p>
                 <p>Pourcentage : {focus.details.partnership_percentage ?? "—"} %</p>
                 <p>Contrat : {focus.details.contract_status || "—"} {focus.details.contract_reference || ""}</p>
               </section>
+              </>
             )}
             {focus.projects?.length > 0 && (
               <section className="mt-6">
-                <h3 className="font-display text-sm font-bold uppercase tracking-wide text-[#002060]">Projets</h3>
+                <h3 className="font-display text-sm font-bold uppercase tracking-wide text-[var(--marine)]">Projets</h3>
                 <ul className="mt-2 space-y-1 text-sm">
                   {focus.projects.map((p) => <li key={p.project_id}>{p.title} — {p.status}</li>)}
                 </ul>
@@ -219,7 +227,7 @@ export default function Directory() {
             {user?.role === "ADMIN_BUREAU" && recap && (
               <section className="mt-6 rounded-xl border p-4" data-testid="pro-annual-recap">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-display text-sm font-bold text-[#002060]">
+                  <h3 className="font-display text-sm font-bold text-[var(--marine)]">
                     Récapitulatif {recap.year}
                   </h3>
                   <Button size="sm" variant="outline" className="rounded-full"
@@ -257,7 +265,7 @@ export default function Directory() {
 
             {user?.role === "ADMIN_BUREAU" && (
               <section className="mt-6 rounded-xl border p-4" data-testid="pro-reviews">
-                <h3 className="inline-flex items-center gap-2 font-display text-sm font-bold text-[#002060]">
+                <h3 className="inline-flex items-center gap-2 font-display text-sm font-bold text-[var(--marine)]">
                   <NotebookPen className="h-4 w-4" /> Suivi qualitatif (Bureau uniquement)
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -286,7 +294,7 @@ export default function Directory() {
                     <Input value={review.context} data-testid="review-context-input"
                       onChange={(e) => setReview({ ...review, context: e.target.value })} />
                   </div>
-                  <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid="review-save-button" onClick={saveReview}>Enregistrer le retour</Button>
                 </div>
 
@@ -297,14 +305,12 @@ export default function Directory() {
                     <div key={r.review_id} data-testid={`review-${r.review_id}`}
                       className="rounded-lg border px-3 py-2 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-[#002060]">
+                        <span className="text-xs font-semibold text-[var(--marine)]">
                           {r.author_name} · {new Date(r.created_at).toLocaleDateString("fr-FR")}
                         </span>
-                        <Button size="sm" variant="outline"
-                          className="rounded-full text-red-700 hover:bg-red-50"
-                          data-testid={`review-delete-${r.review_id}`} onClick={() => removeReview(r)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <RowMenu testId={`review-menu-${r.review_id}`} items={[
+                          { label: "Supprimer ce retour", icon: Trash2, danger: true,
+                            testId: `review-delete-${r.review_id}`, onSelect: () => removeReview(r) }]} />
                       </div>
                       <p className="mt-1">{r.observations}</p>
                       {r.strengths && <p className="text-xs text-emerald-700">Points forts : {r.strengths}</p>}

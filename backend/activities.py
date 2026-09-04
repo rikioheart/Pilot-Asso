@@ -1,4 +1,5 @@
 """Phase 4 — Activités, événements, calendrier, inscriptions, participations."""
+from datetime import timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +9,7 @@ import rbac
 from rbac import ROLE_ADMIN, ROLE_PRO, ROLE_MEMBER
 from deps import (db, iso, now_utc, new_id, active_user, require, require_admin,
                   log_action, notify, notify_bureau, display_name)
+from settings_api import delegation_check
 
 router = APIRouter(prefix="/api")
 
@@ -41,6 +43,7 @@ class ActivityIn(BaseModel):
     google_maps_url: Optional[str] = None
     is_remote: bool = False
     visio_url: Optional[str] = None
+    google_forms_url: Optional[str] = None
     form_id: Optional[str] = None
     form_notify_date: Optional[str] = None
     project_id: Optional[str] = None
@@ -68,6 +71,7 @@ class ActivityUpdate(BaseModel):
     google_maps_url: Optional[str] = None
     is_remote: Optional[bool] = None
     visio_url: Optional[str] = None
+    google_forms_url: Optional[str] = None
     form_id: Optional[str] = None
     form_notify_date: Optional[str] = None
 
@@ -79,6 +83,7 @@ class EventIn(BaseModel):
     start_date: str
     end_date: Optional[str] = None
     location: Optional[str] = None
+    address: Optional[str] = None
     visibility: str = "MEMBERS"
     capacity: Optional[int] = None
     status: str = "PLANNED"
@@ -87,6 +92,8 @@ class EventIn(BaseModel):
     google_maps_url: Optional[str] = None
     is_remote: bool = False
     visio_url: Optional[str] = None
+    google_meet_url: Optional[str] = None
+    google_forms_url: Optional[str] = None
     form_id: Optional[str] = None
     form_notify_date: Optional[str] = None
     eligible_for_loyalty: bool = False
@@ -100,6 +107,7 @@ class EventUpdate(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
+    address: Optional[str] = None
     visibility: Optional[str] = None
     capacity: Optional[int] = None
     status: Optional[str] = None
@@ -107,6 +115,8 @@ class EventUpdate(BaseModel):
     google_maps_url: Optional[str] = None
     is_remote: Optional[bool] = None
     visio_url: Optional[str] = None
+    google_meet_url: Optional[str] = None
+    google_forms_url: Optional[str] = None
     form_id: Optional[str] = None
     form_notify_date: Optional[str] = None
     eligible_for_loyalty: Optional[bool] = None
@@ -294,16 +304,33 @@ async def create_activity(payload: ActivityIn, user: dict = Depends(require("act
     if payload.visibility not in VISIBILITY_MODES:
         raise HTTPException(status_code=400, detail="Mode de visibilité invalide")
     can_publish = rbac.has_permission(user, "activities.validate")
+    delegated = None
+    if not can_publish:
+        check = await delegation_check(user, capacity=payload.capacity,
+                                       prices=[payload.price_public, payload.price_member],
+                                       location=payload.location, date=payload.date)
+        if check["eligible"]:
+            delegated = check
     doc = {
         "activity_id": new_id("act"), **payload.model_dump(),
-        "status": "PLANNED" if can_publish else "PROPOSED",
+        "status": "PLANNED" if (can_publish or delegated) else "PROPOSED",
         "loyalty_card_types": ["STANDARD"], "created_by": user["user_id"],
         "review_comment": None, "reviewed_by": None,
+        "delegated_publication": bool(delegated),
+        "moderation_until": iso(now_utc() + timedelta(hours=delegated["settings"].get("moderation_hours", 48))) if delegated else None,
         "created_at": iso(now_utc()), "updated_at": iso(now_utc()),
     }
     await db.activities.insert_one(doc)
-    await log_action(user, "CREATE", "activities", doc["activity_id"], new_value={"title": payload.title})
-    if not can_publish:
+    await log_action(user, "CREATE", "activities", doc["activity_id"],
+                     new_value={"title": payload.title, "delegated_publication": bool(delegated)})
+    if delegated:
+        name = await display_name(user["user_id"])
+        await notify_bureau(type="DELEGATED_PUBLICATION", title="Activité publiée par délégation",
+                            message=f"{name} a publié « {payload.title} » (critères Bureau respectés). "
+                                    f"Modération possible pendant {delegated['settings'].get('moderation_hours', 48)} h.",
+                            level="WARNING", resource_type="activity", resource_id=doc["activity_id"],
+                            link=f"/activities?focus={doc['activity_id']}")
+    elif not can_publish:
         name = await display_name(user["user_id"])
         await notify_bureau(type="NEW_PROPOSAL", title="Nouvelle activité proposée",
                             message=f"{name} propose « {payload.title} ».", level="ACTION",
@@ -386,6 +413,22 @@ async def review_activity(activity_id: str, payload: ReviewIn, user: dict = Depe
     return await db.activities.find_one({"activity_id": activity_id}, {"_id": 0})
 
 
+async def _notify_registration(user: dict, title: str, resource_type: str, resource_id: str,
+                               candidates: list, link: str):
+    """Inscription d'un membre : notifie le(s) pro(s) responsable(s) et le Bureau."""
+    name = await display_name(user["user_id"])
+    pros = {c for c in candidates if c and c != user["user_id"]}
+    if pros:
+        async for pro in db.users.find({"user_id": {"$in": list(pros)}, "role": ROLE_PRO, "status": "ACTIVE"},
+                                       {"_id": 0, "user_id": 1}):
+            await notify(pro["user_id"], type="ACTIVITY_REGISTRATION", title="Nouvelle inscription",
+                         message=f"{name} s'est inscrit à « {title} ».", level="INFO",
+                         resource_type=resource_type, resource_id=resource_id, link=link)
+    await notify_bureau(type="ACTIVITY_REGISTRATION", title="Nouvelle inscription",
+                        message=f"{name} s'est inscrit à « {title} ».", level="INFO",
+                        resource_type=resource_type, resource_id=resource_id, link=link)
+
+
 @router.post("/activities/{activity_id}/register")
 async def register_activity(activity_id: str, payload: RegisterIn, user: dict = Depends(require("activities.view"))):
     activity = await _get_activity(activity_id, user)
@@ -409,6 +452,9 @@ async def register_activity(activity_id: str, payload: RegisterIn, user: dict = 
     await notify(user["user_id"], type="REGISTRATION_CONFIRMED", title="Inscription confirmée",
                  message=f"Vous êtes inscrit à « {activity['title']} ».", level="SUCCESS",
                  resource_type="activity", resource_id=activity_id, link="/activities")
+    await _notify_registration(user, activity["title"], "activity", activity_id,
+                               [activity.get("created_by"), *(activity.get("professional_ids") or [])],
+                               f"/activities?focus={activity_id}")
     if activity.get("capacity") and count + 1 >= activity["capacity"]:
         await db.activities.update_one({"activity_id": activity_id}, {"$set": {"status": "FULL"}})
     return {k: v for k, v in doc.items() if k != "_id"}
@@ -457,11 +503,32 @@ async def create_event(payload: EventIn, user: dict = Depends(require("events.cr
         raise HTTPException(status_code=400, detail="Mode de visibilité invalide")
     doc = {
         "event_id": new_id("evt"), **payload.model_dump(), "organizer_id": user["user_id"],
-        "activity_ids": [], "financial_summary": None,
+        "activity_ids": [], "financial_summary": None, "delegated_publication": False, "moderation_until": None,
         "created_at": iso(now_utc()), "updated_at": iso(now_utc()),
     }
+    if user["role"] != ROLE_ADMIN and payload.status in ("PLANNED", "CONFIRMED"):
+        check = await delegation_check(user, capacity=payload.capacity, prices=[],
+                                       location=payload.location, date=payload.start_date)
+        name = await display_name(user["user_id"])
+        if check["eligible"]:
+            hours = check["settings"].get("moderation_hours", 48)
+            doc["delegated_publication"] = True
+            doc["moderation_until"] = iso(now_utc() + timedelta(hours=hours))
+            await notify_bureau(type="DELEGATED_PUBLICATION", title="Événement publié par délégation",
+                                message=f"{name} a publié « {payload.title} ». Modération possible pendant {hours} h.",
+                                level="WARNING", resource_type="event", resource_id=doc["event_id"],
+                                link=f"/events/{doc['event_id']}")
+        else:
+            doc["status"] = "DRAFT"
+            doc["pending_validation"] = True
+            doc["delegation_reasons"] = check["reasons"]
+            await notify_bureau(type="NEW_PROPOSAL", title="Événement à valider",
+                                message=f"{name} propose « {payload.title} » (hors critères : {', '.join(check['reasons'])}).",
+                                level="ACTION", resource_type="event", resource_id=doc["event_id"],
+                                link=f"/events/{doc['event_id']}")
     await db.events.insert_one(doc)
-    await log_action(user, "CREATE", "events", doc["event_id"], new_value={"title": payload.title})
+    await log_action(user, "CREATE", "events", doc["event_id"],
+                     new_value={"title": payload.title, "delegated_publication": doc["delegated_publication"]})
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
@@ -553,6 +620,9 @@ async def register_event(event_id: str, payload: RegisterIn, user: dict = Depend
     await notify(user["user_id"], type="REGISTRATION_CONFIRMED", title="Inscription confirmée",
                  message=f"Vous êtes inscrit à « {event['title']} » ({payload.role.lower()}).",
                  level="SUCCESS", resource_type="event", resource_id=event_id, link=f"/events/{event_id}")
+    await _notify_registration(user, event["title"], "event", event_id,
+                               [event.get("organizer_id"), *(event.get("professional_ids") or [])],
+                               f"/events/{event_id}")
     if payload.role == "VOLUNTEER":
         name = await display_name(user["user_id"])
         await notify_bureau(type="VOLUNTEER_REQUEST", title="Nouveau bénévole sur un événement",

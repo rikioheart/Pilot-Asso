@@ -59,7 +59,7 @@ class GuideIn(BaseModel):
     module: str = "AUTRE"
     role_scopes: List[str] = ["PARTICULIER"]
     summary: Optional[str] = None
-    content: str = Field(min_length=10)
+    content: str = Field(min_length=10, max_length=3_000_000)
     visibility: str = "ALL"
     activity_id: Optional[str] = None
 

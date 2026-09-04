@@ -13,9 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const nodeStyle = (node) => ({
-  background: node.node_type === "ROOT" ? "#800020" : "#ffffff",
-  color: node.node_type === "ROOT" ? "#ffffff" : "#002060",
-  border: `2px solid ${node.color || "#002060"}`,
+  background: node.node_type === "ROOT" ? "var(--bordeaux)" : "#ffffff",
+  color: node.node_type === "ROOT" ? "#ffffff" : "var(--marine)",
+  border: `2px solid ${node.color || "var(--marine)"}`,
   borderRadius: node.node_type === "ROOT" ? 999 : 12,
   padding: node.node_type === "ROOT" ? "18px 26px" : "10px 14px",
   fontWeight: node.node_type === "ROOT" ? 800 : 600,
@@ -33,7 +33,7 @@ export default function Mindmap() {
   const [raw, setRaw] = useState({ nodes: [], projects: [], can_edit: false });
   const [selected, setSelected] = useState(null);
   const [dialog, setDialog] = useState(null);
-  const [form, setForm] = useState({ label: "", color: "#002060", link: "", project_id: "", progress: 0 });
+  const [form, setForm] = useState({ label: "", color: "var(--marine)", link: "", project_id: "", progress: 0 });
   const [dirty, setDirty] = useState({});
 
   const load = useCallback(async () => {
@@ -49,7 +49,7 @@ export default function Mindmap() {
       })));
       setEdges(data.edges.map((e) => ({
         id: e.edge_id, source: e.source, target: e.target, animated: false,
-        style: { stroke: "#80002055", strokeWidth: 2 },
+        style: { stroke: "var(--bordeaux)55", strokeWidth: 2 },
       })));
     } catch (e) {
       toast.error(apiError(e));
@@ -101,7 +101,7 @@ export default function Mindmap() {
       });
       toast.success("Nœud ajouté");
       setDialog(null);
-      setForm({ label: "", color: "#002060", link: "", project_id: "", progress: 0 });
+      setForm({ label: "", color: "var(--marine)", link: "", project_id: "", progress: 0 });
       load();
     } catch (err) {
       toast.error(apiError(err));
@@ -127,7 +127,7 @@ export default function Mindmap() {
         actions={raw.can_edit && (
           <div className="flex flex-wrap gap-2">
             {Object.keys(dirty).length > 0 && (
-              <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]" onClick={savePositions}
+              <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]" onClick={savePositions}
                 data-testid="mindmap-save-positions">
                 <Save className="mr-2 h-4 w-4" /> Enregistrer les positions
               </Button>
@@ -136,7 +136,7 @@ export default function Mindmap() {
               onClick={() => setDialog("project")} disabled={!selected}>
               <Link2 className="mr-2 h-4 w-4" /> Associer un projet
             </Button>
-            <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="mindmap-add-node"
+            <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="mindmap-add-node"
               onClick={() => setDialog("node")}>
               <Plus className="mr-2 h-4 w-4" /> Ajouter un nœud
             </Button>
@@ -145,7 +145,7 @@ export default function Mindmap() {
 
       {selected && (
         <p className="mb-3 text-sm text-muted-foreground" data-testid="mindmap-selected">
-          Nœud sélectionné : <b className="text-[#002060]">{selected.label}</b>
+          Nœud sélectionné : <b className="text-[var(--marine)]">{selected.label}</b>
           {selected.project_id && " · projet associé"}
         </p>
       )}
@@ -157,10 +157,10 @@ export default function Mindmap() {
           <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
             onNodeClick={onNodeClick} onNodeDragStop={onNodeDragStop} fitView
             proOptions={{ hideAttribution: true }} minZoom={0.2}>
-            <Background color="#80002020" gap={22} />
+            <Background color="var(--bordeaux)20" gap={22} />
             <Controls showInteractive={false} />
             <MiniMap pannable zoomable className="hidden sm:block"
-              nodeColor={(n) => n.data?.node?.color || "#002060"} />
+              nodeColor={(n) => n.data?.node?.color || "var(--marine)"} />
           </ReactFlow>
         </div>
       )}
@@ -173,7 +173,7 @@ export default function Mindmap() {
               {list.slice(0, 4).map((p) => (
                 <button key={p.project_id} onClick={() => navigate(`/projects/${p.project_id}`)}
                   data-testid={`mindmap-project-${p.project_id}`}
-                  className="block w-full truncate text-left text-sm text-[#002060] hover:text-[#800020]">
+                  className="block w-full truncate text-left text-sm text-[var(--marine)] hover:text-[var(--bordeaux)]">
                   {p.title} · {p.completion_percentage}%
                 </button>
               ))}
@@ -230,7 +230,7 @@ export default function Mindmap() {
                 Le nœud sera rattaché à {selected ? `« ${selected.label} »` : "la racine"}.
               </p>
               <DialogFooter>
-                <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                   data-testid="mindmap-node-save">Ajouter</Button>
               </DialogFooter>
             </form>
@@ -239,7 +239,7 @@ export default function Mindmap() {
               {raw.projects.map((p) => (
                 <button key={p.project_id} onClick={() => attachProject(p.project_id)}
                   data-testid={`mindmap-attach-${p.project_id}`}
-                  className="w-full rounded-lg border px-4 py-2 text-left text-sm transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
+                  className="w-full rounded-lg border px-4 py-2 text-left text-sm transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
                   {p.title}
                 </button>
               ))}

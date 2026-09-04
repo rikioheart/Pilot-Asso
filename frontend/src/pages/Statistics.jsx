@@ -55,7 +55,7 @@ export default function Statistics() {
             {PERIODS.map(([value, label]) => (
               <Button key={value} size="sm" variant={period === value ? "default" : "outline"}
                 data-testid={`stats-period-${value}`}
-                className={`rounded-full ${period === value ? "bg-[#800020] hover:bg-[#63001a]" : ""}`}
+                className={`rounded-full ${period === value ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
                 onClick={() => setPeriod(value)}>{label}</Button>
             ))}
           </div>
@@ -65,13 +65,13 @@ export default function Statistics() {
         {TOTAL_LABELS.map(([key, label]) => (
           <div key={key} className="vdc-kpi" data-testid={`stats-total-${key}`}>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-            <p className="mt-2 font-display text-2xl font-extrabold text-[#002060]">{data.totals[key] ?? 0}</p>
+            <p className="mt-2 font-display text-2xl font-extrabold text-[var(--marine)]">{data.totals[key] ?? 0}</p>
           </div>
         ))}
       </section>
 
       <section className="mt-6 rounded-xl border bg-card p-5" data-testid="stats-chart">
-        <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Évolution</h2>
+        <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Évolution</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Nouveaux membres, tâches terminées, projets créés, participations et tampons fidélité.
         </p>
@@ -83,8 +83,8 @@ export default function Statistics() {
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="membres" stroke="#800020" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="taches" stroke="#002060" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="membres" stroke="var(--bordeaux)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="taches" stroke="var(--marine)" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="projets" stroke="#0f766e" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="participations" stroke="#b45309" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="tampons" stroke="#4c1d95" strokeWidth={2} dot={false} />
@@ -94,7 +94,7 @@ export default function Statistics() {
       </section>
 
       <section className="mt-6 rounded-xl border bg-card p-5" data-testid="stats-categories">
-        <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">Projets par catégorie</h2>
+        <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Projets par catégorie</h2>
         <div className="mt-6 h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.projects_by_category} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -102,7 +102,7 @@ export default function Statistics() {
               <XAxis dataKey="category" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="count" fill="#800020" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="count" fill="var(--bordeaux)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

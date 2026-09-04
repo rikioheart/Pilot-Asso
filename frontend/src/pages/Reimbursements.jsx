@@ -56,7 +56,7 @@ export default function Reimbursements() {
       <PageHeader breadcrumb="Gestion" title="Remboursements"
         subtitle="Les frais avancés par les bénévoles et professionnels, validés puis réglés par le Bureau."
         actions={
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="reimbursement-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="reimbursement-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouvelle demande
           </Button>
@@ -78,7 +78,7 @@ export default function Reimbursements() {
             <div key={item.reimbursement_id} data-testid={`reimbursement-${item.reimbursement_id}`}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-5 py-4">
               <div className="min-w-0">
-                <p className="font-semibold text-[#002060]">{item.beneficiary_name}</p>
+                <p className="font-semibold text-[var(--marine)]">{item.beneficiary_name}</p>
                 <p className="text-sm text-muted-foreground">{item.reason}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Demandé le {new Date(item.request_date).toLocaleDateString("fr-FR")}
@@ -86,7 +86,7 @@ export default function Reimbursements() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-display text-lg font-extrabold text-[#800020]">
+                <span className="font-display text-lg font-extrabold text-[var(--bordeaux)]">
                   {item.amount.toFixed(2)} €
                 </span>
                 <Chip tone={tone}>{label}</Chip>
@@ -105,7 +105,7 @@ export default function Reimbursements() {
                   </>
                 )}
                 {["PENDING", "APPROVED"].includes(item.status) && (
-                  <Button size="sm" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                  <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                     data-testid={`reimbursement-pay-${item.reimbursement_id}`}
                     onClick={() => setStatus(item, "PAID")}>Marquer réglé</Button>
                 )}
@@ -151,7 +151,7 @@ export default function Reimbursements() {
               <Textarea rows={2} value={form.notes} data-testid="reimbursement-notes-input"
                 onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="reimbursement-save-button">Enregistrer</Button>
             </DialogFooter>
           </form>

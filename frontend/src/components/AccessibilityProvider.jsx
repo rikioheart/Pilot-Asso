@@ -15,7 +15,6 @@ export const AccessibilityProvider = ({ children }) => {
     root.dataset.textSize = prefs.text_size.toLowerCase();
     root.dataset.spacing = prefs.spacing.toLowerCase();
     root.dataset.contrast = prefs.contrast.toLowerCase();
-    root.dataset.focus = prefs.focus_mode ? "on" : "off";
     root.dataset.motion = prefs.reduce_motion ? "reduced" : "full";
   }, [profile]);
 

@@ -42,7 +42,7 @@ export default function Notifications() {
         {FILTERS.map(([value, label]) => (
           <button key={label} onClick={() => setFilter(value)} data-testid={`notifications-filter-${label.toLowerCase()}`}
             className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-              filter === value ? "border-[#800020] bg-[#800020] text-white" : "hover:border-[#002060]/40"}`}>
+              filter === value ? "border-[var(--bordeaux)] bg-[var(--bordeaux)] text-white" : "hover:border-[var(--marine-a40)]"}`}>
             {label}
           </button>
         ))}
@@ -57,7 +57,7 @@ export default function Notifications() {
             <div key={n.notification_id} data-testid={`notification-row-${n.notification_id}`}
               className={`flex flex-col gap-2 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between ${n.is_read ? "opacity-60" : ""}`}>
               <div>
-                <p className="font-semibold text-[#002060]">{n.title}</p>
+                <p className="font-semibold text-[var(--marine)]">{n.title}</p>
                 <p className="text-sm text-muted-foreground">{n.message}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {new Date(n.created_at).toLocaleString("fr-FR")} · {n.type}
@@ -66,7 +66,7 @@ export default function Notifications() {
               <div className="flex gap-2">
                 {n.link && (
                   <Link to={n.link} data-testid={`notification-open-${n.notification_id}`}
-                    className="rounded-full border px-4 py-1.5 text-sm font-semibold text-[#002060] transition-colors hover:bg-muted">
+                    className="rounded-full border px-4 py-1.5 text-sm font-semibold text-[var(--marine)] transition-colors hover:bg-muted">
                     Ouvrir
                   </Link>
                 )}

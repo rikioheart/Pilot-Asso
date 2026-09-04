@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
 import { Camera, Search, CameraOff, Star, CheckCircle2 } from "lucide-react";
-import { api, apiError } from "@/lib/api";
+import { api, apiError, isOffline, queueOfflineStamp } from "@/lib/api";
+import { useOffline } from "@/components/OfflineMode";
 import { PageHeader, EmptyState } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +19,15 @@ export default function LoyaltyScan() {
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
   const [tokenInput, setTokenInput] = useState("");
+  const [offlineToken, setOfflineToken] = useState(null);
+  const { offline, pending } = useOffline();
   const [results, setResults] = useState([]);
   const [history, setHistory] = useState([]);
   const scannerRef = useRef(null);
 
+  const [catalog, setCatalog] = useState({ eligible_activities: [], eligible_events: [] });
   useEffect(() => {
+    api.get("/loyalty/eligible").then((r) => setCatalog(r.data)).catch(() => {});
     api.get("/loyalty/history", { params: { limit: 20 } }).then((r) => setHistory(r.data.items)).catch(() => {});
     return () => {
       if (scannerRef.current) scannerRef.current.stop().catch(() => {});
@@ -36,8 +41,18 @@ export default function LoyaltyScan() {
     setResults([]);
   };
 
+  const holdOffline = (token) => {
+    setOfflineToken(token);
+    setMember({ user_id: null, display_name: "Adhérent (QR mémorisé, hors connexion)", offline: true, dogs: [],
+      total_points: "—", card_type: "—", eligible_activities: catalog.eligible_activities || [],
+      eligible_events: catalog.eligible_events || [] });
+    setActivityId(""); setEventId(""); setResults([]);
+    toast.message("Hors connexion : le scan sera synchronisé à la reconnexion");
+  };
+
   const submitToken = async () => {
     if (tokenInput.trim().length < 6) return toast.error("Saisissez le code complet du QR");
+    if (isOffline()) { holdOffline(tokenInput.trim()); setTokenInput(""); return; }
     try {
       const { data } = await api.post("/loyalty/scan", { qr_token: tokenInput.trim() });
       identify(data);
@@ -55,12 +70,13 @@ export default function LoyaltyScan() {
         await scanner.stop().catch(() => {});
         scannerRef.current = null;
         setScanning(false);
+        if (isOffline()) { holdOffline(decoded); return; }
         try {
           const { data } = await api.post("/loyalty/scan", { qr_token: decoded });
           identify(data);
           toast.success(`Adhérent identifié : ${data.display_name}`);
         } catch (e) {
-          toast.error(apiError(e));
+          if (!e.response) holdOffline(decoded); else toast.error(apiError(e));
         }
       });
     } catch (e) {
@@ -88,6 +104,14 @@ export default function LoyaltyScan() {
 
   const confirm = async () => {
     if (!activityId && !eventId) return toast.error("Sélectionnez une activité ou un événement éligible");
+    if (member?.offline || isOffline()) {
+      const n = queueOfflineStamp({ qr_token: offlineToken || undefined, user_id: member?.user_id || undefined,
+        activity_id: activityId || null, event_id: eventId || null });
+      window.dispatchEvent(new Event("vdc-offline-queue"));
+      toast.success(`Tampon enregistré localement (${n} en attente de synchronisation)`);
+      setMember(null); setOfflineToken(null); setActivityId(""); setEventId("");
+      return;
+    }
     try {
       const { data } = await api.post("/loyalty/stamp", {
         user_id: member.user_id,
@@ -107,17 +131,23 @@ export default function LoyaltyScan() {
       <PageHeader breadcrumb="Terrain" title="Valider une participation"
         subtitle="Scannez le QR d'engagement de l'adhérent (ou saisissez son code), choisissez l'activité ou l'événement éligible, validez en un clic." />
 
+      {(offline || pending > 0) && (
+        <p className="mb-4 rounded-lg border border-amber-400 bg-amber-50 px-4 py-2 text-sm text-amber-700" data-testid="loyalty-offline-banner">
+          {offline ? "Mode dégradé hors connexion : les scans sont enregistrés sur cet appareil et synchronisés automatiquement dès le retour du réseau."
+            : `${pending} scan(s) en attente de synchronisation.`}
+        </p>
+      )}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           <div className="rounded-xl border bg-card p-5" data-testid="loyalty-scanner">
-            <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">1. Identifier l'adhérent</h2>
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">1. Identifier l'adhérent</h2>
             <div className="mt-4 flex flex-wrap gap-2">
               {scanning ? (
                 <Button variant="outline" className="rounded-full" onClick={stopScan} data-testid="loyalty-stop-scan">
                   <CameraOff className="mr-2 h-4 w-4" /> Arrêter la caméra
                 </Button>
               ) : (
-                <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" onClick={startScan}
+                <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" onClick={startScan}
                   data-testid="loyalty-start-scan">
                   <Camera className="mr-2 h-4 w-4" /> Scanner le QR
                 </Button>
@@ -150,8 +180,8 @@ export default function LoyaltyScan() {
                 <div className="mt-3 space-y-2" data-testid="loyalty-search-results">
                   {results.map((r) => (
                     <button key={r.user_id} onClick={() => identify(r)} data-testid={`loyalty-result-${r.user_id}`}
-                      className="w-full rounded-lg border px-4 py-2 text-left text-sm transition-colors hover:border-[#800020]/40 hover:bg-muted/50">
-                      <span className="font-semibold text-[#002060]">{r.display_name}</span>
+                      className="w-full rounded-lg border px-4 py-2 text-left text-sm transition-colors hover:border-[var(--bordeaux-a40)] hover:bg-muted/50">
+                      <span className="font-semibold text-[var(--marine)]">{r.display_name}</span>
                       <span className="ml-2 text-xs text-muted-foreground">
                         {r.city || ""} {r.dogs.length > 0 && `· ${r.dogs.join(", ")}`} · {r.total_points} pts
                       </span>
@@ -164,7 +194,7 @@ export default function LoyaltyScan() {
 
           {member && (
             <div className="rounded-xl border bg-card p-5" data-testid="loyalty-selected-member">
-              <h2 className="font-display text-base md:text-lg font-bold text-[#002060]">2. Élément éligible</h2>
+              <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">2. Élément éligible</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {member.display_name} · {member.total_points} tampon(s) · carte {member.card_type}
                 {member.dogs.length > 0 && ` · ${member.dogs.join(", ")}`}
@@ -202,7 +232,7 @@ export default function LoyaltyScan() {
                       </SelectContent>
                     </Select>
                   )}
-                  <Button onClick={confirm} className="w-full rounded-full bg-[#002060] hover:bg-[#001740]"
+                  <Button onClick={confirm} className="w-full rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                     data-testid="loyalty-confirm-stamp">
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Valider la présence et ajouter le tampon
                   </Button>
@@ -216,8 +246,8 @@ export default function LoyaltyScan() {
         </div>
 
         <div className="rounded-xl border bg-card p-5" data-testid="loyalty-scan-history">
-          <h2 className="inline-flex items-center gap-2 font-display text-base md:text-lg font-bold text-[#002060]">
-            <Star className="h-4 w-4 text-[#800020]" /> Derniers tampons
+          <h2 className="inline-flex items-center gap-2 font-display text-base md:text-lg font-bold text-[var(--marine)]">
+            <Star className="h-4 w-4 text-[var(--bordeaux)]" /> Derniers tampons
           </h2>
           <div className="mt-4 space-y-2">
             {history.length === 0 && (
@@ -228,12 +258,12 @@ export default function LoyaltyScan() {
               <div key={s.stamp_id} className="flex items-center justify-between rounded-lg border px-4 py-3"
                 data-testid={`loyalty-scan-history-${s.stamp_id}`}>
                 <div>
-                  <p className="text-sm font-semibold text-[#002060]">{s.member_name}</p>
+                  <p className="text-sm font-semibold text-[var(--marine)]">{s.member_name}</p>
                   <p className="text-xs text-muted-foreground">
                     {s.activity_title} · {new Date(s.created_at).toLocaleDateString("fr-FR")} · par {s.validated_by_name}
                   </p>
                 </div>
-                <span className="font-display text-lg font-extrabold text-[#800020]">+{s.points}</span>
+                <span className="font-display text-lg font-extrabold text-[var(--bordeaux)]">+{s.points}</span>
               </div>
             ))}
           </div>

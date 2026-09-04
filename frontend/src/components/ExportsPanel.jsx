@@ -92,7 +92,7 @@ export const ExportsPanel = () => {
             className="justify-start rounded-full">
             {busy === kind
               ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              : <Download className="mr-2 h-4 w-4 text-[#800020]" />}
+              : <Download className="mr-2 h-4 w-4 text-[var(--bordeaux)]" />}
             {label}
           </Button>
         ))}

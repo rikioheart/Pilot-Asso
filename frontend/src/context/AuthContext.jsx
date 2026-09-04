@@ -44,6 +44,7 @@ export const AuthProvider = ({ children }) => {
       /* noop */
     }
     localStorage.removeItem("vdc_token");
+    sessionStorage.removeItem("vdc_focus_pages");
     setUser(false);
     setProfile(null);
   };

@@ -10,13 +10,13 @@ export const PriorityQueue = ({ data }) => {
 
   return (
     <section className="mb-8 overflow-hidden rounded-2xl border bg-card" data-testid="priority-queue">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-[#002060] px-5 py-4 text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-[var(--marine)] px-5 py-4 text-white">
         <div className="flex items-center gap-2.5">
           <BellRing className="h-5 w-5 text-white/80" />
           <h2 className="font-display text-base md:text-lg font-bold">Ce qui attend une action</h2>
         </div>
         <div className="flex items-center gap-2 text-xs font-bold">
-          <span className="rounded-full bg-[#800020] px-3 py-1" data-testid="priority-high-total">
+          <span className="rounded-full bg-[var(--bordeaux)] px-3 py-1" data-testid="priority-high-total">
             {data.high_total} urgent(s)
           </span>
           <span className="rounded-full bg-white/12 px-3 py-1" data-testid="priority-normal-total">
@@ -36,13 +36,13 @@ export const PriorityQueue = ({ data }) => {
             <Link key={item.key} to={item.link} data-testid={`priority-${item.key}`}
               className="group flex items-center gap-3 bg-card px-5 py-4 transition-colors hover:bg-muted/60">
               <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl font-display text-lg font-extrabold ${
-                item.urgency === "HIGH" ? "bg-[#800020]/10 text-[#800020]" : "bg-[#002060]/8 text-[#002060]"}`}>
+                item.urgency === "HIGH" ? "bg-[var(--bordeaux-a10)] text-[var(--bordeaux)]" : "bg-[var(--marine-a8)] text-[var(--marine)]"}`}>
                 {item.count}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-[#002060]">{item.label}</span>
+                <span className="block text-sm font-semibold text-[var(--marine)]">{item.label}</span>
                 {item.urgency === "HIGH" && (
-                  <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-[#800020]">
+                  <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-[var(--bordeaux)]">
                     <AlertTriangle className="h-3 w-3" /> Action requise
                   </span>
                 )}

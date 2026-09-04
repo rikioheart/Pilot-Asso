@@ -1,0 +1,25 @@
+{
+  "summary": "Prompt 8 Lot A (socle UI paramétrable + focus mode + navigation + recherche étendue + FAB par rôle + suppressions via AlertDialog) testé end-to-end. Backend 7/7 pytest (test_prompt8_theme_search.py) : GET public /api/settings/theme renvoie les 8 clés, PUT Bureau accepte #123456, PUT couleur invalide → 400, PUT pro1 → 403, POST /reset ramène primary=#800020, /api/search (Bureau) renvoie groupes incluant Activités/Événements/Guides, /api/search (membre1) n'expose ni Stocks ni Documents. Frontend (Bureau desktop, pro1 desktop, membre1 mobile 390x800) : FAB quick-actions-button + quick-actions-menu par rôle (Bureau: Créer un membre / Consulter le cockpit / Création rapide ; pro1: Créer une activité / Accéder à ma fiche ; membre1: Inscrire mon chien à une activité / Consulter le prochain événement), QuickCreate Sheet s'ouvre, focus mode toggle applique html[data-focus=on] et masque notification-bell, comportement page-par-page (dashboard=on → /projects=off → retour dashboard=on) et reset après logout→login (=off), /admin/settings theme-settings-card fonctionne (--bordeaux passe à #336699 puis reset via confirm-dialog-confirm remet #800020), global-search-input avec 'DEMO' renvoie global-search-results avec groupes Activités + Événements + Guides, /aide guide-menu-* ouvre guide-delete-* → prompt motif → confirm-dialog → confirm-dialog-cancel préserve le guide, mobile-bottom-nav présent (Accueil, Calendrier, Activités, Événements, Menu) et bottom-nav-menu ouvre mobile-sidebar. Aucune erreur JS sur /admin/dashboard, /aide, /documents, /stock, /profile, /directory, /admin/engagement.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_prompt8_theme_search.py",
+    "/app/test_reports/pytest/prompt8.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "settings_api.py: régex HEX #[0-9a-fA-F]{6} correct, DEFAULT_THEME contient bien les 8 clés attendues, reset supprime le doc pour restaurer valeurs par défaut — nickel.",
+    "GET /api/settings/theme est bien public (aucun Depends d'auth) — nécessaire pour l'écran de login, conforme au spec.",
+    "Recherche globale : les groupes Stocks/Documents sont bien filtrés par permission (absents pour membre1) — RBAC respecté.",
+    "FocusMode : sessionStorage 'vdc_focus_pages' scope par pathname, reset au logout — comportement page-par-page confirmé côté runtime.",
+    "ConfirmDialog / RowMenu : suppressions passent bien par un AlertDialog (confirm-dialog / -confirm / -cancel) et data-testids exposés — bonne testabilité."
+  ],
+  "updated_files": ["/app/backend/tests/test_prompt8_theme_search.py"],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100% flows demandés"},
+  "test_credentials": "Bureau associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro1.demo@lavoixduchien.fr/Demo2026! ; membre1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Aucune donnée créée. Le thème a été temporairement modifié (primary=#123456 puis #336699) puis remis à #800020 via POST /api/settings/theme/reset et via theme-reset-button UI. Aucune suppression de guide/document effectuée (confirm-dialog-cancel utilisé).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 8 Lot A validé à 100%. Auth: POST /api/auth/login renvoie {user, access_token}. Rappel: /api/settings/theme est public (GET), PUT/POST reset requièrent Bureau (require_admin). /api/search renvoie {'groups':[{'label','items':[...]}]}, les labels étendus disponibles selon rôle incluent Activités/Événements/Stocks/Documents/Guides. Pour tests focus-mode, la clé sessionStorage est 'vdc_focus_pages' et l'attribut html est data-focus (on/off). Onboarding modal 'Ignorer' peut apparaître pour pro1/membre1 sur /profile — cliquer avant interactions.",
+  "rca of the issue": "N/A — aucun bug détecté."
+}

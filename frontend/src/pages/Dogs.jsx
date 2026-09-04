@@ -114,14 +114,14 @@ export default function Dogs() {
       <PageHeader breadcrumb="Suivi des chiens" title="Chiens suivis"
         subtitle="Fiches, professionnel référent, suivi de cas et coopération entre métiers."
         actions={data.can_create && (
-          <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="dog-create-button"
+          <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="dog-create-button"
             onClick={() => setOpen(true)}>
             <Plus className="mr-2 h-4 w-4" /> Nouvelle fiche
           </Button>
         )} />
 
       {data.items.length === 0 ? (
-        <EmptyState testId="dogs-empty" icon={DogIcon} title="Aucun chien suivi pour l'instant"
+        <EmptyState testId="dogs-empty" module="dogs" icon={DogIcon} title="Aucun chien suivi pour l'instant"
           description="Créez la fiche de votre chien : elle rassemble son histoire, ses progrès et les retours des professionnels." />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -129,13 +129,13 @@ export default function Dogs() {
             <button key={dog.dog_id} type="button" onClick={() => openDetail(dog.dog_id)}
               data-testid={`dog-card-${dog.dog_id}`}
               className="overflow-hidden rounded-xl border bg-card text-left transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className="h-32 bg-[#002060]/8">
+              <div className="h-32 bg-[var(--marine-a8)]">
                 {dog.photo_file_id
                   ? <img src={fileUrl(dog.photo_file_id)} alt="" className="h-full w-full object-cover" />
-                  : <div className="grid h-full place-items-center"><DogIcon className="h-8 w-8 text-[#002060]/25" /></div>}
+                  : <div className="grid h-full place-items-center"><DogIcon className="h-8 w-8 text-[var(--marine-a25)]" /></div>}
               </div>
               <div className="p-5">
-                <p className="font-display font-bold text-[#002060]">
+                <p className="font-display font-bold text-[var(--marine)]">
                   {dog.name} <span className="text-sm font-normal text-muted-foreground">
                     · {dog.owner_name}</span>
                 </p>
@@ -214,7 +214,7 @@ export default function Dogs() {
                 value={form.photo_file_id} label="Ajouter une photo"
                 onChange={(id) => setForm({ ...form, photo_file_id: id })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="dog-save-button">Créer la fiche</Button>
             </DialogFooter>
           </form>
@@ -268,7 +268,7 @@ export default function Dogs() {
                     <p className="text-sm text-muted-foreground">Aucun suivi ouvert pour l'instant.</p>
                   ) : detail.cases.map((c) => (
                     <div key={c.case_id} className="mb-4" data-testid={`dog-case-${c.case_id}`}>
-                      <p className="font-semibold text-[#002060]">{c.problem}</p>
+                      <p className="font-semibold text-[var(--marine)]">{c.problem}</p>
                       {c.objectives?.length > 0 && (
                         <ul className="mt-1 text-xs text-muted-foreground">
                           {c.objectives.map((o) => <li key={o}>• {o}</li>)}
@@ -277,8 +277,8 @@ export default function Dogs() {
                       <div className="mt-2"><ProgressBar value={c.progress || 0} label="Progression" /></div>
                       <ul className="mt-3 space-y-1.5">
                         {(c.steps || []).map((s) => (
-                          <li key={s.step_id} className="border-l-2 border-[#800020]/40 pl-3 text-sm">
-                            <span className="font-medium text-[#002060]">{s.label}</span>
+                          <li key={s.step_id} className="border-l-2 border-[var(--bordeaux-a40)] pl-3 text-sm">
+                            <span className="font-medium text-[var(--marine)]">{s.label}</span>
                             <span className="ml-2 text-xs text-muted-foreground">
                               {s.progress} % · {s.author_name} · {s.date}
                             </span>
@@ -319,10 +319,10 @@ export default function Dogs() {
                           </div>
                           <p className="mt-2 text-sm text-muted-foreground">{r.observations}</p>
                           {(r.comments || []).length > 0 && (
-                            <ul className="mt-3 space-y-1.5 border-l-2 border-[#002060]/20 pl-3">
+                            <ul className="mt-3 space-y-1.5 border-l-2 border-[var(--marine-a20)] pl-3">
                               {r.comments.map((c) => (
                                 <li key={c.comment_id} className="text-xs">
-                                  <span className="font-semibold text-[#002060]">{c.author_name} : </span>
+                                  <span className="font-semibold text-[var(--marine)]">{c.author_name} : </span>
                                   <span className="text-muted-foreground">{c.message}</span>
                                   {!c.visible_to_owner && detail.can_write_pro && (
                                     <Chip tone="amber">interne</Chip>
@@ -343,7 +343,7 @@ export default function Dogs() {
                                     onCheckedChange={(v) => setComment({ ...comment, visible_to_owner: !!v })} />
                                   Rendre ce commentaire visible par le propriétaire
                                 </label>
-                                <Button size="sm" className="rounded-full bg-[#002060] hover:bg-[#001740]"
+                                <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                                   data-testid={`dog-comment-send-${r.report_id}`}
                                   onClick={() => addComment(r.report_id)}>Publier</Button>
                               </div>
@@ -363,7 +363,7 @@ export default function Dogs() {
 
                   {detail.can_write_pro && (
                     <div className="mt-5 space-y-3 rounded-lg border border-dashed p-4">
-                      <p className="text-sm font-semibold text-[#002060]">Nouveau compte-rendu</p>
+                      <p className="text-sm font-semibold text-[var(--marine)]">Nouveau compte-rendu</p>
                       <Select value={report.intervention_type}
                         onValueChange={(v) => setReport({ ...report, intervention_type: v })}>
                         <SelectTrigger data-testid="dog-report-type-select"><SelectValue /></SelectTrigger>
@@ -383,7 +383,7 @@ export default function Dogs() {
                         Partager ce compte-rendu avec le propriétaire
                       </label>
                       <Button size="sm" disabled={report.observations.trim().length < 3}
-                        className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+                        className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                         data-testid="dog-report-save-button" onClick={addReport}>Enregistrer</Button>
                     </div>
                   )}
@@ -410,7 +410,7 @@ export default function Dogs() {
                         placeholder="Comportement à la maison, évolution constatée, ressentis…"
                         onChange={(e) => setNote(e.target.value)} />
                       <Button size="sm" disabled={note.trim().length < 2} data-testid="dog-note-save-button"
-                        className="rounded-full bg-[#002060] hover:bg-[#001740]" onClick={addNote}>
+                        className="rounded-full bg-[var(--marine)] hover:bg-[#001740]" onClick={addNote}>
                         Ajouter mon observation
                       </Button>
                     </div>

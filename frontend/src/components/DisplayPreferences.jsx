@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Accessibility, Eye, Type, Sparkles, LayoutGrid, Save } from "lucide-react";
+import { Accessibility, Eye, Type, Sparkles, LayoutGrid, Save , Bell} from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SectionCard, Chip } from "@/components/Ui";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const FONTS = [["DEFAULT", "Police standard"], ["DYSLEXIA", "Police dyslexie (OpenDyslexic)"],
-  ["SERIF", "Police à empattement"]];
+const FONTS = [["DEFAULT", "Atkinson Hyperlegible (lisibilité, par défaut)"], ["LEXEND", "Lexend (lecture fluide)"],
+  ["DYSLEXIA", "OpenDyslexic (police dyslexie)"]];
 const SIZES = [["SMALL", "Petite"], ["NORMAL", "Normale"], ["LARGE", "Grande"], ["XLARGE", "Très grande"]];
 const SPACINGS = [["NORMAL", "Normal"], ["COMFORTABLE", "Confortable"], ["WIDE", "Très espacé"]];
 const CONTRASTS = [["NORMAL", "Standard"], ["HIGH", "Contraste élevé"], ["SOFT", "Palette douce"]];
@@ -26,6 +26,8 @@ export const DisplayPreferences = () => {
     contrast: "NORMAL", focus_mode: false, reduce_motion: false });
   const [hidden, setHidden] = useState([]);
   const [recapEmail, setRecapEmail] = useState(true);
+  const [notifTypes, setNotifTypes] = useState(null);
+  const [notifPrefs, setNotifPrefs] = useState({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -33,14 +35,16 @@ export const DisplayPreferences = () => {
     setAccess((a) => ({ ...a, ...(profile.accessibility || {}) }));
     setHidden(profile.preferences?.hidden_modules || []);
     setRecapEmail(profile.preferences?.monthly_recap_email !== false);
+    setNotifPrefs(profile.preferences?.notification_prefs || {});
   }, [profile]);
+  useEffect(() => { api.get("/settings/notification-types").then((r) => setNotifTypes(r.data)).catch(() => {}); }, []);
 
   const save = async () => {
     setBusy(true);
     try {
       await api.put("/profiles/me/accessibility", access);
       await api.put("/profiles/me/preferences", { hidden_modules: hidden,
-        monthly_recap_email: recapEmail });
+        monthly_recap_email: recapEmail, notification_prefs: notifPrefs });
       await refresh?.();
       toast.success("Préférences enregistrées et appliquées");
     } catch (e) { toast.error(apiError(e)); }
@@ -76,22 +80,21 @@ export const DisplayPreferences = () => {
             (v) => setAccess({ ...access, contrast: v }), "access-contrast-select")}
         </div>
         <div className="mt-5 space-y-4">
-          <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
+          <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
             <span>
-              <span className="flex items-center gap-2 text-sm font-semibold text-[#002060]">
-                <Eye className="h-4 w-4 text-[#800020]" /> Mode focus
+              <span className="flex items-center gap-2 text-sm font-semibold text-[var(--marine)]">
+                <Eye className="h-4 w-4 text-[var(--bordeaux)]" /> Mode focus
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
-                Masque les éléments secondaires pour ne garder que l'essentiel.
+                Le mode focus s'active page par page grâce au bouton « Focus » de la barre du haut.
+                Il masque les blocs secondaires, notifications et alertes, et se réinitialise à la déconnexion.
               </span>
             </span>
-            <Switch checked={access.focus_mode} data-testid="access-focus-switch"
-              onCheckedChange={(v) => setAccess({ ...access, focus_mode: v })} />
-          </label>
+          </div>
           <label className="flex items-start justify-between gap-4 rounded-lg border p-3">
             <span>
-              <span className="flex items-center gap-2 text-sm font-semibold text-[#002060]">
-                <Sparkles className="h-4 w-4 text-[#800020]" /> Réduire les animations
+              <span className="flex items-center gap-2 text-sm font-semibold text-[var(--marine)]">
+                <Sparkles className="h-4 w-4 text-[var(--bordeaux)]" /> Réduire les animations
               </span>
               <span className="mt-1 block text-xs text-muted-foreground">
                 Recommandé en cas de trouble de l'attention ou de sensibilité au mouvement.
@@ -112,7 +115,7 @@ export const DisplayPreferences = () => {
               className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                 hidden.includes(key)
                   ? "bg-muted text-muted-foreground line-through"
-                  : "bg-[#002060] text-white"}`}>
+                  : "bg-[var(--marine)] text-white"}`}>
               {label}
             </button>
           ))}
@@ -121,6 +124,21 @@ export const DisplayPreferences = () => {
           Les modules en grisé sont masqués. Vos droits d'accès ne changent pas : seul l'affichage est adapté.
         </p>
       </SectionCard>
+
+      {notifTypes && !notifTypes.locked && (
+        <SectionCard title="Mes notifications" icon={Bell} testId="notification-preferences-card"
+          subtitle="Choisissez les notifications que vous souhaitez recevoir dans la plateforme.">
+          <div className="space-y-2">
+            {Object.entries(notifTypes.types).map(([key, label]) => (
+              <label key={key} className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+                <span>{label}</span>
+                <Switch checked={notifPrefs[key] !== false} data-testid={`notif-pref-${key}`}
+                  onCheckedChange={(v) => setNotifPrefs({ ...notifPrefs, [key]: v })} />
+              </label>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard title="Récap mensuel d'engagement" testId="recap-preferences-card"
         subtitle="Chaque 1er du mois, un résumé de vos tampons et du palier suivant.">
@@ -146,7 +164,7 @@ export const DisplayPreferences = () => {
 
       <div className="flex items-center gap-3">
         <Button onClick={save} disabled={busy} data-testid="preferences-save-button"
-          className="rounded-full bg-[#800020] hover:bg-[#63001a]">
+          className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
           <Save className="mr-2 h-4 w-4" /> {busy ? "Enregistrement…" : "Enregistrer mes préférences"}
         </Button>
         <Chip tone="muted"><Accessibility className="h-3 w-3" /> Accessibilité cognitive et sensorielle</Chip>

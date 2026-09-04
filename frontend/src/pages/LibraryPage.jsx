@@ -76,7 +76,7 @@ export default function LibraryPage() {
               </Button>
             )}
             {can("library.upload") && (
-              <Button className="rounded-full bg-[#800020] hover:bg-[#63001a]" data-testid="library-create-button"
+              <Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" data-testid="library-create-button"
                 onClick={() => setOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> Ajouter une ressource
               </Button>
@@ -97,13 +97,13 @@ export default function LibraryPage() {
                 <Chip tone="marine"><Lock className="h-3 w-3" /> {ACCESS[item.access_level]}</Chip>
                 {item.status !== "ACTIVE" && <Chip tone="amber">{item.status === "PENDING_REVIEW" ? "À valider" : item.status}</Chip>}
               </div>
-              <h3 className="mt-3 font-display text-base font-bold text-[#002060]">{item.title}</h3>
+              <h3 className="mt-3 font-display text-base font-bold text-[var(--marine)]">{item.title}</h3>
               <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">{item.description}</p>
               {(item.member_price || item.public_price) && (
                 <p className="mt-3 text-sm" data-testid={`library-price-${item.item_id}`}>
                   {item.member_price != null ? (
                     <>
-                      <span className="font-display text-lg font-extrabold text-[#800020]">
+                      <span className="font-display text-lg font-extrabold text-[var(--bordeaux)]">
                         {item.member_price.toFixed(2)} €
                       </span>
                       <span className="ml-2 text-xs text-muted-foreground line-through">
@@ -112,12 +112,12 @@ export default function LibraryPage() {
                       <span className="ml-2 text-xs font-semibold text-emerald-700">tarif adhérent</span>
                     </>
                   ) : (
-                    <span className="font-semibold text-[#002060]">{item.public_price.toFixed(2)} €</span>
+                    <span className="font-semibold text-[var(--marine)]">{item.public_price.toFixed(2)} €</span>
                   )}
                 </p>
               )}
               <p className="mt-3 text-xs text-muted-foreground">{item.download_count || 0} consultation(s)</p>
-              <Button size="sm" className="mt-4 rounded-full bg-[#002060] hover:bg-[#001740]"
+              <Button size="sm" className="mt-4 rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                 data-testid={`library-open-${item.item_id}`} onClick={() => openItem(item)}>
                 {item.content_type === "EXTERNAL_LINK"
                   ? <><ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Ouvrir le contenu</>
@@ -185,7 +185,7 @@ export default function LibraryPage() {
               <Input value={form.tags} data-testid="library-tags-input"
                 onChange={(e) => setForm({ ...form, tags: e.target.value })} /></div>
             <DialogFooter>
-              <Button type="submit" className="rounded-full bg-[#800020] hover:bg-[#63001a]"
+              <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                 data-testid="library-save-button">Ajouter</Button>
             </DialogFooter>
           </form>
@@ -199,7 +199,7 @@ export default function LibraryPage() {
             <ul className="space-y-2">
               {log?.map((entry) => (
                 <li key={entry.download_id} className="rounded-lg border px-3 py-2 text-sm">
-                  <p className="font-semibold text-[#002060]">{entry.user_name}</p>
+                  <p className="font-semibold text-[var(--marine)]">{entry.user_name}</p>
                   <p className="text-xs text-muted-foreground">
                     {entry.item_title} — {new Date(entry.created_at).toLocaleString("fr-FR")}
                   </p>
