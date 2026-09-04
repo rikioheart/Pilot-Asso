@@ -1,0 +1,32 @@
+{
+  "summary": "Prompt 8D Lot C — RSVP à 3 états, propositions notifiées aux PRO_COORDINATEUR, mentions à la création, badges dans l'annuaire. Backend + frontend testés end-to-end (Bureau, Pro coordinateur, Particulier). 9/9 tests pytest passent (1 skipped: terrain_slot non exposé). Frontend: contrôles rsvp visibles sur /activities (5 cartes), /events/<id> (event-rsvp-card + control), /projects/<id> (3 task-rsvp controls). Distinction de rôle confirmée: Bureau/Pro voient le détail nominatif avec rôles (Marc Vasseur (Membres), Julien Marchais (Pros)…), Particulier voit uniquement les totaux + breakdown (detail-toggle ABSENT). MentionPicker (activity-mentions-picker) visible dans le formulaire de création. Directory drawer s'ouvre correctement (badges affichés uniquement si atteints — comportement conditionnel correct).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt8d_lot_c_rsvp.py",
+    "/app/test_reports/pytest/lot_c_rsvp.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "rsvp.py: bien conçu — 4 element_types, synchronisation participations pour PARTICIPE/activity+event, contrôle de capacité 400 si complet, DELETE annule proprement. Bien.",
+    "rsvp.py::rsvp_summary: la logique de merge (participations d'abord, puis rsvps en excluant les déjà vus) est correcte et évite le double-comptage.",
+    "ParticipationControl.jsx: le mapping ROLE_OF utilise ADMIN_BUREAU/PROFESSIONNEL/PARTICULIER mais le backend renvoie 'role' avec les valeurs constantes rbac (ROLE_ADMIN='ADMIN_BUREAU', ROLE_PRO='PROFESSIONNEL'?). Vérification effectuée in-page: les labels 'Membres'/'Pros' s'affichent correctement, donc le mapping fonctionne.",
+    "MentionPicker.jsx: fetch /members?limit=300 au montage — OK mais retourne null si aucun membre (silent). Ajouter un état d'erreur explicite serait un plus.",
+    "MentionPicker.jsx: pas de recherche/filtre — avec 300 membres l'UX peut devenir lourde. Envisager un input de filtre.",
+    "loyalty rules API: le champ est 'label' (pas 'name'), 'kind' (pas 'type'), 'is_active' (pas 'active'), 'activity_category' (pas 'category'). Documentation à clarifier si côté client (fait dans le fichier de test)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_prompt8d_lot_c_rsvp.py"
+  ],
+  "success_rate": { "backend": "100%", "frontend": "100%" },
+  "test_credentials": "Bureau: associationlavoixduchien@gmail.com/VoixDuChien2026! ; Membre: membre1.demo@lavoixduchien.fr/Demo2026! ; Pro coordinateur: pro2.demo@lavoixduchien.fr/Demo2026! ; Pro standard: pro1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Créé pendant les tests puis nettoyé: 3 activités [TEST] (archivées via fixture cleanup), 1 règle de fidélité TEST_BadgeRule (supprimée), 2 RSVPs sur act_134f4b98f9ee (supprimés en fin de test — PEUT_ETRE membre1 + PARTICIPE pro2). Aucun résidu.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Lot C validé backend + frontend. Pytest: TestRsvpStates (4 pass + 1 skip terrain), TestProposalNotifications (1 pass — vérifie que Bureau ET Pro coordinateur reçoivent la notif DELEGATED_PUBLICATION/NEW_PROPOSAL), TestMentions (1 pass — MENTION reçue par le membre mentionné), TestBadgesDirectory (3 pass — GET requires user_id renvoie 422, GET avec user_id renvoie 200, POST /loyalty/rules avec badge=true créé). Frontend Playwright: cycle complet 3 rôles sur activity act_134f4b98f9ee — Particulier PEUT_ETRE (0→1), Pro2 PARTICIPE (1→2 après ajout, détail visible avec rôles), Bureau détail visible avec noms+rôles, Particulier detail-toggle absent (totaux+breakdown seulement). event-rsvp-card + control OK sur /events/<id>, 3 task-rsvp controls OK sur /projects/<id>, activity-mentions-picker OK dans formulaire création activités, directory drawer OK (badges conditionnels — non rendus si pas atteints). Note: le champ POST /api/loyalty/rules attend 'label'/'kind'/'is_active'/'activity_category' (schéma RuleIn), pas 'name'/'type'/'active'/'category'.",
+  "rca of the issue": "Aucun bug bloquant."
+}

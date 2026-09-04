@@ -97,6 +97,7 @@ class TaskIn(BaseModel):
     visibility: str = "PROJECT_TEAM"
     blocked_by_task_id: Optional[str] = None
     google_forms_url: Optional[str] = None
+    mentions: List[str] = []
 
 
 class TaskUpdate(BaseModel):
@@ -495,6 +496,11 @@ async def create_task(payload: TaskIn, user: dict = Depends(active_user)):
     await task_history(doc["task_id"], user, "CREATE", new_value={"title": payload.title})
     await log_action(user, "CREATE", "tasks", doc["task_id"], new_value={"title": payload.title})
     await refresh_progress(payload.project_id)
+    for uid in dict.fromkeys(payload.mentions or []):
+        if uid and uid != user["user_id"]:
+            await notify(uid, type="MENTION", title="Vous avez été mentionné",
+                         message=f"Vous avez été mentionné dans la tâche « {payload.title} ».", level="ACTION",
+                         resource_type="task", resource_id=doc["task_id"], link=f"/projects/{payload.project_id}")
     if payload.assigned_user_id:
         await notify(payload.assigned_user_id, type="TASK_ASSIGNED", title="Nouvelle tâche attribuée",
                      message=f"{payload.title} — projet {project['title']}", level="ACTION",

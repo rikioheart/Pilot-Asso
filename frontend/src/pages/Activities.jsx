@@ -17,6 +17,8 @@ import { ACTIVITY_CATEGORY_LABELS, ACTIVITY_TYPE_LABELS, VISIBILITY_LABELS, labe
 import { MapEmbed } from "@/components/MapEmbed";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { CommentSection } from "@/components/CommentSection";
+import { ParticipationControl } from "@/components/ParticipationControl";
+import { MentionPicker } from "@/components/MentionPicker";
 
 export default function Activities() {
   const { user, can } = useAuth();
@@ -30,7 +32,7 @@ export default function Activities() {
     title: "", description: "", category: "BALADE", type: "COLLECTIVE", date: "", start_time: "",
     end_time: "", location: "", capacity: "", price_public: "", price_member: "",
     eligible_for_loyalty: false, loyalty_points: 1, visibility: "MEMBERS", event_id: "",
-    google_maps_url: "", is_remote: false, visio_url: "", google_forms_url: "", form_id: "", form_notify_date: "",
+    google_maps_url: "", is_remote: false, visio_url: "", google_forms_url: "", mentions: [], form_id: "", form_notify_date: "",
   });
   const [forms, setForms] = useState([]);
   const [commentFor, setCommentFor] = useState(null);
@@ -65,7 +67,7 @@ export default function Activities() {
         loyalty_points: Number(form.loyalty_points) || 1,
         date: form.date || null, event_id: form.event_id || null,
         google_maps_url: form.google_maps_url || null, visio_url: form.visio_url || null,
-        google_forms_url: form.google_forms_url || null,
+        google_forms_url: form.google_forms_url || null, mentions: form.mentions,
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success(isAdmin ? "Activité créée" : "Proposition envoyée au Bureau");
@@ -209,6 +211,7 @@ export default function Activities() {
                     data-testid="activity-gforms-input"
                     onChange={(e) => setForm({ ...form, google_forms_url: e.target.value })} />
                 </div>
+                <MentionPicker value={form.mentions} onChange={(m) => setForm({ ...form, mentions: m })} testId="activity-mentions" />
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={form.is_remote} data-testid="activity-remote-checkbox"
                     onCheckedChange={(v) => setForm({ ...form, is_remote: !!v })} />
@@ -354,6 +357,7 @@ export default function Activities() {
                   <WeatherWidget location={a.location} testId={`activity-weather-${a.activity_id}`} />
                 </div>
               )}
+              <div className="mt-4"><ParticipationControl elementType="activity" elementId={a.activity_id} testId={`activity-rsvp-${a.activity_id}`} /></div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button size="sm" variant="ghost" className="rounded-full" data-testid={`activity-comments-${a.activity_id}`}
                   onClick={() => setCommentFor(a)}>

@@ -213,6 +213,11 @@ async def notify_bureau(**kwargs):
         await notify(admin["user_id"], **kwargs)
 
 
+async def notify_coordinators(**kwargs):
+    async for pro in db.users.find({"access_level": "PRO_COORDINATEUR", "status": "ACTIVE"}):
+        await notify(pro["user_id"], **kwargs)
+
+
 async def display_name(user_id: str) -> str:
     profile = await db.profiles.find_one({"user_id": user_id}, {"_id": 0, "display_name": 1})
     return (profile or {}).get("display_name") or "Un membre"

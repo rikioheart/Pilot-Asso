@@ -142,6 +142,18 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Relances bienveillantes** : 3 modèles pré-rédigés (`GET /nudge-templates`) ; le dialogue de relance propose
   des suggestions personnalisables avant envoi.
 
+### Prompt 8D — Lot C : Participation & propositions (04/09/2026, testé 100 % backend + frontend)
+- **Participation à 3 états** (`rsvp.py`, collection `rsvps`) sur activités, événements, tâches (et créneaux
+  terrain côté API) : « Je participe » = inscription existante (compte dans la capacité), « Peut-être » /
+  « Pas possible » = simple réponse sans place. Compteurs séparés avec répartition par rôle ; détail nominatif
+  visible Bureau/Pro, totaux seuls pour le Particulier. Composant `ParticipationControl`.
+- **Propositions** : les notifications de proposition (activités/événements) vont désormais au Bureau **et**
+  aux `PRO_COORDINATEUR` (`notify_coordinators`) ; l'auteur est notifié de l'acceptation/refus commenté
+  (flux `review` existant).
+- **Mentions @profil à la création** d'activité/événement/tâche (`MentionPicker`) → notification `MENTION`.
+- **Badges de fidélité dans l'annuaire** : affichés sur la fiche pro (drawer `/directory`) via
+  `GET /loyalty/badges`.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

@@ -15,6 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CommentSection } from "@/components/CommentSection";
+import { ParticipationControl } from "@/components/ParticipationControl";
+import { MentionPicker } from "@/components/MentionPicker";
 
 const PROJECT_ROLES = ["COORDINATOR", "CONTRIBUTOR", "VOLUNTEER", "EXPERT", "REVIEWER"];
 
@@ -24,7 +26,7 @@ export default function ProjectDetail() {
   const [data, setData] = useState(null);
   const [members, setMembers] = useState([]);
   const [history, setHistory] = useState({ taskId: null, items: [] });
-  const [newTask, setNewTask] = useState({ title: "", deadline: "", assigned_user_id: "", is_volunteer_task: false, parent_task_id: "" });
+  const [newTask, setNewTask] = useState({ title: "", deadline: "", assigned_user_id: "", is_volunteer_task: false, parent_task_id: "", mentions: [] });
   const [dialog, setDialog] = useState(null); // {type:'submit'|'validate'|'help'|'comment', task}
   const [text, setText] = useState("");
   const [proof, setProof] = useState("");
@@ -82,6 +84,7 @@ export default function ProjectDetail() {
       assigned_user_id: newTask.assigned_user_id || null,
       is_volunteer_task: newTask.is_volunteer_task,
       parent_task_id: newTask.parent_task_id || null,
+      mentions: newTask.mentions,
     }), "Tâche créée").then(() => setNewTask({ title: "", deadline: "", assigned_user_id: "", is_volunteer_task: false, parent_task_id: "" }));
   };
 
@@ -159,6 +162,7 @@ export default function ProjectDetail() {
                     act(() => api.delete(`/tasks/${t.task_id}`), "Tâche supprimée"); } }]} />
             )}
           </div>
+          <div className="mt-2"><ParticipationControl elementType="task" elementId={t.task_id} testId={`task-rsvp-${t.task_id}`} /></div>
         </div>
         {childrenOf(t.task_id).map((c) => taskRow(c, depth + 1))}
       </div>
@@ -214,6 +218,7 @@ export default function ProjectDetail() {
                   <Label>Échéance</Label>
                   <Input type="date" value={newTask.deadline} data-testid="task-deadline-input"
                     onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })} />
+                  <MentionPicker value={newTask.mentions} onChange={(m) => setNewTask({ ...newTask, mentions: m })} testId="task-mentions" />
                 </div>
                 <div className="space-y-2">
                   <Label>Attribuer à</Label>

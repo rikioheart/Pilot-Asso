@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/Badges";
 import { MapEmbed } from "@/components/MapEmbed";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { CommentSection } from "@/components/CommentSection";
+import { ParticipationControl } from "@/components/ParticipationControl";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EVENT_TYPE_LABELS, VISIBILITY_LABELS, ROLE_LABELS, ATTENDANCE_LABELS, label }
@@ -92,6 +93,11 @@ export default function EventDetail() {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
+          <div className="rounded-xl border bg-card p-5" data-testid="event-rsvp-card">
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Ma participation</h2>
+            <div className="mt-3"><ParticipationControl elementType="event" elementId={eventId} testId="event-rsvp" /></div>
+          </div>
+
           <div className="rounded-xl border bg-card p-5" data-testid="event-activities">
             <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Activités du programme</h2>
             <div className="mt-4 space-y-2">

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 import rbac
 from rbac import ROLE_ADMIN, ROLE_PRO, ROLE_MEMBER
 from deps import (db, iso, now_utc, new_id, active_user, require, require_admin,
-                  log_action, notify, notify_bureau, display_name)
+                  log_action, notify, notify_bureau, notify_coordinators, display_name)
 from settings_api import delegation_check
 
 router = APIRouter(prefix="/api")
@@ -44,6 +44,7 @@ class ActivityIn(BaseModel):
     is_remote: bool = False
     visio_url: Optional[str] = None
     google_forms_url: Optional[str] = None
+    mentions: List[str] = []
     form_id: Optional[str] = None
     form_notify_date: Optional[str] = None
     project_id: Optional[str] = None
@@ -94,6 +95,7 @@ class EventIn(BaseModel):
     visio_url: Optional[str] = None
     google_meet_url: Optional[str] = None
     google_forms_url: Optional[str] = None
+    mentions: List[str] = []
     form_id: Optional[str] = None
     form_notify_date: Optional[str] = None
     eligible_for_loyalty: bool = False
@@ -296,6 +298,17 @@ async def list_activities(category: Optional[str] = None, status: Optional[str] 
     return {"items": items, "total": len(items)}
 
 
+async def _notify_mentions(mentions, actor, kind_label, title, resource_type, resource_id, link):
+    if not mentions:
+        return
+    name = await display_name(actor["user_id"])
+    for uid in dict.fromkeys(mentions):
+        if uid and uid != actor["user_id"]:
+            await notify(uid, type="MENTION", title="Vous avez été mentionné",
+                         message=f"{name} vous a mentionné dans {kind_label} « {title} ».", level="ACTION",
+                         resource_type=resource_type, resource_id=resource_id, link=link)
+
+
 @router.post("/activities")
 async def create_activity(payload: ActivityIn, user: dict = Depends(require("activities.propose"))):
     if payload.category not in await all_activity_categories() \
@@ -335,6 +348,10 @@ async def create_activity(payload: ActivityIn, user: dict = Depends(require("act
         await notify_bureau(type="NEW_PROPOSAL", title="Nouvelle activité proposée",
                             message=f"{name} propose « {payload.title} ».", level="ACTION",
                             resource_type="activity", resource_id=doc["activity_id"], link="/activities")
+        await notify_coordinators(type="NEW_PROPOSAL", title="Nouvelle activité proposée",
+                                  message=f"{name} propose « {payload.title} ».", level="ACTION",
+                                  resource_type="activity", resource_id=doc["activity_id"], link="/activities")
+    await _notify_mentions(payload.mentions, user, "activité", payload.title, "activity", doc["activity_id"], "/activities")
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
@@ -526,9 +543,14 @@ async def create_event(payload: EventIn, user: dict = Depends(require("events.cr
                                 message=f"{name} propose « {payload.title} » (hors critères : {', '.join(check['reasons'])}).",
                                 level="ACTION", resource_type="event", resource_id=doc["event_id"],
                                 link=f"/events/{doc['event_id']}")
+            await notify_coordinators(type="NEW_PROPOSAL", title="Événement à valider",
+                                      message=f"{name} propose « {payload.title} ».",
+                                      level="ACTION", resource_type="event", resource_id=doc["event_id"],
+                                      link=f"/events/{doc['event_id']}")
     await db.events.insert_one(doc)
     await log_action(user, "CREATE", "events", doc["event_id"],
                      new_value={"title": payload.title, "delegated_publication": doc["delegated_publication"]})
+    await _notify_mentions(payload.mentions, user, "l'événement", payload.title, "event", doc["event_id"], f"/events/{doc['event_id']}")
     return {k: v for k, v in doc.items() if k != "_id"}
 
 

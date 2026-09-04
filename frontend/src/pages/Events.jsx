@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EVENT_TYPE_LABELS, VISIBILITY_LABELS, STATUS_LABELS, label } from "@/lib/labels";
+import { MentionPicker } from "@/components/MentionPicker";
 
 export default function Events() {
   const { user, can } = useAuth();
@@ -26,7 +27,7 @@ export default function Events() {
     title: "", description: "", event_type: "ONE_OFF", start_date: "", end_date: "",
     location: "", capacity: "", status: "PLANNED", visibility: "MEMBERS",
     address: "", google_maps_url: "", is_remote: false, visio_url: "", google_meet_url: "",
-    google_forms_url: "", form_id: "", form_notify_date: "",
+    google_forms_url: "", mentions: [], form_id: "", form_notify_date: "",
     eligible_for_loyalty: false, loyalty_points: 1,
   });
   const [forms, setForms] = useState([]);
@@ -57,6 +58,7 @@ export default function Events() {
         end_date: form.end_date || null, address: form.address || null,
         google_maps_url: form.google_maps_url || null, visio_url: form.visio_url || null,
         google_meet_url: form.google_meet_url || null, google_forms_url: form.google_forms_url || null,
+        mentions: form.mentions,
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success("Événement créé");
@@ -189,6 +191,7 @@ export default function Events() {
                       onChange={(e) => setForm({ ...form, google_forms_url: e.target.value })} />
                   </div>
                 </div>
+                <MentionPicker value={form.mentions} onChange={(m) => setForm({ ...form, mentions: m })} testId="event-mentions" />
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={form.is_remote} data-testid="event-remote-checkbox"
                     onCheckedChange={(v) => setForm({ ...form, is_remote: !!v })} />

@@ -20,6 +20,7 @@ export default function Directory() {
   const [focus, setFocus] = useState(null);
   const [reviews, setReviews] = useState(null);
   const [recap, setRecap] = useState(null);
+  const [badges, setBadges] = useState([]);
   const [review, setReview] = useState({ observations: "", strengths: "", improvements: "",
     context: "" });
 
@@ -44,7 +45,9 @@ export default function Directory() {
     try {
       const { data } = await api.get(`/professionals/${userId}`);
       setFocus(data);
-      setReviews(null); setRecap(null);
+      setReviews(null); setRecap(null); setBadges([]);
+      api.get("/loyalty/badges", { params: { user_id: userId } })
+        .then((r) => setBadges(r.data.badges || [])).catch(() => setBadges([]));
       setReview({ observations: "", strengths: "", improvements: "", context: "" });
       if (user?.role === "ADMIN_BUREAU") {
         const [r, a] = await Promise.all([
@@ -162,6 +165,11 @@ export default function Directory() {
               {focus.details.company_name || focus.profile?.display_name}
             </h2>
             <p className="text-sm text-muted-foreground">{focus.profile?.display_name} · {focus.access_level}</p>
+            {badges.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5" data-testid="directory-badges">
+                {badges.map((b) => <Chip key={b.name} tone="bordeaux" testId={`directory-badge-${b.threshold}`}>{b.name}</Chip>)}
+              </div>
+            )}
             {focus.details.description && <p className="mt-4 text-sm">{focus.details.description}</p>}
 
             {focus.details.services?.length > 0 && (
