@@ -154,6 +154,30 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Badges de fidélité dans l'annuaire** : affichés sur la fiche pro (drawer `/directory`) via
   `GET /loyalty/badges`.
 
+### Prompt 8E — Lot A (partie 1) : 3 thèmes visuels (04/09/2026, testé)
+- 3 thèmes fixes (`ThemeProvider.THEMES`) : **T1** clair (défaut, bordeaux/bleu nuit/blanc), **T2** Bordeaux
+  (actions bleu nuit), **T3** sombre (fond bleu nuit profond, texte blanc, accents bordeaux, classe `.dark`).
+- Thème par défaut choisi par le Bureau (`PUT /settings/theme {theme_key}`, sélecteur `ThemeSettings`).
+- **Override par utilisateur** dans « Mon espace » (`DisplayPreferences`), mémorisé en `preferences.theme` +
+  localStorage `vdc_user_theme` ; le choix perso prime toujours sur le défaut Bureau.
+- Reste à faire (Lot A partie 2) : **icônes par module** choisies par le Bureau.
+
+### Prompt 8E — Lot A (partie 2) : Icônes par module (04/09/2026, testé 100 %)
+- Bibliothèque Lucide prédéfinie (`lib/moduleIcons.js`) ; le Bureau choisit une icône par module
+  (`ModuleIconsSettings`, `settings/module-icons`) ; `AppShell.iconFor` résout par chemin, texte toujours visible.
+
+### Prompt 8E — Lot B : Couverture + fiches chiens enrichies (04/09/2026, testé 100 %)
+- **Photo de couverture** (`settings/cover-photo`, `CoverBanner`, `CoverPhotoSettings`) en haut des 3 dashboards,
+  upload compressé côté navigateur.
+- **Fiche chien enrichie** : grande photo (hero), nom en grand titre, blocs d'infos aérés (`InfoBlock`),
+  sections existantes conservées dessous.
+
+### Prompt 8E — Lot C : Page publique (04/09/2026, testé 100 %)
+- Page `/public` sans authentification (`public_api.py`, `pages/Public.jsx`) : agenda public (événements PUBLIC),
+  professionnels avec **QR carte de visite** (réutilise `ProCardQr` + `/carte/:userId`), galerie d'activités.
+- Le Bureau contrôle les sections visibles (`settings/public-page` : enabled/show_events/show_pros/show_gallery/intro)
+  et le lien est partageable (`PublicPageSettings`).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

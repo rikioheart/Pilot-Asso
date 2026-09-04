@@ -1,0 +1,56 @@
+"""Prompt 8E Lot C — Page publique de l'association (accessible sans connexion)."""
+from fastapi import APIRouter, Depends
+
+from deps import db, iso, now_utc, require_admin
+from settings_api import get_setting, set_setting
+
+router = APIRouter(prefix="/api")
+
+DEFAULT_PUBLIC = {
+    "enabled": True, "show_events": True, "show_pros": True, "show_gallery": True,
+    "intro": "Bienvenue à La Voix du Chien — l'association qui accompagne chiens et humains, "
+             "avec bienveillance et sans jugement.",
+}
+
+
+@router.get("/settings/public-page")
+async def public_page_settings(admin: dict = Depends(require_admin)):
+    return await get_setting("public_page", DEFAULT_PUBLIC)
+
+
+@router.put("/settings/public-page")
+async def update_public_page(payload: dict, admin: dict = Depends(require_admin)):
+    allowed = {k: payload[k] for k in ("enabled", "show_events", "show_pros", "show_gallery", "intro")
+               if k in payload}
+    if "intro" in allowed:
+        allowed["intro"] = str(allowed["intro"])[:600]
+    await set_setting("public_page", allowed, admin)
+    return await get_setting("public_page", DEFAULT_PUBLIC)
+
+
+@router.get("/public/page")
+async def public_page():
+    cfg = await get_setting("public_page", DEFAULT_PUBLIC)
+    if not cfg.get("enabled"):
+        return {"enabled": False}
+    today = iso(now_utc())[:10]
+    events, pros, activities = [], [], []
+    if cfg.get("show_events"):
+        cur = db.events.find({"visibility": "PUBLIC", "status": "PLANNED", "start_date": {"$gte": today}},
+                             {"_id": 0, "event_id": 1, "title": 1, "start_date": 1, "location": 1,
+                              "description": 1}).sort("start_date", 1).limit(12)
+        events = await cur.to_list(12)
+    if cfg.get("show_pros"):
+        async for u in db.users.find({"role": "PROFESSIONNEL", "status": "ACTIVE"}, {"_id": 0, "user_id": 1}).limit(40):
+            prof = await db.profiles.find_one({"user_id": u["user_id"]},
+                                              {"_id": 0, "display_name": 1, "bio": 1, "city": 1})
+            pros.append({"user_id": u["user_id"],
+                         "display_name": (prof or {}).get("display_name") or "Professionnel",
+                         "bio": (prof or {}).get("bio"), "city": (prof or {}).get("city")})
+    if cfg.get("show_gallery"):
+        cur = db.activities.find({"visibility": "PUBLIC"},
+                                 {"_id": 0, "activity_id": 1, "title": 1, "date": 1, "category": 1}
+                                 ).sort("date", -1).limit(8)
+        activities = await cur.to_list(8)
+    return {"enabled": True, "config": cfg, "association_name": "La Voix du Chien",
+            "events": events, "pros": pros, "activities": activities}

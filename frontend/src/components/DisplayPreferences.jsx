@@ -4,6 +4,8 @@ import { Accessibility, Eye, Type, Sparkles, LayoutGrid, Save , Bell} from "luci
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SectionCard, Chip } from "@/components/Ui";
+import { useTheme, THEMES } from "@/components/ThemeProvider";
+import { Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +24,7 @@ const MODULES = [["feed", "Fil d'actualité"], ["engagement", "Ma progression"],
 
 export const DisplayPreferences = () => {
   const { profile, refresh } = useAuth();
+  const { userKey, setUserTheme } = useTheme();
   const [access, setAccess] = useState({ font: "DEFAULT", text_size: "NORMAL", spacing: "NORMAL",
     contrast: "NORMAL", focus_mode: false, reduce_motion: false });
   const [hidden, setHidden] = useState([]);
@@ -36,6 +39,7 @@ export const DisplayPreferences = () => {
     setHidden(profile.preferences?.hidden_modules || []);
     setRecapEmail(profile.preferences?.monthly_recap_email !== false);
     setNotifPrefs(profile.preferences?.notification_prefs || {});
+    if (profile.preferences?.theme) setUserTheme(profile.preferences.theme);
   }, [profile]);
   useEffect(() => { api.get("/settings/notification-types").then((r) => setNotifTypes(r.data)).catch(() => {}); }, []);
 
@@ -44,7 +48,7 @@ export const DisplayPreferences = () => {
     try {
       await api.put("/profiles/me/accessibility", access);
       await api.put("/profiles/me/preferences", { hidden_modules: hidden,
-        monthly_recap_email: recapEmail, notification_prefs: notifPrefs });
+        monthly_recap_email: recapEmail, notification_prefs: notifPrefs, theme: userKey || null });
       await refresh?.();
       toast.success("Préférences enregistrées et appliquées");
     } catch (e) { toast.error(apiError(e)); }
@@ -68,6 +72,31 @@ export const DisplayPreferences = () => {
 
   return (
     <div className="space-y-6" data-testid="display-preferences">
+      <SectionCard title="Mon thème" icon={Palette} testId="user-theme-card"
+        subtitle="Choisissez votre thème. Votre choix prime sur le thème par défaut de l'association.">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-theme-choices">
+          <button data-testid="user-theme-INHERIT" onClick={() => setUserTheme(null)}
+            className={`rounded-xl border-2 p-3 text-left text-sm transition-all ${!userKey
+              ? "border-[var(--bordeaux)]" : "border-transparent bg-muted/40 hover:border-[var(--bordeaux-a40)]"}`}>
+            <p className="font-semibold text-[var(--marine)]">Choix du Bureau</p>
+            <p className="text-xs text-muted-foreground">Suivre le thème par défaut</p>
+          </button>
+          {Object.entries(THEMES).map(([key, t]) => (
+            <button key={key} data-testid={`user-theme-${key}`} onClick={() => setUserTheme(key)}
+              className={`rounded-xl border-2 p-3 text-left transition-all ${userKey === key
+                ? "border-[var(--bordeaux)]" : "border-transparent bg-muted/40 hover:border-[var(--bordeaux-a40)]"}`}>
+              <div className="mb-1.5 flex gap-1">
+                <span className="h-5 w-5 rounded-full" style={{ background: t.vars["--bordeaux"] }} />
+                <span className="h-5 w-5 rounded-full" style={{ background: t.vars["--marine"] }} />
+                <span className="h-5 w-5 rounded-full border" style={{ background: t.vars["--surface"] }} />
+              </div>
+              <p className="text-sm font-semibold text-[var(--marine)]">{t.label}</p>
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Appliqué immédiatement. « Enregistrer » le mémorise sur vos autres appareils.</p>
+      </SectionCard>
+
       <SectionCard title="Confort de lecture" icon={Type} testId="accessibility-card"
         subtitle="Ces réglages s'appliquent immédiatement sur tous les écrans, à chaque connexion.">
         <div className="grid gap-4 sm:grid-cols-2">

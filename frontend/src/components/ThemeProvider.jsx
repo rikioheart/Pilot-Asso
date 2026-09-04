@@ -2,70 +2,82 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import axios from "axios";
 import { API } from "@/lib/api";
 
-export const DEFAULT_THEME = {
-  primary: "#800020", primary_dark: "#63001a", dark: "#002060",
-  surface: "#ffffff", surface_alt: "#f4f6f8",
-  status_ok: "#1e7f4f", status_warn: "#c2701a", status_error: "#b3261e",
+export const THEMES = {
+  T1: {
+    label: "Clair (défaut)", dark: false,
+    vars: { "--bordeaux": "#800020", "--bordeaux-dark": "#63001a", "--marine": "#002060",
+      "--surface": "#ffffff", "--surface-alt": "#f4f6f8",
+      "--status-ok": "#1e7f4f", "--status-warn": "#c2701a", "--status-error": "#b3261e" },
+    hsl: { background: "210 20% 98%", foreground: "222 47% 11%", card: "0 0% 100%",
+      "card-foreground": "222 47% 11%", popover: "0 0% 100%", "popover-foreground": "222 47% 11%",
+      muted: "210 20% 96%", "muted-foreground": "215 16% 40%", border: "214 32% 91%",
+      input: "214 32% 91%", primary: "345 100% 25%", "primary-foreground": "0 0% 100%",
+      secondary: "222 100% 19%", ring: "345 100% 25%" },
+  },
+  T2: {
+    label: "Bordeaux", dark: false,
+    vars: { "--bordeaux": "#002060", "--bordeaux-dark": "#001845", "--marine": "#800020",
+      "--surface": "#ffffff", "--surface-alt": "#f7ecef",
+      "--status-ok": "#1e7f4f", "--status-warn": "#c2701a", "--status-error": "#b3261e" },
+    hsl: { background: "345 42% 95%", foreground: "222 47% 11%", card: "0 0% 100%",
+      "card-foreground": "222 47% 11%", popover: "0 0% 100%", "popover-foreground": "222 47% 11%",
+      muted: "345 26% 92%", "muted-foreground": "215 16% 40%", border: "345 26% 86%",
+      input: "345 26% 86%", primary: "222 100% 19%", "primary-foreground": "0 0% 100%",
+      secondary: "345 100% 25%", ring: "222 100% 19%" },
+  },
+  T3: {
+    label: "Sombre", dark: true,
+    vars: { "--bordeaux": "#c14b6c", "--bordeaux-dark": "#9a3352", "--marine": "#e8ecf5",
+      "--surface": "#0b1836", "--surface-alt": "#070f24",
+      "--status-ok": "#48c78e", "--status-warn": "#f0a44a", "--status-error": "#f26d6d" },
+    hsl: { background: "222 55% 9%", foreground: "210 40% 96%", card: "222 45% 14%",
+      "card-foreground": "210 40% 96%", popover: "222 45% 14%", "popover-foreground": "210 40% 96%",
+      muted: "222 30% 20%", "muted-foreground": "214 20% 72%", border: "222 25% 26%",
+      input: "222 25% 26%", primary: "340 52% 55%", "primary-foreground": "0 0% 100%",
+      secondary: "210 40% 96%", ring: "340 52% 55%" },
+  },
+};
+export const DEFAULT_THEME_KEY = "T1";
+
+export const applyTheme = (key) => {
+  const t = THEMES[key] || THEMES.T1;
+  const root = document.documentElement;
+  Object.entries(t.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  Object.entries(t.hsl).forEach(([k, v]) => root.style.setProperty(`--${k}`, v));
+  root.classList.toggle("dark", !!t.dark);
 };
 
-const hexToHsl = (hex) => {
-  const n = parseInt(hex.slice(1), 16);
-  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return `0 0% ${Math.round(l * 100)}%`;
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  h *= 60;
-  return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-};
-
-export const applyTheme = (t) => {
-  const root = document.documentElement.style;
-  root.setProperty("--bordeaux", t.primary);
-  root.setProperty("--bordeaux-dark", t.primary_dark);
-  root.setProperty("--marine", t.dark);
-  root.setProperty("--surface", t.surface);
-  root.setProperty("--surface-alt", t.surface_alt);
-  root.setProperty("--status-ok", t.status_ok);
-  root.setProperty("--status-warn", t.status_warn);
-  root.setProperty("--status-error", t.status_error);
-  root.setProperty("--primary", hexToHsl(t.primary));
-  root.setProperty("--ring", hexToHsl(t.primary));
-  root.setProperty("--secondary", hexToHsl(t.dark));
-  root.setProperty("--accent-foreground", hexToHsl(t.dark));
-  root.setProperty("--card", hexToHsl(t.surface));
-  root.setProperty("--popover", hexToHsl(t.surface));
-  root.setProperty("--background", hexToHsl(t.surface_alt));
-  root.setProperty("--destructive", hexToHsl(t.status_error));
-};
-
-/** Couleur de la charte résolue (utile pour canvas / exports). */
 export const themeColor = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim() || DEFAULT_THEME.primary;
+  getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim() || "#800020";
 
-const ThemeContext = createContext({ theme: DEFAULT_THEME, reload: () => {} });
+const ThemeContext = createContext({ themeKey: "T1", userKey: null, bureauKey: "T1",
+  setUserTheme: () => {}, reload: () => {} });
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    try { return { ...DEFAULT_THEME, ...JSON.parse(localStorage.getItem("vdc_theme") || "{}") }; }
-    catch { return DEFAULT_THEME; }
-  });
+  const [bureauKey, setBureauKey] = useState("T1");
+  const [userKey, setUserKey] = useState(() => localStorage.getItem("vdc_user_theme") || null);
+  const themeKey = userKey || bureauKey;
 
   const reload = useCallback(async () => {
     try {
       const { data } = await axios.get(`${API}/settings/theme`);
-      const next = { ...DEFAULT_THEME, ...data };
-      localStorage.setItem("vdc_theme", JSON.stringify(next));
-      setTheme(next);
-    } catch { /* thème local conservé */ }
+      setBureauKey(THEMES[data.theme_key] ? data.theme_key : "T1");
+    } catch { /* défaut conservé */ }
   }, []);
 
-  useEffect(() => { applyTheme(theme); }, [theme]);
+  const setUserTheme = useCallback((key) => {
+    if (key && THEMES[key]) { localStorage.setItem("vdc_user_theme", key); setUserKey(key); }
+    else { localStorage.removeItem("vdc_user_theme"); setUserKey(null); }
+  }, []);
+
+  useEffect(() => { applyTheme(themeKey); }, [themeKey]);
   useEffect(() => { reload(); }, [reload]);
 
-  return <ThemeContext.Provider value={{ theme, reload }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ themeKey, userKey, bureauKey, setUserTheme, reload }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 };
 
 export const useTheme = () => useContext(ThemeContext);

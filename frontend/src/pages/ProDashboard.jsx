@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ListChecks, CalendarDays, Sparkle, Star, UserCircle, FileText, Boxes, Link2, Clock, MapPin } from "lucide-react";
 import { api } from "@/lib/api";
 import { NewsFeed } from "@/components/NewsFeed";
+import { CoverBanner } from "@/components/CoverBanner";
 import { PageHeader, KpiCard, EmptyState, SectionCard, Chip } from "@/components/Ui";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export default function ProDashboard() {
         <KpiCard testId="pro-kpi-stamps" label="Participations validées" value={k.stamps} icon={Star} tone="bordeaux" />
       </section></VisibleBlock>
 
+      <section className="mt-6" data-testid="pro-cover"><CoverBanner /></section>
       <section className="mt-6" data-testid="pro-news"><NewsFeed /></section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { confirmDialog, RowMenu } from "@/components/ConfirmDialog";
 import { ThemeSettings } from "@/components/ThemeSettings";
+import { ModuleIconsSettings } from "@/components/ModuleIconsSettings";
+import { CoverPhotoSettings } from "@/components/CoverPhotoSettings";
+import { PublicPageSettings } from "@/components/PublicPageSettings";
 import { EmptyStateSettings } from "@/components/EmptyStateSettings";
 import { DelegationSettings, OnboardingSettings, BlockVisibilitySettings } from "@/components/GovernanceSettings";
 import { WeatherSettings } from "@/components/WeatherSettings";
@@ -55,6 +58,9 @@ export default function AdminSettings() {
         subtitle="Charte graphique, nomenclatures configurables, rôles, niveaux et permissions. La vérification est toujours effectuée côté serveur." />
 
       <ThemeSettings />
+      <ModuleIconsSettings />
+      <CoverPhotoSettings />
+      <PublicPageSettings />
       <EmptyStateSettings />
       <BlockVisibilitySettings onSaved={reloadBlocks} />
       <DelegationSettings />

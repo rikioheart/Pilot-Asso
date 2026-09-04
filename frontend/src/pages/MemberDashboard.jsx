@@ -6,6 +6,7 @@ import { api, apiError } from "@/lib/api";
 import { EmptyState, WelcomeBanner, SectionCard } from "@/components/Ui";
 import { EngagementCard } from "@/components/ActivityFeed";
 import { NewsFeed } from "@/components/NewsFeed";
+import { CoverBanner } from "@/components/CoverBanner";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
 import { useBlockVisible } from "@/components/BlockVisibility";
@@ -60,6 +61,7 @@ export default function MemberDashboard() {
             data-testid="member-add-dog-cta" onClick={() => navigate("/profile")}>Ajouter mon chien</Button>} />
       )}
 
+      <section className="mb-6" data-testid="member-cover"><CoverBanner /></section>
       <section className="mb-6" data-testid="member-news"><NewsFeed /></section>
 
       <section className={`grid gap-6 ${cols}`} data-testid="member-zones">

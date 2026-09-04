@@ -23,6 +23,13 @@ const CATEGORIES = { SOCIABILISATION: "Sociabilisation", REACTIVITE: "Réactivit
 const NEW_DOG = { name: "", breed: "", age: "", sex: "MALE", behavior_context: "",
   behavior_category: "AUTRE", history: "", photo_file_id: null, owner_id: "" };
 
+const InfoBlock = ({ label, value }) => (
+  <div className="rounded-xl border bg-muted/30 p-3" data-testid={`dog-info-${label.toLowerCase()}`}>
+    <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+    <p className="mt-1 font-semibold text-[var(--marine)]">{value}</p>
+  </div>
+);
+
 export default function Dogs() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
@@ -226,17 +233,22 @@ export default function Dogs() {
         <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto" data-testid="dog-detail-dialog">
           {detail && (
             <>
+              <div className="overflow-hidden rounded-2xl border" data-testid="dog-hero">
+                {detail.dog.photo_file_id
+                  ? <img src={fileUrl(detail.dog.photo_file_id)} alt={detail.dog.name}
+                      className="h-56 w-full object-cover sm:h-72" />
+                  : <div className="flex h-40 w-full items-center justify-center bg-muted text-sm text-muted-foreground">Pas encore de photo</div>}
+              </div>
               <DialogHeader>
-                <DialogTitle>{detail.dog.name} — {detail.dog.owner_name}</DialogTitle>
+                <DialogTitle className="font-display text-2xl text-[var(--marine)] md:text-3xl">{detail.dog.name}</DialogTitle>
+                <p className="text-sm text-muted-foreground">Propriétaire : {detail.dog.owner_name}</p>
               </DialogHeader>
-              <div className="space-y-5">
-                <div className="flex flex-wrap gap-2">
-                  {detail.dog.breed && <Chip tone="muted">{detail.dog.breed}</Chip>}
-                  {detail.dog.age && <Chip tone="muted">{detail.dog.age}</Chip>}
-                  {detail.dog.sex && <Chip tone="muted">{detail.dog.sex === "MALE" ? "Mâle" : "Femelle"}</Chip>}
-                  {detail.dog.behavior_category && (
-                    <Chip tone="bordeaux">{CATEGORIES[detail.dog.behavior_category]}</Chip>
-                  )}
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="dog-info-blocks">
+                  <InfoBlock label="Race" value={detail.dog.breed || "—"} />
+                  <InfoBlock label="Âge" value={detail.dog.age || "—"} />
+                  <InfoBlock label="Sexe" value={detail.dog.sex === "MALE" ? "Mâle" : detail.dog.sex === "FEMALE" ? "Femelle" : "—"} />
+                  <InfoBlock label="Profil" value={CATEGORIES[detail.dog.behavior_category] || "—"} />
                 </div>
                 {detail.dog.behavior_context && (
                   <p className="text-sm text-muted-foreground">{detail.dog.behavior_context}</p>

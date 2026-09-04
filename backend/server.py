@@ -38,6 +38,7 @@ import dogs as dogs_module
 import dog_journal as dog_journal_module
 import news as news_module
 import rsvp as rsvp_module
+import public_api as public_module
 import crons_api as crons_module
 import comments as comments_module
 import payments as payments_module
@@ -789,6 +790,7 @@ app.include_router(dogs_module.router)
 app.include_router(dog_journal_module.router)
 app.include_router(news_module.router)
 app.include_router(rsvp_module.router)
+app.include_router(public_module.router)
 app.include_router(crons_module.router)
 app.include_router(records_module.router)
 app.include_router(help_module.router)

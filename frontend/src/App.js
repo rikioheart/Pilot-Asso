@@ -8,6 +8,7 @@ import { EmptyStatesProvider } from "@/components/EmptyStates";
 import { BlockVisibilityProvider } from "@/components/BlockVisibility";
 import { OfflineProvider } from "@/components/OfflineMode";
 import { AppShell, PendingScreen } from "@/components/AppShell";
+import Public from "@/pages/Public";
 import Login from "@/pages/Login";
 import AuthCallback from "@/pages/AuthCallback";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -105,6 +106,7 @@ function AppRouter() {
     <Routes>
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/carte/:userId" element={<PublicProCard />} />
+      <Route path="/public" element={<Public />} />
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/admin/dashboard" element={<Protected adminOnly><AdminDashboard /></Protected>} />
       <Route path="/admin/members" element={<Protected adminOnly><Members /></Protected>} />

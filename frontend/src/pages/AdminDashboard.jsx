@@ -9,6 +9,7 @@ import { PageHeader, KpiCard, EmptyState, WelcomeBanner } from "@/components/Ui"
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { NewsManager } from "@/components/NewsManager";
 import { NewsFeed } from "@/components/NewsFeed";
+import { CoverBanner } from "@/components/CoverBanner";
 import { PriorityQueue } from "@/components/PriorityQueue";
 import { ExportsPanel } from "@/components/ExportsPanel";
 import { Button } from "@/components/ui/button";
@@ -159,6 +160,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-6">
+          <CoverBanner />
           <NewsManager />
           <NewsFeed />
           <ActivityFeed feed={feed} />

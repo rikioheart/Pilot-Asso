@@ -9,23 +9,13 @@ from deps import db, iso, now_utc, new_id, require_admin, active_user, log_actio
 
 router = APIRouter(prefix="/api")
 
-DEFAULT_THEME = {
-    "primary": "#800020", "primary_dark": "#63001a", "dark": "#002060",
-    "surface": "#ffffff", "surface_alt": "#f4f6f8",
-    "status_ok": "#1e7f4f", "status_warn": "#c2701a", "status_error": "#b3261e",
-}
+DEFAULT_THEME = {"theme_key": "T1"}
+THEME_KEYS = ["T1", "T2", "T3"]
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
 class ThemeIn(BaseModel):
-    primary: Optional[str] = None
-    primary_dark: Optional[str] = None
-    dark: Optional[str] = None
-    surface: Optional[str] = None
-    surface_alt: Optional[str] = None
-    status_ok: Optional[str] = None
-    status_warn: Optional[str] = None
-    status_error: Optional[str] = None
+    theme_key: str
 
 
 async def get_setting(key: str, default: dict) -> dict:
@@ -48,11 +38,9 @@ async def theme():
 
 @router.put("/settings/theme")
 async def update_theme(payload: ThemeIn, admin: dict = Depends(require_admin)):
-    values = payload.model_dump(exclude_none=True)
-    for k, v in values.items():
-        if not HEX.match(v):
-            raise HTTPException(status_code=400, detail=f"Couleur invalide pour « {k} » (format #RRGGBB attendu)")
-    await set_setting("theme", values, admin)
+    if payload.theme_key not in THEME_KEYS:
+        raise HTTPException(status_code=400, detail="Thème invalide (T1, T2 ou T3 attendu)")
+    await set_setting("theme", {"theme_key": payload.theme_key}, admin)
     return await get_setting("theme", DEFAULT_THEME)
 
 
@@ -258,6 +246,32 @@ async def update_biweekly_recap(payload: BiweeklyIn, admin: dict = Depends(requi
         values["intro"] = values["intro"][:500]
     await set_setting("biweekly_recap", values, admin)
     return await get_setting("biweekly_recap", DEFAULT_BIWEEKLY)
+
+
+@router.get("/settings/module-icons")
+async def module_icons(user: dict = Depends(active_user)):
+    return await get_setting("module_icons", {"icons": {}})
+
+
+@router.put("/settings/module-icons")
+async def update_module_icons(payload: dict, admin: dict = Depends(require_admin)):
+    icons = {str(k): str(v) for k, v in (payload.get("icons") or {}).items() if v}
+    await set_setting("module_icons", {"icons": icons}, admin)
+    return await get_setting("module_icons", {"icons": {}})
+
+
+@router.get("/settings/cover-photo")
+async def cover_photo(user: dict = Depends(active_user)):
+    from storage import file_meta
+    doc = await get_setting("cover_photo", {"file_id": None})
+    fid = doc.get("file_id")
+    return {"file_id": fid, "file": await file_meta(fid) if fid else None}
+
+
+@router.put("/settings/cover-photo")
+async def update_cover_photo(payload: dict, admin: dict = Depends(require_admin)):
+    await set_setting("cover_photo", {"file_id": payload.get("file_id")}, admin)
+    return {"ok": True}
 
 
 @router.get("/settings/notification-types")
