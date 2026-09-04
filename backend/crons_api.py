@@ -184,6 +184,8 @@ async def cron_recap_email(request: Request, background: BackgroundTasks, author
         return {"ok": True, "duplicate": True}
     from exports import send_recap_email
     background.add_task(send_recap_email)
+    from exports import send_member_biweekly_recaps
+    background.add_task(send_member_biweekly_recaps)
     return {"ok": True, "queued": "recap-email", "run_id": run_id}
 @router.post("/cron/member-recaps")
 async def cron_member_recaps(request: Request, background: BackgroundTasks,

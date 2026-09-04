@@ -468,6 +468,42 @@ async def test_recap(admin: dict = Depends(require_admin)):
     return await send_recap_email()
 
 
+async def send_member_biweekly_recaps():
+    """Récap bihebdomadaire personnalisé (notification), activable par le Bureau, désabonnable par le membre."""
+    from settings_api import get_setting, DEFAULT_BIWEEKLY
+    cfg = await get_setting("biweekly_recap", DEFAULT_BIWEEKLY)
+    if not cfg.get("enabled"):
+        logger.info("[CRON] Récap bihebdo désactivé par le Bureau")
+        return {"sent": 0, "disabled": True}
+    since = iso(now_utc() - timedelta(days=14))
+    sent = skipped = 0
+    async for member in db.users.find({"role": "PARTICULIER", "status": "ACTIVE"},
+                                      {"_id": 0, "user_id": 1}):
+        profile = await db.profiles.find_one({"user_id": member["user_id"]}, {"_id": 0, "preferences": 1})
+        if ((profile or {}).get("preferences") or {}).get("biweekly_recap") is False:
+            skipped += 1
+            continue
+        card = await db.loyalty_cards.find_one({"user_id": member["user_id"]}, {"_id": 0, "card_id": 1})
+        seances = await db.loyalty_stamps.count_documents(
+            {"card_id": (card or {}).get("card_id"), "created_at": {"$gte": since}}) if card else 0
+        news_ct = await db.news.count_documents({"publish_at": {"$gte": since}})
+        message = (f"{cfg.get('intro', '')} {seances} séance(s) sur 2 semaines · "
+                   f"{news_ct} actualité(s) récente(s) de l'association.")
+        await notify(member["user_id"], type="BIWEEKLY_RECAP",
+                     title="Votre quinzaine à La Voix du Chien", message=message.strip(),
+                     level="INFO", link="/member/dashboard")
+        sent += 1
+    logger.info(f"[CRON] Récap bihebdo : {sent} notification(s), {skipped} désabonné(s)")
+    return {"sent": sent, "opted_out": skipped}
+
+
+@router.post("/exports/biweekly-recaps")
+async def trigger_biweekly_recaps(admin: dict = Depends(require_admin)):
+    result = await send_member_biweekly_recaps()
+    await log_action(admin, "EXPORT", "exports", "biweekly-recaps", new_value=result)
+    return result
+
+
 @router.post("/exports/member-recaps")
 async def trigger_member_recaps(admin: dict = Depends(require_admin)):
     """Déclenchement manuel par le Bureau du récap mensuel des adhérents."""

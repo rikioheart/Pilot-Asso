@@ -217,6 +217,18 @@ async def animation_review(admin: dict = Depends(require("users.manage"))):
                        "guide_not_seen": len(no_guide)}}
 
 
+NUDGE_TEMPLATES = [
+    "Les copains de balade attendent {chien} ! On se retrouve très bientôt pour une nouvelle sortie ?",
+    "Un petit coucou du Bureau : {chien} nous manque aux activités. On serait ravis de vous revoir quand vous voulez.",
+    "Prendre soin de {chien}, c'est aussi partager de bons moments ensemble. La prochaine activité est faite pour vous deux !",
+]
+
+
+@router.get("/nudge-templates")
+async def nudge_templates(admin: dict = Depends(require("users.manage"))):
+    return {"templates": NUDGE_TEMPLATES}
+
+
 @router.post("/members/{user_id}/nudge")
 async def nudge_member(user_id: str, body: dict, admin: dict = Depends(require("users.manage"))):
     if not await db.users.find_one({"user_id": user_id}):

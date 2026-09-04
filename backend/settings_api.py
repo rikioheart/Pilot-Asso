@@ -236,6 +236,30 @@ async def update_block_visibility(payload: BlockVisibilityIn, admin: dict = Depe
     return {"blocks": BLOCKS, "roles": ROLES, "hidden": clean}
 
 
+# ---------------------------------------------------------------- Récap bihebdomadaire personnalisé
+DEFAULT_BIWEEKLY = {"enabled": False,
+                    "intro": "Voici votre récapitulatif de quinzaine à La Voix du Chien."}
+
+
+class BiweeklyIn(BaseModel):
+    enabled: Optional[bool] = None
+    intro: Optional[str] = None
+
+
+@router.get("/settings/biweekly-recap")
+async def biweekly_recap(user: dict = Depends(active_user)):
+    return await get_setting("biweekly_recap", DEFAULT_BIWEEKLY)
+
+
+@router.put("/settings/biweekly-recap")
+async def update_biweekly_recap(payload: BiweeklyIn, admin: dict = Depends(require_admin)):
+    values = payload.model_dump(exclude_none=True)
+    if "intro" in values:
+        values["intro"] = values["intro"][:500]
+    await set_setting("biweekly_recap", values, admin)
+    return await get_setting("biweekly_recap", DEFAULT_BIWEEKLY)
+
+
 @router.get("/settings/notification-types")
 async def notification_types(user: dict = Depends(active_user)):
     from deps import OPTIONAL_NOTIFICATION_TYPES

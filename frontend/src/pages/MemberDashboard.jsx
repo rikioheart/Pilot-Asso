@@ -5,6 +5,7 @@ import { CalendarDays, Dog as DogIcon, FolderKanban, MapPin, Clock, Stethoscope 
 import { api, apiError } from "@/lib/api";
 import { EmptyState, WelcomeBanner, SectionCard } from "@/components/Ui";
 import { EngagementCard } from "@/components/ActivityFeed";
+import { NewsFeed } from "@/components/NewsFeed";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
 import { useBlockVisible } from "@/components/BlockVisibility";
@@ -58,6 +59,8 @@ export default function MemberDashboard() {
           action={<Button className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
             data-testid="member-add-dog-cta" onClick={() => navigate("/profile")}>Ajouter mon chien</Button>} />
       )}
+
+      <section className="mb-6" data-testid="member-news"><NewsFeed /></section>
 
       <section className={`grid gap-6 ${cols}`} data-testid="member-zones">
         {dogs.length > 0 && (

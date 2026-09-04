@@ -31,7 +31,7 @@ export default function LoyaltyCard() {
   if (data === false) return <EmptyState testId="loyalty-unavailable" title="Carte indisponible"
     description="Votre profil ne dispose pas de carte d'engagement." />;
 
-  const { card, stamps, rewards, next_reward, progress, source_labels } = data;
+  const { card, stamps, rewards, next_reward, progress, source_labels, badges } = data;
 
   const regenerate = async () => {
     try {
@@ -64,6 +64,14 @@ export default function LoyaltyCard() {
 
   return (
     <div data-testid="loyalty-page">
+      {badges?.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2" data-testid="loyalty-badges">
+          <span className="text-sm font-semibold text-[var(--marine)]">Mes badges :</span>
+          {badges.map((b) => (
+            <Chip key={b.name} tone="bordeaux" testId={`loyalty-badge-${b.threshold}`}>{b.name}</Chip>
+          ))}
+        </div>
+      )}
       <PageHeader breadcrumb="Mon espace" title="Ma carte d'engagement"
         subtitle="Présentez votre QR personnel au professionnel : il valide votre présence et votre tampon est ajouté." />
 

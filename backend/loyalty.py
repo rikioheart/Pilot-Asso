@@ -27,6 +27,8 @@ class RuleIn(BaseModel):
     card_types: List[str] = ["STANDARD"]
     validity_days: Optional[int] = None
     is_active: bool = True
+    badge: bool = False
+    badge_name: Optional[str] = None
 
 
 class StampIn(BaseModel):
@@ -81,9 +83,22 @@ async def card_payload(user_id: str) -> dict:
     rewards = await db.loyalty_rules.find({"kind": "REWARD", "is_active": True}, {"_id": 0}) \
         .sort("threshold", 1).to_list(50)
     next_reward = next((r for r in rewards if (r.get("threshold") or 0) > card["total_points"]), None)
+    badges = [{"name": r.get("badge_name") or r.get("reward") or r.get("label"), "threshold": r.get("threshold")}
+              for r in rewards if r.get("badge") and (r.get("threshold") or 0) <= card["total_points"]]
     return {"card": card, "stamps": stamps, "rewards": rewards, "next_reward": next_reward,
-            "source_labels": SOURCE_LABELS,
+            "source_labels": SOURCE_LABELS, "badges": badges,
             "progress": (card["total_points"] / next_reward["threshold"] * 100) if next_reward else 100}
+
+
+@router.get("/loyalty/badges")
+async def member_badges(user_id: str, user: dict = Depends(active_user)):
+    """Badges de fidélité atteints par un membre (visibles par la communauté)."""
+    card = await ensure_card(user_id)
+    rewards = await db.loyalty_rules.find({"kind": "REWARD", "is_active": True, "badge": True},
+                                          {"_id": 0}).sort("threshold", 1).to_list(50)
+    return {"badges": [{"name": r.get("badge_name") or r.get("reward") or r.get("label"),
+                        "threshold": r.get("threshold")}
+                       for r in rewards if (r.get("threshold") or 0) <= card["total_points"]]}
 
 
 # ---------------------------------------------------------------- Ma carte

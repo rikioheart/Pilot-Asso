@@ -1,0 +1,40 @@
+{
+  "summary": "Prompt 8D Lot B — Vie de l'association & communauté: end-to-end frontend testing on Bureau, Membre, Pro. Fil d'actualité (publier immédiat, programmer à date future, épingler avec mise en avant, confettis one-shot via vdc_seen_highlight), fil visible/non-commentable sur les 3 dashboards, Récapitulatif bihebdomadaire (activation/sauvegarde/envoi test), Relances bienveillantes (nudge-dialog + 3 suggestions), APIs complémentaires (/api/nudge-templates, /api/loyalty/badges). Tout fonctionne, un seul point d'UX : le NewsFeed ne se rafraîchit pas automatiquement après publication depuis NewsManager (nécessite un rechargement de page pour voir la nouvelle actualité dans le fil).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "NewsFeed / NewsManager (AdminDashboard.jsx)",
+        "issue": "Après avoir cliqué sur 'Publier' dans le NewsManager, la nouvelle actualité apparaît immédiatement dans news-manager-list mais PAS dans news-feed situé sur la même page — le composant NewsFeed ne fait son GET /api/news qu'au montage (useEffect avec deps vides) et n'est pas notifié par NewsManager. Il faut recharger la page pour voir l'actualité dans le fil. Impact modéré : le critère d'acceptation dit 'apparaît dans news-manager-list ET dans le fil news-feed'.",
+        "selector": "[data-testid=\"news-feed\"]",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "NewsFeed: exposer un moyen de rafraîchir depuis NewsManager (context, event bus, ou callback prop) pour que la nouvelle actualité apparaisse dans le fil sans reload. Ex: partager un état parent ou déclencher un window.dispatchEvent('news:updated') que NewsFeed écoute."
+  ],
+  "critical_code_review_comments": [
+    "NewsFeed.jsx: useEffect avec [] ne re-fetch jamais → couplage manquant avec NewsManager. À corriger comme indiqué ci-dessus.",
+    "news.py list_news: filtre par publish_at <= now — OK. Le champ 'highlight' de la réponse pointe vers le premier item pinned+highlight_type, correct. Bien.",
+    "news.py create_news: unpin all others si le nouvel item est pinned+highlight_type — comportement 'one highlight à la fois' cohérent. À noter dans la doc.",
+    "MemberAnimation.jsx: les 3 SUGGESTIONS sont hardcodées côté frontend et ne consomment PAS l'endpoint /api/nudge-templates. C'est acceptable car E1 précise que l'endpoint est un 'complément', mais il serait plus élégant de fetch /api/nudge-templates au montage pour partager la source de vérité entre backend (récap email) et UI (dialogue de relance).",
+    "BiweeklyRecapSettings.jsx: pas d'état 'loading' visible pendant le POST /api/exports/biweekly-recaps qui peut prendre plusieurs secondes; ajouter un spinner ou disable du bouton pendant l'appel serait un plus.",
+    "NewsFeed.jsx confetti: respect de prefers-reduced-motion et vdc_animations_off — bien. localStorage.setItem('vdc_seen_highlight', h.news_id) est fait dans le if(h) block: OK.",
+    "loyalty/badges: le endpoint exige ?user_id= (422 sinon) — cohérent avec la spec fournie par E1."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "95%"},
+  "test_credentials": "Bureau: associationlavoixduchien@gmail.com/VoixDuChien2026! ; Membre: membre1.demo@lavoixduchien.fr/Demo2026! ; Pro: pro2.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "3 actualités TEST_ créées (TEST_ActuNow, TEST_ActuFuture, TEST_ChienSemaine) puis TOUTES supprimées via API en fin de test. Biweekly settings remis à enabled=false + intro par défaut. Aucun résidu.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Lot B validé côté frontend. Tests exécutés: (1) NewsManager Bureau — publication immédiate → mgr OK / feed FAIL (bug de rafraîchissement mineur); (2) Programmation future → tag 'programmée' visible + absente du fil public OK; (3) Épinglage + highlight_type=CHIEN_SEMAINE → news-highlight bordeaux avec label 'Chien de la semaine' OK; (4) Confettis: apparaissent au 1er reload après nouvelle mise en avant, absents au 2e reload (localStorage vdc_seen_highlight) OK; (5) Pin/unpin via news-pin-<id> button OK; (6) Delete via news-delete-<id> + confirmDialog OK; (7) /admin/settings biweekly-settings-card: enable+intro+save+test-send tous OK (toast 'Envoyé : X membre(s)' détecté); (8) /admin/animation nudge-dialog: 3 suggestions préremplissantes OK, nudge-send-button présent; (9) /member/dashboard section member-news avec NewsFeed nested, sans champ commentaire OK; (10) /pro/dashboard section pro-news avec NewsFeed nested, sans commentaire OK; (11) APIs: GET /api/nudge-templates → 200 avec {templates:[3 items]}; GET /api/loyalty/badges sans user_id → 422 attendu. Lot C non testé (participation 3 états, propositions membres, mentions) — non implémenté. Le mode 'Global' du cockpit Admin doit être actif pour voir NewsManager/NewsFeed (la vue Activités/Membres/Pros les cache).",
+  "rca of the issue": "NewsFeed.jsx: useEffect(() => { api.get('/news').then(setData); }, []) — le tableau de dépendances vide fait que le fetch n'a lieu qu'au montage. NewsManager, situé dans le même AdminDashboard, ne partage pas d'état avec NewsFeed. Mitigation possible: (a) lifter le state 'news' dans AdminDashboard et le passer à NewsFeed en prop; (b) exposer une méthode refresh via ref/context; (c) déclencher un événement custom window.dispatchEvent(new Event('news:updated')) après POST et l'écouter côté NewsFeed."
+}

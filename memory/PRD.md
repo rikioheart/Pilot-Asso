@@ -128,6 +128,20 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Photos** avec **compression automatique côté navigateur** (`imageCompress.js`, redimension 1600px / JPEG 0.8)
   puis stockage Object Storage.
 
+### Prompt 8D — Lot B : Vie de l'association & communauté (04/09/2026, testé backend 100 % / frontend 100 % après correctif)
+- **Fil d'actualité** (`news.py`, collection `news`) : le Bureau publie de courtes actualités datées non
+  commentables, avec **programmation** à l'avance (publish_at) ; affiché sur les 3 dashboards (`NewsFeed`).
+- **Mise en avant épinglée** « Chien de la semaine » / « Réussite » (photo + description, une seule à la fois)
+  + **confettis discrets** à l'ouverture (une fois par mise en avant, respect `prefers-reduced-motion` et flag
+  `vdc_animations_off`). Rafraîchissement du fil via évènement `news:updated`.
+- **Récap bihebdomadaire personnalisé** : réglages Bureau (`settings/biweekly-recap` : enabled + intro),
+  greffé sur le cron existant `recap-email` (1 & 15) via `send_member_biweekly_recaps`, notification in-app,
+  désabonnement par la préférence membre `biweekly_recap`.
+- **Badges de fidélité** : `RuleIn.badge`/`badge_name`, badges atteints exposés (`card_payload.badges`,
+  `GET /loyalty/badges`) et affichés sur la carte d'engagement + dashboard membre.
+- **Relances bienveillantes** : 3 modèles pré-rédigés (`GET /nudge-templates`) ; le dialogue de relance propose
+  des suggestions personnalisables avant envoi.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

@@ -7,6 +7,8 @@ import {
 import { api } from "@/lib/api";
 import { PageHeader, KpiCard, EmptyState, WelcomeBanner } from "@/components/Ui";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { NewsManager } from "@/components/NewsManager";
+import { NewsFeed } from "@/components/NewsFeed";
 import { PriorityQueue } from "@/components/PriorityQueue";
 import { ExportsPanel } from "@/components/ExportsPanel";
 import { Button } from "@/components/ui/button";
@@ -157,6 +159,8 @@ export default function AdminDashboard() {
         </div>
 
         <div className="space-y-6">
+          <NewsManager />
+          <NewsFeed />
           <ActivityFeed feed={feed} />
           <ExportsPanel />
 
