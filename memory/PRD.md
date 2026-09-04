@@ -117,6 +117,17 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   `sweep_overdue_payments()` branché sur le cron quotidien `rappels-quotidiens`.
 - Correctif : `.emergent/crons.yml` réparé (entrée `recap-lundi` corrompue → 4 crons valides).
 
+### Prompt 8D — Lot A : Carnet de suivi du chien (04/09/2026, testé 100 % backend + frontend)
+- **Modèle configurable** par le Bureau (`settings/dog-journal-template`) : sections objectifs/progression/
+  séances/notes/photos, ajout/renommage/suppression, appliqué à tous les chiens.
+- **Carnet par chien** (`dog_journal.py`, collection `dog_journals`) : activation double (Bureau **et**
+  propriétaire) ; le Bureau/Pro remplit toutes les sections dès activation Bureau ; le Particulier écrit
+  uniquement dans les sections que le Bureau lui a ouvertes, sinon lecture seule.
+- **Jauges de progression** par objectif (ex. « Rappel : 3/5 ») qui se remplissent à chaque séance validée
+  (+1/−1 par Bureau/Pro).
+- **Photos** avec **compression automatique côté navigateur** (`imageCompress.js`, redimension 1600px / JPEG 0.8)
+  puis stockage Object Storage.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

@@ -5,6 +5,7 @@ import { api, apiError, fileUrl } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState, Chip, SectionCard, ProgressBar } from "@/components/Ui";
 import { FileUpload } from "@/components/FileUpload";
+import { DogJournal } from "@/components/DogJournal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -416,6 +417,8 @@ export default function Dogs() {
                     </div>
                   )}
                 </SectionCard>
+
+                <DogJournal dogId={detail.dog.dog_id} dogName={detail.dog.name} />
               </div>
             </>
           )}

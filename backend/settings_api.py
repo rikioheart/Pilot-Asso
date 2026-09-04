@@ -1,11 +1,11 @@
 """Paramètres de l'association : charte graphique, critères, messages (association_settings)."""
 import re
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from deps import db, iso, now_utc, require_admin, active_user, log_action
+from deps import db, iso, now_utc, new_id, require_admin, active_user, log_action
 
 router = APIRouter(prefix="/api")
 
@@ -240,3 +240,50 @@ async def update_block_visibility(payload: BlockVisibilityIn, admin: dict = Depe
 async def notification_types(user: dict = Depends(active_user)):
     from deps import OPTIONAL_NOTIFICATION_TYPES
     return {"types": OPTIONAL_NOTIFICATION_TYPES, "locked": user["role"] == "ADMIN_BUREAU"}
+
+
+# ---------------------------------------------------------------- Carnet de suivi du chien (modèle)
+DEFAULT_DOG_JOURNAL_TEMPLATE = {
+    "sections": [
+        {"section_id": "objectifs", "label": "Objectifs", "kind": "OBJECTIVES"},
+        {"section_id": "progression", "label": "Progression", "kind": "TEXT"},
+        {"section_id": "seances", "label": "Séances réalisées", "kind": "TEXT"},
+        {"section_id": "notes", "label": "Notes comportementales", "kind": "TEXT"},
+        {"section_id": "photos", "label": "Photos", "kind": "PHOTOS"},
+    ],
+}
+JOURNAL_SECTION_KINDS = ["TEXT", "OBJECTIVES", "PHOTOS"]
+
+
+class JournalSection(BaseModel):
+    section_id: Optional[str] = None
+    label: str
+    kind: str = "TEXT"
+
+
+class DogJournalTemplateIn(BaseModel):
+    sections: List[JournalSection]
+
+
+@router.get("/settings/dog-journal-template")
+async def dog_journal_template(user: dict = Depends(active_user)):
+    return await get_setting("dog_journal_template", DEFAULT_DOG_JOURNAL_TEMPLATE)
+
+
+@router.put("/settings/dog-journal-template")
+async def update_dog_journal_template(payload: DogJournalTemplateIn, admin: dict = Depends(require_admin)):
+    sections, seen = [], set()
+    for s in payload.sections:
+        if s.kind not in JOURNAL_SECTION_KINDS:
+            raise HTTPException(status_code=400, detail=f"Type de section invalide : {s.kind}")
+        if not (s.label or "").strip():
+            raise HTTPException(status_code=400, detail="Chaque section doit avoir un nom")
+        sid = s.section_id or new_id("sec")
+        if sid in seen:
+            sid = new_id("sec")
+        seen.add(sid)
+        sections.append({"section_id": sid, "label": s.label.strip()[:80], "kind": s.kind})
+    if not sections:
+        raise HTTPException(status_code=400, detail="Le modèle doit comporter au moins une section")
+    await set_setting("dog_journal_template", {"sections": sections}, admin)
+    return {"sections": sections}

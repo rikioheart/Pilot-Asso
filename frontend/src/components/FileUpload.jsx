@@ -2,20 +2,22 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Paperclip, Upload, X } from "lucide-react";
 import { apiError, fileUrl, uploadFile } from "@/lib/api";
+import { compressImage } from "@/lib/imageCompress";
 import { Button } from "@/components/ui/button";
 
 /** Envoi d'un fichier (image, PDF, document) vers le stockage de la plateforme. */
 export const FileUpload = ({ usage = "OTHER", value, onChange, label = "Ajouter un fichier",
-  accept, preview = false, testId = "file-upload" }) => {
+  accept, preview = false, compress = false, testId = "file-upload" }) => {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
 
   const pick = async (event) => {
-    const file = event.target.files?.[0];
+    let file = event.target.files?.[0];
     if (!file) return;
     setBusy(true);
     try {
+      if (compress) file = await compressImage(file);
       const data = await uploadFile(file, usage);
       setName(data.original_filename);
       onChange?.(data.file_id, data);
