@@ -55,6 +55,9 @@ class Preferences(BaseModel):
     monthly_recap_email: Optional[bool] = None
     view_modes: Optional[dict] = None
     notification_prefs: Optional[dict] = None
+    theme: Optional[str] = None
+    text_size: Optional[int] = None
+    animations_off: Optional[bool] = None
 
 
 class FunctionDescriptionIn(BaseModel):

@@ -178,6 +178,15 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - Le Bureau contrôle les sections visibles (`settings/public-page` : enabled/show_events/show_pros/show_gallery/intro)
   et le lien est partageable (`PublicPageSettings`).
 
+### Prompt 8F — Lot A : Confort de lecture & animations (05/09/2026, backend+persistance vérifiés par curl, compile OK)
+- **Curseur de taille de texte 14–24px** appliqué instantanément à toute l'interface (`document.documentElement.style.fontSize`, échelle rem globale) via `ThemeProvider`.
+- **Contrôle global des animations** (case à cocher, indépendant du thème) + respect `prefers-reduced-motion` → classe `.reduce-motion` neutralisant animations/transitions.
+- Contrôles dans « Mon espace › Affichage & accessibilité » (`DisplayPreferences`), mémorisés dans
+  `preferences.text_size` / `animations_off` (modèle `Preferences` étendu) + localStorage pour l'instantané.
+- Reste du Prompt 8F à faire (lots suivants) : langage constructif systématique, palette d'alerte adoucie,
+  morcellement des formulaires >5 champs (stepper), autosave brouillons (30s + restauration 7j),
+  emplacement fixe de l'action principale (bas droite Bordeaux), retours micro-actions, protection suppression.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

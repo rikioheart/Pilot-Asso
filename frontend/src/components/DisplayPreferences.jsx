@@ -24,7 +24,7 @@ const MODULES = [["feed", "Fil d'actualité"], ["engagement", "Ma progression"],
 
 export const DisplayPreferences = () => {
   const { profile, refresh } = useAuth();
-  const { userKey, setUserTheme } = useTheme();
+  const { userKey, setUserTheme, textSize, setTextSize, animationsOff, setAnimationsOff } = useTheme();
   const [access, setAccess] = useState({ font: "DEFAULT", text_size: "NORMAL", spacing: "NORMAL",
     contrast: "NORMAL", focus_mode: false, reduce_motion: false });
   const [hidden, setHidden] = useState([]);
@@ -40,6 +40,8 @@ export const DisplayPreferences = () => {
     setRecapEmail(profile.preferences?.monthly_recap_email !== false);
     setNotifPrefs(profile.preferences?.notification_prefs || {});
     if (profile.preferences?.theme) setUserTheme(profile.preferences.theme);
+    if (profile.preferences?.text_size) setTextSize(profile.preferences.text_size);
+    if (typeof profile.preferences?.animations_off === "boolean") setAnimationsOff(profile.preferences.animations_off);
   }, [profile]);
   useEffect(() => { api.get("/settings/notification-types").then((r) => setNotifTypes(r.data)).catch(() => {}); }, []);
 
@@ -48,7 +50,8 @@ export const DisplayPreferences = () => {
     try {
       await api.put("/profiles/me/accessibility", access);
       await api.put("/profiles/me/preferences", { hidden_modules: hidden,
-        monthly_recap_email: recapEmail, notification_prefs: notifPrefs, theme: userKey || null });
+        monthly_recap_email: recapEmail, notification_prefs: notifPrefs, theme: userKey || null,
+        text_size: textSize, animations_off: animationsOff });
       await refresh?.();
       toast.success("Préférences enregistrées et appliquées");
     } catch (e) { toast.error(apiError(e)); }
@@ -72,6 +75,25 @@ export const DisplayPreferences = () => {
 
   return (
     <div className="space-y-6" data-testid="display-preferences">
+      <SectionCard title="Confort de lecture & animations" icon={Palette} testId="a11y-comfort-card"
+        subtitle="Ajustez la taille du texte et les animations. Appliqué immédiatement, sur toute la plateforme.">
+        <div className="space-y-4">
+          <div>
+            <div className="mb-1 flex items-center justify-between text-sm">
+              <span className="font-medium text-[var(--marine)]">Taille du texte</span>
+              <span className="text-muted-foreground" data-testid="text-size-value">{textSize}px</span>
+            </div>
+            <input type="range" min="14" max="24" step="1" value={textSize} data-testid="text-size-slider"
+              onChange={(e) => setTextSize(Number(e.target.value))} className="w-full accent-[var(--bordeaux)]" />
+          </div>
+          <label className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+            <span>Réduire les animations (transitions instantanées)</span>
+            <input type="checkbox" checked={animationsOff} data-testid="animations-off-toggle"
+              onChange={(e) => setAnimationsOff(e.target.checked)} className="h-5 w-5 accent-[var(--bordeaux)]" />
+          </label>
+        </div>
+      </SectionCard>
+
       <SectionCard title="Mon thème" icon={Palette} testId="user-theme-card"
         subtitle="Choisissez votre thème. Votre choix prime sur le thème par défaut de l'association.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-theme-choices">

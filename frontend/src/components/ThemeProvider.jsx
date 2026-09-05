@@ -51,12 +51,23 @@ export const themeColor = (name) =>
   getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim() || "#800020";
 
 const ThemeContext = createContext({ themeKey: "T1", userKey: null, bureauKey: "T1",
-  setUserTheme: () => {}, reload: () => {} });
+  setUserTheme: () => {}, reload: () => {}, textSize: 16, setTextSize: () => {},
+  animationsOff: false, setAnimationsOff: () => {} });
 
 export const ThemeProvider = ({ children }) => {
   const [bureauKey, setBureauKey] = useState("T1");
   const [userKey, setUserKey] = useState(() => localStorage.getItem("vdc_user_theme") || null);
   const themeKey = userKey || bureauKey;
+  const [textSize, setTextSizeState] = useState(() => Number(localStorage.getItem("vdc_text_size")) || 16);
+  const [animationsOff, setAnimOffState] = useState(() => localStorage.getItem("vdc_animations_off") === "1");
+
+  const setTextSize = useCallback((n) => {
+    const v = Math.min(24, Math.max(14, Number(n) || 16));
+    localStorage.setItem("vdc_text_size", String(v)); setTextSizeState(v);
+  }, []);
+  const setAnimationsOff = useCallback((v) => {
+    localStorage.setItem("vdc_animations_off", v ? "1" : "0"); setAnimOffState(!!v);
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -72,9 +83,16 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => { applyTheme(themeKey); }, [themeKey]);
   useEffect(() => { reload(); }, [reload]);
+  useEffect(() => { document.documentElement.style.fontSize = `${textSize}px`; }, [textSize]);
+  useEffect(() => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    document.documentElement.classList.toggle("reduce-motion", animationsOff || reduce);
+  }, [animationsOff]);
 
   return (
-    <ThemeContext.Provider value={{ themeKey, userKey, bureauKey, setUserTheme, reload }}>
+    <ThemeContext.Provider value={{ themeKey, userKey, bureauKey, setUserTheme, reload,
+      textSize, setTextSize, animationsOff, setAnimationsOff }}>
+      <style>{`.reduce-motion *,.reduce-motion *::before,.reduce-motion *::after{animation-duration:0.001ms!important;animation-iteration-count:1!important;transition-duration:0.001ms!important;scroll-behavior:auto!important}`}</style>
       {children}
     </ThemeContext.Provider>
   );
