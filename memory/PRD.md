@@ -187,6 +187,13 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   morcellement des formulaires >5 champs (stepper), autosave brouillons (30s + restauration 7j),
   emplacement fixe de l'action principale (bas droite Bordeaux), retours micro-actions, protection suppression.
 
+### Prompt 8F — Lot B : Palette d'alerte adoucie (05/09/2026, compile OK)
+- Statut paiement « en retard » : rouge → **orange doux** ; réponse RSVP « Pas possible » : rouge → gris neutre.
+- Variable de thème `--status-error` adoucie (#b3261e → #c2571a orange-rouge) en T1/T2 ; le rouge/bordeaux vif
+  reste réservé aux suppressions et refus explicites.
+- Reste 8F (lots suivants) : langage constructif systématique, morcellement des formulaires >5 champs,
+  autosave brouillons, emplacement fixe de l'action principale, retours micro-actions, protection suppression.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

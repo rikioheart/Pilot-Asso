@@ -6,7 +6,7 @@ import { api, apiError } from "@/lib/api";
 const STATES = [
   { key: "PARTICIPE", label: "Je participe", icon: Check, tone: "bg-[var(--status-ok,#1e7f4f)]" },
   { key: "PEUT_ETRE", label: "Peut-être", icon: HelpCircle, tone: "bg-amber-500" },
-  { key: "PAS_POSSIBLE", label: "Pas possible", icon: X, tone: "bg-red-500" },
+  { key: "PAS_POSSIBLE", label: "Pas possible", icon: X, tone: "bg-slate-500" },
 ];
 const ROLE_LABEL = { BUREAU: "Bureau", PRO: "Pros", MEMBRE: "Membres" };
 const ROLE_OF = { ADMIN_BUREAU: "BUREAU", PROFESSIONNEL: "PRO", PARTICULIER: "MEMBRE" };

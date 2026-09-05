@@ -19,7 +19,7 @@ export const PAYMENT_METHOD_LABELS = { ESPECES: "Espèces", CHEQUE: "Chèque", V
 const STATUS_TONE = {
   PAYE: "bg-[var(--status-ok-a10,#e6f4ec)] text-[var(--status-ok,#1e7f4f)]",
   EN_ATTENTE: "bg-amber-50 text-amber-700",
-  EN_RETARD: "bg-red-50 text-red-700",
+  EN_RETARD: "bg-orange-100 text-orange-800",
 };
 
 function StatusPill({ status, testId }) {
