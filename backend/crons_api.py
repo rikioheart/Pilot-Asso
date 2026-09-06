@@ -7,7 +7,6 @@ from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request
 
 from rbac import ROLE_ADMIN
 from deps import db, iso, now_utc, new_id, logger, notify, notify_bureau
-
 router = APIRouter(prefix="/api")
 
 
@@ -218,3 +217,86 @@ async def cron_weekly_summary(request: Request, background: BackgroundTasks, aut
         return {"ok": True, "duplicate": True}
     background.add_task(send_weekly_summary)
     return {"ok": True, "queued": "weekly-summary", "run_id": run_id}
+
+
+async def expire_vacations():
+    """Désactive automatiquement le mode vacances arrivé à échéance."""
+    today = iso(now_utc())[:10]
+    ended = 0
+    async for profile in db.profiles.find({"preferences.vacation.active": True}, {"_id": 0, "user_id": 1,
+                                                                                  "preferences": 1}):
+        vacation = (profile.get("preferences") or {}).get("vacation") or {}
+        if vacation.get("end_date") and vacation["end_date"] <= today:
+            await db.profiles.update_one({"user_id": profile["user_id"]},
+                                         {"$set": {"preferences.vacation": {"active": False},
+                                                   "updated_at": iso(now_utc())}})
+            await notify(profile["user_id"], type="VACATION_ENDED", title="Bon retour parmi nous",
+                         message="Votre mode vacances est terminé. Les notifications reçues pendant votre absence "
+                                 "restent consultables dans « Archivées ».", level="INFO", link="/notifications")
+            ended += 1
+    logger.info(f"[CRON] Modes vacances expirés : {ended}")
+    return ended
+
+
+async def send_daily_digests():
+    """Digest quotidien : à l'heure choisie par chaque membre, un e-mail regroupe ses notifications du jour."""
+    from zoneinfo import ZoneInfo
+    from exports import send_email, EMAIL_FROM_NAME
+    from html import escape
+    hour = now_utc().astimezone(ZoneInfo("Europe/Paris")).hour
+    sent = 0
+    async for profile in db.profiles.find({"preferences.delivery_mode": "DIGEST"},
+                                          {"_id": 0, "user_id": 1, "preferences": 1}):
+        prefs = profile.get("preferences") or {}
+        if prefs.get("digest_hour", 18) != hour:
+            continue
+        if (prefs.get("vacation") or {}).get("active"):
+            continue
+        user = await db.users.find_one({"user_id": profile["user_id"]},
+                                       {"_id": 0, "email": 1, "role": 1, "status": 1, "is_active": 1})
+        if not user or user.get("role") == ROLE_ADMIN or user.get("status") != "ACTIVE" or not user.get("is_active"):
+            continue
+        pending = await db.notifications.find(
+            {"recipient_id": profile["user_id"], "digest_pending": True}, {"_id": 0}
+        ).sort([("priority_weight", 1), ("created_at", -1)]).to_list(100)
+        if not pending:
+            continue
+        rows = "".join(
+            f'<li style="margin:0 0 8px"><strong>{escape(n.get("title") or "")}</strong>'
+            f'{" — " + escape(n.get("message")) if n.get("message") else ""}</li>' for n in pending)
+        html = (
+            '<table role="presentation" width="100%"><tr><td style="padding:24px;'
+            'font-family:Arial,sans-serif;color:#333333">'
+            f'<h1 style="color:#002060;font-size:20px;margin:0 0 8px">Votre récapitulatif du jour</h1>'
+            f'<p style="color:#666666;margin:0 0 16px">{len(pending)} nouvelle(s) notification(s).</p>'
+            f'<ul style="padding-left:18px">{rows}</ul>'
+            f'<p style="font-size:12px;color:#888888;margin-top:20px">Message automatique de {escape(EMAIL_FROM_NAME)}. '
+            'Vous pouvez repasser en réception immédiate depuis vos préférences.</p>'
+            '</td></tr></table>')
+        email_id = await send_email(to=user["email"], subject="Votre récapitulatif quotidien — La Voix du Chien",
+                                    html=html)
+        await db.notifications.update_many(
+            {"recipient_id": profile["user_id"], "digest_pending": True},
+            {"$set": {"digest_pending": False, "digest_sent_at": iso(now_utc())}})
+        await db.email_log.insert_one({"kind": "DIGEST", "recipient": user["email"], "email_id": email_id,
+                                       "count": len(pending), "sent_at": iso(now_utc())})
+        sent += 1
+    logger.info(f"[CRON] Digests quotidiens envoyés (heure {hour}h) : {sent}")
+    return sent
+
+
+@router.post("/cron/hourly")
+async def cron_hourly(request: Request, background: BackgroundTasks, authorization: str = Header(None),
+                      x_webhook_id: str = Header(None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    check_secret(authorization)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    run_id = x_webhook_id or body.get("run_id") or new_id("run")
+    if not await claim_run("hourly", run_id):
+        return {"ok": True, "duplicate": True}
+    background.add_task(expire_vacations)
+    background.add_task(send_daily_digests)
+    return {"ok": True, "queued": "hourly", "run_id": run_id}

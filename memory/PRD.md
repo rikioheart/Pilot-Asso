@@ -218,6 +218,27 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   / 5 min pause, Démarrer/Pause/Réinitialiser, sans alarme ; synchronisation du mode focus entre composants via
   l'évènement `vdc-focus-changed`.
 
+### Prompt 8G — Accueil minimal, notifications unifiées & activation membres (06/06/2026, testé 100 % frontend — iteration_23)
+- **Accueil minimal par rôle** : nouveau composant `BaseHomeBlocks.jsx` (3 blocs communs : progression du chien,
+  fil d'actualité, participations à venir). `MemberDashboard` réduit à ces 3 blocs ; `ProDashboard` = 3 blocs +
+  « Mes activités du jour » + « Mes tâches du jour ». Modules retirés de l'accueil (toujours accessibles via la nav).
+- **Centre de notifications unifié** (`Notifications.jsx`) : filtres Toutes / Prioritaires / Non lues / Archivées,
+  badge « Prioritaire » (mentions + validations en attente d'abord via `priority_weight`), tri prioritaire côté API,
+  bannière mode vacances. `notify()` (deps.py) étendu : vacances → archivage sans push, digest → `digest_pending`.
+- **Digest quotidien** : cron horaire `.emergent/crons.yml` → `/api/cron/hourly` (`send_daily_digests` à l'heure
+  choisie par membre via Resend + `expire_vacations`). Bureau toujours en immédiat (non désactivable).
+- **Mode vacances** (`account.py`) : suspend/archive les notifications, fin auto à la date choisie ou manuelle,
+  Bureau informé, **relais Bureau obligatoire** (409 + désignation d'un remplaçant si aucun autre Bureau actif).
+- **Départage validation double** (`activities.py` review) : première décision fait foi ; les autres valideurs
+  notifiés « Décision déjà prise » ; le Bureau peut revenir sur une décision d'un PRO_COORDINATEUR sous **48 h**.
+- **Parcours d'activation** (`activation.py` + `ActivationJourney.jsx`) : 3–4 étapes (profil, carnet chien,
+  1re activité), affiché une fois, passable ; complétion visible du Bureau via `/animation-review` (`activation_done`).
+- **Désactivation & suppression RGPD** (`account.py` + `AccountSettings.jsx`, onglet « Notifications & compte » de
+  Mon espace) : désactivation réversible (profil masqué de l'annuaire, données conservées) ; suppression
+  irréversible avec double confirmation (saisie « SUPPRIMER »), effacement des données perso, conservation des
+  données comptables anonymisées ; Bureau notifié dans les deux cas.
+- Backfill : `priority_weight` ajouté aux 212 notifications existantes.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

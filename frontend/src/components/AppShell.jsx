@@ -20,6 +20,7 @@ import { OfflineIndicator } from "@/components/OfflineMode";
 import { useBlockVisibleFn } from "@/components/BlockVisibility";
 import { LogoLockup, Logo } from "@/components/Logo";
 import { Onboarding } from "@/components/Onboarding";
+import { ActivationJourney } from "@/components/ActivationJourney";
 import { Button } from "@/components/ui/button";
 
 const BUREAU_NAV = [
@@ -292,6 +293,7 @@ export const AppShell = ({ children }) => {
         </header>
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
         <Onboarding />
+        <ActivationJourney />
         <QuickActionsFab />
         <FocusPomodoro />
         <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t bg-card lg:hidden"

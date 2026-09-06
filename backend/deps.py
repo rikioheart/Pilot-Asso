@@ -191,20 +191,58 @@ async def notification_allowed(recipient_id: str, type: str) -> bool:
     return prefs.get(type, True) is not False
 
 
+HIGH_PRIORITY_TYPES = {"MENTION", "NEW_PROPOSAL"}
+
+
+def priority_weight(type: str, level: str) -> int:
+    """0 = à traiter en priorité (mention, validation en attente), 1 = important, 2 = information."""
+    if type in HIGH_PRIORITY_TYPES:
+        return 0
+    if level in ("ACTION", "WARNING"):
+        return 1
+    return 2
+
+
+async def _recipient_prefs(recipient_id: str):
+    target = await db.users.find_one({"user_id": recipient_id}, {"_id": 0, "role": 1})
+    profile = await db.profiles.find_one({"user_id": recipient_id}, {"_id": 0, "preferences": 1})
+    return target, ((profile or {}).get("preferences") or {})
+
+
+async def is_on_vacation(recipient_id: str) -> bool:
+    _, prefs = await _recipient_prefs(recipient_id)
+    return bool((prefs.get("vacation") or {}).get("active"))
+
+
 async def notify(recipient_id: str, type: str, title: str, message: str = "", level: str = "INFO",
                  resource_type: str = None, resource_id: str = None, link: str = None):
     if not await notification_allowed(recipient_id, type):
         return None
+    target, prefs = await _recipient_prefs(recipient_id)
+    is_bureau = bool(target and target["role"] == ROLE_ADMIN)
     doc = {
         "notification_id": new_id("ntf"), "recipient_id": recipient_id, "type": type, "title": title,
         "message": message, "level": level, "resource_type": resource_type, "resource_id": resource_id,
         "link": link, "is_read": False, "read_at": None,
         "priority": "HIGH" if level in ("ACTION", "WARNING") else "NORMAL",
+        "priority_weight": priority_weight(type, level),
+        "is_archived": False, "digest_pending": False, "received_during_vacation": False,
         "created_at": iso(now_utc()),
     }
+    push = True
+    if not is_bureau:
+        vacation = prefs.get("vacation") or {}
+        if vacation.get("active"):
+            doc["is_archived"] = True
+            doc["received_during_vacation"] = True
+            push = False
+        elif prefs.get("delivery_mode") == "DIGEST":
+            doc["digest_pending"] = True
+            push = False
     await db.notifications.insert_one(doc)
     payload = {k: v for k, v in doc.items() if k != "_id"}
-    await hub.push(recipient_id, payload)
+    if push:
+        await hub.push(recipient_id, payload)
     return payload
 
 

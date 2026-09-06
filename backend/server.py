@@ -358,15 +358,23 @@ async def update_member(user_id: str, payload: UserAdminUpdate, admin: dict = De
 # ---------------------------------------------------------------- Notifications
 @api.get("/notifications")
 async def list_notifications(unread_only: bool = False, type: Optional[str] = None,
+                             archived: bool = False, priority: bool = False,
                              limit: int = 50, user: dict = Depends(current_user)):
     query = {"recipient_id": user["user_id"]}
+    query["is_archived"] = True if archived else {"$ne": True}
     if unread_only:
         query["is_read"] = False
     if type:
         query["type"] = type
-    items = await db.notifications.find(query, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
-    unread = await db.notifications.count_documents({"recipient_id": user["user_id"], "is_read": False})
-    return {"items": items, "unread_count": unread}
+    if priority:
+        query["priority_weight"] = {"$lte": 1}
+    items = await db.notifications.find(query, {"_id": 0}) \
+        .sort([("priority_weight", 1), ("created_at", -1)]).limit(limit).to_list(limit)
+    unread = await db.notifications.count_documents(
+        {"recipient_id": user["user_id"], "is_read": False, "is_archived": {"$ne": True}})
+    archived_count = await db.notifications.count_documents(
+        {"recipient_id": user["user_id"], "is_archived": True})
+    return {"items": items, "unread_count": unread, "archived_count": archived_count}
 
 
 @api.post("/notifications/{notification_id}/read")
@@ -798,6 +806,10 @@ app.include_router(settings_module.router)
 app.include_router(comments_module.router)
 app.include_router(payments_module.router)
 app.include_router(weather_module.router)
+import account as account_module
+import activation as activation_module
+app.include_router(account_module.router)
+app.include_router(activation_module.router)
 
 app.add_middleware(
     CORSMiddleware,

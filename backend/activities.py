@@ -416,17 +416,55 @@ async def review_activity(activity_id: str, payload: ReviewIn, user: dict = Depe
         raise HTTPException(status_code=404, detail="Activité introuvable")
     if payload.decision not in ("ACCEPT", "REFUSE"):
         raise HTTPException(status_code=400, detail="Décision invalide")
+    is_admin = user["role"] == ROLE_ADMIN
+    # Départage de validation double : la première décision fait foi.
+    prev_reviewer = activity.get("reviewed_by")
+    if prev_reviewer and prev_reviewer != user["user_id"]:
+        prev_at = activity.get("reviewed_at")
+        within_48h = False
+        if prev_at:
+            try:
+                dt = prev_at if isinstance(prev_at, str) else iso(prev_at)
+                within_48h = now_utc() - now_utc().fromisoformat(dt.replace("Z", "+00:00")) < timedelta(hours=48)
+            except Exception:
+                within_48h = False
+        can_override = is_admin and activity.get("reviewer_role") == "PRO_COORDINATEUR" and within_48h
+        if not can_override:
+            return {"already_decided": True, "decision": activity.get("status"),
+                    "decided_by": activity.get("reviewed_by_name"),
+                    "message": f"La décision a déjà été prise par {activity.get('reviewed_by_name') or 'un autre valideur'}."}
     status = "PLANNED" if payload.decision == "ACCEPT" else "REFUSED"
+    reviewer_role = "ADMIN" if is_admin else "PRO_COORDINATEUR"
+    reviewer_name = await display_name(user["user_id"])
+    is_override = bool(prev_reviewer and prev_reviewer != user["user_id"])
     await db.activities.update_one({"activity_id": activity_id}, {"$set": {
         "status": status, "review_comment": payload.comment, "reviewed_by": user["user_id"],
-        "updated_at": iso(now_utc())}})
-    await log_action(user, "REVIEW", "activities", activity_id, new_value={"status": status})
+        "reviewed_by_name": reviewer_name, "reviewer_role": reviewer_role,
+        "reviewed_at": iso(now_utc()), "updated_at": iso(now_utc())}})
+    await log_action(user, "REVIEW", "activities", activity_id,
+                     new_value={"status": status, "override": is_override})
     await notify(activity["created_by"],
                  type="ACTIVITY_ACCEPTED" if status == "PLANNED" else "ACTIVITY_REFUSED",
                  title="Activité acceptée" if status == "PLANNED" else "Activité refusée",
-                 message=payload.comment or f"« {activity['title']} » : décision du Bureau enregistrée.",
+                 message=payload.comment or f"« {activity['title']} » : décision enregistrée.",
                  level="SUCCESS" if status == "PLANNED" else "WARNING",
                  resource_type="activity", resource_id=activity_id, link="/activities")
+    if not is_override:
+        # Prévenir les autres valideurs que la décision est prise, sans qu'ils puissent la contredire.
+        decision_label = "acceptée" if status == "PLANNED" else "refusée"
+        recipients = set()
+        async for admin in db.users.find({"role": ROLE_ADMIN, "status": "ACTIVE"}, {"_id": 0, "user_id": 1}):
+            recipients.add(admin["user_id"])
+        async for pro in db.users.find({"access_level": "PRO_COORDINATEUR", "status": "ACTIVE"},
+                                       {"_id": 0, "user_id": 1}):
+            recipients.add(pro["user_id"])
+        recipients.discard(user["user_id"])
+        for uid in recipients:
+            extra = (" Vous pouvez revenir sur cette décision pendant 48 h."
+                     if reviewer_role == "PRO_COORDINATEUR" else "")
+            await notify(uid, type="DECISION_TAKEN", title="Décision déjà prise",
+                         message=f"« {activity['title']} » a été {decision_label} par {reviewer_name}.{extra}",
+                         level="INFO", resource_type="activity", resource_id=activity_id, link="/activities")
     return await db.activities.find_one({"activity_id": activity_id}, {"_id": 0})
 
 

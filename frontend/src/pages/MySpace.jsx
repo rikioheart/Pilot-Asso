@@ -5,11 +5,12 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, SectionCard, EmptyState, Chip, KpiCard } from "@/components/Ui";
 import { DisplayPreferences } from "@/components/DisplayPreferences";
+import { AccountSettings } from "@/components/AccountSettings";
 import { ProSpaceForm, FunctionDescription } from "@/components/ProSpaceForm";
 import { Button } from "@/components/ui/button";
 
 const TABS = [["RECAP", "Mon récapitulatif"], ["PREFERENCES", "Affichage & accessibilité"],
-  ["FUNCTION", "Ma fonction"], ["PRO", "Espace professionnel"]];
+  ["COMPTE", "Notifications & compte"], ["FUNCTION", "Ma fonction"], ["PRO", "Espace professionnel"]];
 
 export default function MySpace() {
   const { user } = useAuth();
@@ -104,6 +105,7 @@ export default function MySpace() {
       )}
 
       {tab === "PREFERENCES" && <DisplayPreferences />}
+      {tab === "COMPTE" && <AccountSettings />}
       {tab === "FUNCTION" && <FunctionDescription />}
       {tab === "PRO" && isPro && <ProSpaceForm />}
 

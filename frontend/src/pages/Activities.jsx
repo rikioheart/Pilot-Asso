@@ -103,6 +103,21 @@ export default function Activities() {
     }
   };
 
+  const review = async (id, decision) => {
+    try {
+      const body = decision === "REFUSE" ? { decision, comment: "Non retenue pour le moment" } : { decision };
+      const { data } = await api.post(`/activities/${id}/review`, body);
+      if (data.already_decided) {
+        toast(data.message || "La décision a déjà été prise.");
+      } else {
+        toast.success(decision === "ACCEPT" ? "Activité acceptée" : "Activité refusée");
+      }
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
   const steps = [
     {
       title: "L'essentiel",
@@ -427,12 +442,10 @@ export default function Activities() {
                   <>
                     <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                       data-testid={`activity-accept-${a.activity_id}`}
-                      onClick={() => act(() => api.post(`/activities/${a.activity_id}/review`, { decision: "ACCEPT" }),
-                        "Activité acceptée")}>Accepter</Button>
+                      onClick={() => review(a.activity_id, "ACCEPT")}>Accepter</Button>
                     <Button size="sm" variant="outline" className="rounded-full"
                       data-testid={`activity-refuse-${a.activity_id}`}
-                      onClick={() => act(() => api.post(`/activities/${a.activity_id}/review`,
-                        { decision: "REFUSE", comment: "Non retenue pour le moment" }), "Activité refusée")}>Refuser</Button>
+                      onClick={() => review(a.activity_id, "REFUSE")}>Refuser</Button>
                   </>
                 )}
               </div>

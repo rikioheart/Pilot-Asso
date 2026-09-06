@@ -1,0 +1,36 @@
+{
+  "summary": "Prompt 8G frontend testing: minimal Particulier home, Pro home with 3 base blocks + today/tasks, unified notifications center with priority/archived/unread filters + vacation banner, AccountSettings tab (delivery digest, vacation, deactivate/reactivate, RGPD delete gating), Bureau tie-break + Bureau vacation replacement guard, activation journey. All required flows PASS.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AccountSettings (member)",
+        "issue": "Digest hour selector (account-digest-hour-select / account-digest-hour-row) is intermittently not shown after clicking the Radix Switch account-digest-switch. Worked on first pass (hour row visible, save toast 'Préférences de réception enregistrées'), but on a fresh re-render clicking the Switch data-testid via .click() did not toggle aria-checked (remained 'false'). Likely a Radix Switch focus/click routing quirk. Consider clicking the wrapping <label> or exposing testid on the underlying button.",
+        "selector": "[data-testid='account-digest-switch']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: make account-digest-switch click-target more robust (Radix Switch sometimes ignores programmatic .click() on the root wrapper). Adding data-testid onto the label or the underlying <button role='switch'> would make E2E clicks deterministic.",
+    "Optional: seed at least one PROPOSED activity visible to the Bureau demo account so the double-validation happy path (activity-accept-<id>) can be exercised end-to-end from the UI. During this run, /activities showed only ACTIVE/DONE activities, so no activity-accept-* button was available to click."
+  ],
+  "critical_code_review_comments": [
+    "MemberDashboard.jsx correctly renders ONLY WelcomeBanner + BaseHomeBlocks — no finance/KPI/tasks/volunteer/engagement blocks. Verified in DOM: home-finance/home-kpis/home-tasks/home-volunteer/home-engagement/home-work/home-low-stock/home-week are all absent. Good.",
+    "ProDashboard.jsx renders BaseHomeBlocks + pro-today + pro-my-tasks only — no pro-kpi-row/pro-week/pro-low-stock. Good.",
+    "Notifications.jsx priority filter correctly filters priority_weight===0 items and renders notification-priority-<id> badge with bordeaux color + AlertCircle icon; vacation banner shows amber tone (not destructive red) — matches constructive tone spec.",
+    "AccountSettings.jsx: Bureau branch shows account-bureau-note and hides the delivery/digest section (no account-digest-switch rendered), matching backend 403 on /account/notifications for admins. Good.",
+    "RGPD delete dialog gating implemented via `disabled={deleteWord !== 'SUPPRIMER' || busy}` — verified: disabled with '' and with 'abc', enabled only with 'SUPPRIMER'. Annuler closes dialog. Not confirmed on seeded account per instructions."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (skipped)", "frontend": "100% on required flows" },
+  "test_credentials": "Bureau associationlavoixduchien@gmail.com / VoixDuChien2026! — OK. Particulier membre1.demo@lavoixduchien.fr / Demo2026! — OK (verified NOT deactivated after test). PRO_COORDINATEUR pro2.demo@lavoixduchien.fr / Demo2026! — OK.",
+  "seed_data_creation": "None persisted. Member vacation was toggled on/off (ended cleanly, /account/settings returns vacation.active=false). Member account was toggled deactivate→reactivate (verified /account/settings deactivated=false at end). Bureau vacation activation intentionally hit 409 needReplacement (not activated). No RGPD delete performed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified flows: (1) Particulier /member/dashboard shows member-dashboard > home-base-blocks with home-news/home-dogs/home-next only; no legacy blocks. (2) /pro/dashboard shows pro-dashboard > home-base-blocks + pro-today + pro-my-tasks; no KPI/week/low-stock. (3) /notifications: 4 filters (all/priority/unread/archived), priority filter shows 2 notification-priority-<id> badges, notifications-mark-all works. (4) /my-space > my-space-tab-COMPTE > account-settings: member sees Digest switch + hour select + Save (save toast 'Préférences de réception enregistrées'), Bureau sees account-bureau-note and no Digest section. (5) Member vacation start with future date -> account-vacation-active + notifications-vacation-banner visible; Désactiver returns to end-date input. (6) Bureau vacation start -> 409 -> account-replacement-row + account-replacement-hint appear (correct guard for lone bureau). (7) RGPD dialog gating verified: confirm button remains disabled until user types exactly 'SUPPRIMER'; Annuler closes. (8) /api/activation/journey returns {eligible:false, done:true} for seeded membre1 (already done). Activation overlay DID appear once on /my-space navigation after login (screenshot captured) and was dismissed via activation-skip. Tie-break happy path (activity-accept-<id>) NOT executed because /activities had no PROPOSED activities for the Bureau — buttons count=0. Consider seeding one PROPOSED activity to fully exercise this UI. Note flaky Radix Switch on account-digest-switch: worked first pass, failed second pass under identical script. This is a test-infra quirk (click routing) not a functional bug — feature works from the UI.",
+  "rca of the issue": "N/A — no functional bugs. Digest-switch flakiness RCA: Radix UI's Switch renders as <button role='switch'> inside a wrapping <label>; when data-testid is on the outer wrapper and the test invokes .click(force=True), the pointer event can be dispatched to a non-interactive node and the switch state is not toggled. Recommend placing data-testid on the underlying <button role='switch'> for deterministic tests. The tie-break UI happy path was not exercisable because no PROPOSED activities were seeded; backend was already curl-verified by main agent per the review request."
+}

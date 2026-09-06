@@ -206,6 +206,8 @@ async def animation_review(admin: dict = Depends(require("users.manage"))):
         card = {"user_id": user["user_id"], "email": user["email"], "role": user["role"],
                 "display_name": profile.get("display_name") or user["email"],
                 "last_login": user.get("last_login"),
+                "activation_done": bool(profile.get("activation_done")),
+                "deactivated": bool(profile.get("deactivated")),
                 "member_category": profile.get("member_category")}
         if not user.get("last_login") or user["last_login"] < cutoff:
             inactive.append(card)

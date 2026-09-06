@@ -31,3 +31,11 @@ crons:
     endpoint: "{{BASE_URL}}/api/cron/weekly-summary"
     method: POST
     enabled: true
+  - name: digest-et-vacances-horaire
+    description: "Chaque heure : envoie les digests quotidiens à l'heure choisie par chaque membre et clôt les modes vacances arrivés à échéance"
+    cron: "0 * * * *"
+    timezone: "Europe/Paris"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/hourly"
+    method: POST
+    enabled: true

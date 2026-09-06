@@ -129,6 +129,8 @@ async def directory(q: Optional[str] = None, category: Optional[str] = None, dep
         if not u or (u["status"] != "ACTIVE" and user["role"] != ROLE_ADMIN):
             continue
         p = profiles.get(it["user_id"], {})
+        if p.get("deactivated") and user["role"] != ROLE_ADMIN:
+            continue
         results.append({**it, "display_name": p.get("display_name"), "city": p.get("city"),
                         "department": p.get("department"), "avatar": p.get("avatar"),
                         "involvement_level": u.get("access_level"), "member_status": u.get("status")})
