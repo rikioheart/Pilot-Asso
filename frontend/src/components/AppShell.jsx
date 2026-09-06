@@ -15,7 +15,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { HelpButton } from "@/components/HelpButton";
 import { QuickActionsFab } from "@/components/QuickActionsFab";
-import { FocusToggle } from "@/components/FocusMode";
+import { FocusToggle, FocusPomodoro } from "@/components/FocusMode";
 import { OfflineIndicator } from "@/components/OfflineMode";
 import { useBlockVisibleFn } from "@/components/BlockVisibility";
 import { LogoLockup, Logo } from "@/components/Logo";
@@ -293,6 +293,7 @@ export const AppShell = ({ children }) => {
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
         <Onboarding />
         <QuickActionsFab />
+        <FocusPomodoro />
         <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t bg-card lg:hidden"
           data-testid="mobile-bottom-nav" aria-label="Navigation principale">
           {mobileItems.map(({ to, label, icon: Icon }) => (

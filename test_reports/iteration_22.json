@@ -1,0 +1,51 @@
+{
+  "summary": "Prompt 8F frontend testing on Activities & Events wizard flow, draft restore banner, RSVP micro-feedback, and Focus mode Pomodoro. All 6 requested flows pass end-to-end with correct French labels, bordeaux primary buttons, and constructive tone hints.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Events.jsx event-start-input uses <input type=\"date\"> — spec text mentions 'start_date' so this is fine, but note the field only stores a date (not datetime) which differs from Activity's optional starts_at time field. Confirm this is intentional.",
+    "FormWizard footer is `sticky bottom-0` with `-mx-6` inside the shadcn Dialog; check on very small viewports that the primary button remains visible (Escape works but the sticky bar may overlap fields). Not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (skipped)", "frontend": "100%" },
+  "test_credentials": "Bureau/admin associationlavoixduchien@gmail.com / VoixDuChien2026! — login OK",
+  "seed_data_creation": "Created 1 activity (TEST_ Activité wizard) and 1 event (TEST_ Event wizard) via the wizard flows. Also toggled RSVP PARTICIPE on an existing activity (toggled back off, count restored to 0).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Activity wizard (activity-wizard) — 3 steps, progress 33/67/100, hint 'Ajoutez un titre pour continuer.' shown while blocked, back preserves title, final primary label 'Créer l\\'activité' with bordeaux class, toast 'Activité créée'. Event wizard (event-wizard) — 3 steps, step2 hint 'Choisissez une date de début pour continuer.', event-start-input is type=date (fill with YYYY-MM-DD, NOT datetime-local), final label 'Créer l\\'événement', toast 'Événement créé'. Draft restore banner activity-draft-restore triggers when localStorage key 'vdc_draft_activity_new' exists with shape {ts, data} — verified Reprendre restores title. RSVP buttons activity-rsvp-<id>-PARTICIPE add vdc-pop pulse class on click; count increments then decrements on toggle-off. Focus toggle focus-mode-toggle reveals focus-pomodoro card showing 25:00 / Concentration; Démarrer decrements time (24:58 after 2s); Reset returns 25:00; toggling focus off hides card.",
+  "detailed_results": {
+    "activity_wizard": {
+      "visible": true, "step1_primary_disabled_before_title": true,
+      "hint_step1": "Ajoutez un titre pour continuer.",
+      "progress_step1": "33 %", "progress_step2": "67 %",
+      "primary_enabled_after_title": true,
+      "step2_date_input_visible": true,
+      "back_preserves_title": true,
+      "step3_primary_label": "Créer l'activité",
+      "primary_bordeaux_class": true,
+      "toast": "Activité créée"
+    },
+    "event_wizard": {
+      "visible": true, "step1_hint": "Ajoutez un titre pour continuer.",
+      "step2_hint": "Choisissez une date de début pour continuer.",
+      "step2_primary_disabled_pre_date": true,
+      "step2_primary_enabled_post_date": true,
+      "step3_primary_label": "Créer l'événement",
+      "primary_bordeaux_class": true,
+      "toast": "Événement créé"
+    },
+    "draft_restore": { "banner_visible": true, "resume_restores_title": true },
+    "rsvp": { "pulse_vdc_pop": true, "count_before": "0", "count_after_click": "1", "count_after_toggle_off": "0" },
+    "focus_pomodoro": {
+      "toggle_visible": true, "card_visible_on": true, "initial_time": "25:00",
+      "phase": "Concentration", "time_after_2s_running": "24:58",
+      "time_after_reset": "25:00", "hidden_when_focus_off": true
+    }
+  }
+}

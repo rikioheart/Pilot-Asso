@@ -14,6 +14,7 @@ const ROLE_OF = { ADMIN_BUREAU: "BUREAU", PROFESSIONNEL: "PRO", PARTICULIER: "ME
 export function ParticipationControl({ elementType, elementId, testId = "rsvp" }) {
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(false);
+  const [pulse, setPulse] = useState(null);
 
   const load = useCallback(() => api.get("/rsvp/summary",
     { params: { element_type: elementType, element_id: elementId } })
@@ -22,8 +23,11 @@ export function ParticipationControl({ elementType, elementId, testId = "rsvp" }
   if (!data) return null;
 
   const setState = async (state) => {
+    const removing = data.my_state === state;
+    setPulse(state);
+    setTimeout(() => setPulse(null), 500);
     try {
-      if (data.my_state === state) {
+      if (removing) {
         await api.delete("/rsvp", { params: { element_type: elementType, element_id: elementId } });
       } else {
         await api.post("/rsvp", { element_type: elementType, element_id: elementId, state });
@@ -40,7 +44,8 @@ export function ParticipationControl({ elementType, elementId, testId = "rsvp" }
           return (
             <button key={s.key} data-testid={`${testId}-${s.key}`} onClick={() => setState(s.key)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                active ? `${s.tone} border-transparent text-white` : "text-[var(--marine)] hover:bg-muted"}`}>
+                active ? `${s.tone} border-transparent text-white` : "text-[var(--marine)] hover:bg-muted"} ${
+                pulse === s.key ? "vdc-pop" : ""}`}>
               <s.icon className="h-3.5 w-3.5" /> {s.label}
               <span className={`ml-1 rounded-full px-1.5 text-xs ${active ? "bg-white/25" : "bg-muted"}`}
                 data-testid={`${testId}-count-${s.key}`}>{data.counts[s.key].total}</span>

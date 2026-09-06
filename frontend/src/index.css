@@ -81,6 +81,14 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: none; }
     }
+    .vdc-pop {
+        animation: vdc-pop 0.45s ease;
+    }
+    @keyframes vdc-pop {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.12); }
+        100% { transform: scale(1); }
+    }
 }
 
 @layer base {

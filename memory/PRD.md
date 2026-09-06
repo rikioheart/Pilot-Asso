@@ -203,6 +203,21 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - Reste 8F : langage constructif systématique, morcellement formulaires >5 champs, emplacement fixe action
   principale, retours micro-actions animés, protection suppression (menu ⋮ + confirmation neutre + traçage).
 
+### Prompt 8F — Lot D : Morcellement, micro-actions & Pomodoro (06/06/2026, testé 100 % frontend — iteration_22)
+- **Assistant multi-étapes** réutilisable `FormWizard.jsx` (barre de progression, Précédent/Continuer sans
+  perte de données, validation par étape avec message d'aide constructif, action principale toujours **en bas
+  à droite en bordeaux**). Appliqué à la **création d'activités** (3 étapes : L'essentiel / Quand & où /
+  Détails & options) et d'**événements** (L'essentiel / Dates & lieu / Options & liens).
+- **Brouillon auto** câblé sur ces deux formulaires (`useDraft`, clés `activity_new` / `event_new`) : bannière
+  de reprise à la réouverture, effacé après création.
+- **Retours micro-actions** : pulsation douce (`.vdc-pop`, respecte `data-motion="reduced"`) sur les boutons
+  de participation (RSVP) avec mise à jour immédiate des compteurs, sans rechargement.
+- **Langage constructif** : messages d'aide formulés en instructions (« Ajoutez un titre pour continuer »),
+  suppression des points d'exclamation (ex. bénévolat « Merci, votre proposition… est enregistrée »).
+- **Mini-minuteur Pomodoro doux** (`FocusPomodoro`) affiché uniquement en **Mode focus** : 25 min concentration
+  / 5 min pause, Démarrer/Pause/Réinitialiser, sans alarme ; synchronisation du mode focus entre composants via
+  l'évènement `vdc-focus-changed`.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

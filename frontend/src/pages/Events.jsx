@@ -10,11 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EVENT_TYPE_LABELS, VISIBILITY_LABELS, STATUS_LABELS, label } from "@/lib/labels";
 import { MentionPicker } from "@/components/MentionPicker";
+import { FormWizard } from "@/components/FormWizard";
+import { useAutoSaveDraft, loadDraft, clearDraft } from "@/lib/useDraft";
+
+const DRAFT_KEY = "event_new";
+const EMPTY = {
+  title: "", description: "", event_type: "ONE_OFF", start_date: "", end_date: "",
+  location: "", capacity: "", status: "PLANNED", visibility: "MEMBERS",
+  address: "", google_maps_url: "", is_remote: false, visio_url: "", google_meet_url: "",
+  google_forms_url: "", mentions: [], form_id: "", form_notify_date: "",
+  eligible_for_loyalty: false, loyalty_points: 1,
+};
 
 export default function Events() {
   const { user, can } = useAuth();
@@ -23,14 +34,14 @@ export default function Events() {
   const [meta, setMeta] = useState(null);
   const [filters, setFilters] = useState({ event_type: "", q: "", upcoming: false });
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    title: "", description: "", event_type: "ONE_OFF", start_date: "", end_date: "",
-    location: "", capacity: "", status: "PLANNED", visibility: "MEMBERS",
-    address: "", google_maps_url: "", is_remote: false, visio_url: "", google_meet_url: "",
-    google_forms_url: "", mentions: [], form_id: "", form_notify_date: "",
-    eligible_for_loyalty: false, loyalty_points: 1,
-  });
+  const [form, setForm] = useState(EMPTY);
   const [forms, setForms] = useState([]);
+  const [draftAvail, setDraftAvail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+  useAutoSaveDraft(DRAFT_KEY, form.title.trim() ? form : "");
+  useEffect(() => { if (open) setDraftAvail(!!loadDraft(DRAFT_KEY)); }, [open]);
 
   const load = useCallback(async () => {
     try {
@@ -50,8 +61,8 @@ export default function Events() {
     if (can("forms.view")) api.get("/forms").then((r) => setForms(r.data.items || [])).catch(() => {});
   }, [can]);
 
-  const create = async (e) => {
-    e.preventDefault();
+  const create = async () => {
+    setSubmitting(true);
     try {
       await api.post("/events", {
         ...form, capacity: form.capacity ? Number(form.capacity) : null,
@@ -62,22 +73,193 @@ export default function Events() {
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success("Événement créé");
+      clearDraft(DRAFT_KEY);
+      setForm(EMPTY);
       setOpen(false);
       load();
     } catch (err) {
       toast.error(apiError(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const register = async (eventId, role) => {
     try {
       await api.post(`/events/${eventId}/register`, { role });
-      toast.success(role === "VOLUNTEER" ? "Merci ! Votre proposition de bénévolat est enregistrée." : "Inscription confirmée");
+      toast.success(role === "VOLUNTEER" ? "Merci, votre proposition de bénévolat est enregistrée." : "Inscription confirmée");
       load();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
+
+  const steps = [
+    {
+      title: "L'essentiel",
+      valid: !!form.title.trim(),
+      hint: "Ajoutez un titre pour continuer.",
+      content: (
+        <>
+          <div className="space-y-2">
+            <Label>Titre *</Label>
+            <Input value={form.title} data-testid="event-title-input"
+              onChange={(e) => set({ title: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea rows={3} value={form.description} data-testid="event-description-input"
+              onChange={(e) => set({ description: e.target.value })} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={form.event_type} onValueChange={(v) => set({ event_type: v })}>
+                <SelectTrigger data-testid="event-type-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(meta?.event_types || []).map((t) => (
+                    <SelectItem key={t} value={t} data-testid={`event-type-${t}`}>
+                      {label(EVENT_TYPE_LABELS, t, meta?.custom_labels)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Statut</Label>
+              <Select value={form.status} onValueChange={(v) => set({ status: v })}>
+                <SelectTrigger data-testid="event-status-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(meta?.event_statuses || []).map((s) => (
+                    <SelectItem key={s} value={s} data-testid={`event-status-${s}`}>
+                      {label(STATUS_LABELS, s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </>
+      ),
+    },
+    {
+      title: "Dates & lieu",
+      valid: !!form.start_date,
+      hint: "Choisissez une date de début pour continuer.",
+      content: (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Date de début *</Label>
+              <Input type="date" value={form.start_date} data-testid="event-start-input"
+                onChange={(e) => set({ start_date: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Date de fin</Label>
+              <Input type="date" value={form.end_date} data-testid="event-end-input"
+                onChange={(e) => set({ end_date: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Lieu</Label>
+              <Input value={form.location} data-testid="event-location-input"
+                onChange={(e) => set({ location: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Adresse (carte & météo)</Label>
+              <Input value={form.address} placeholder="Ex. 12 rue des Prés, 45320 Nargis" data-testid="event-address-input"
+                onChange={(e) => set({ address: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Capacité</Label>
+              <Input type="number" min="1" value={form.capacity} data-testid="event-capacity-input"
+                onChange={(e) => set({ capacity: e.target.value })} />
+            </div>
+          </div>
+          {isAdmin && (
+            <div className="space-y-2">
+              <Label>Visibilité</Label>
+              <Select value={form.visibility} onValueChange={(v) => set({ visibility: v })}>
+                <SelectTrigger data-testid="event-visibility-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(meta?.visibility_modes || []).map((v) => (
+                    <SelectItem key={v} value={v} data-testid={`event-visibility-${v}`}>
+                      {label(VISIBILITY_LABELS, v)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      title: "Options & liens",
+      content: (
+        <>
+          <div className="space-y-2">
+            <Label>Lien Google Maps</Label>
+            <Input placeholder="https://maps.google.com/…" value={form.google_maps_url}
+              data-testid="event-maps-input" onChange={(e) => set({ google_maps_url: e.target.value })} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Lien Google Meet</Label>
+              <Input placeholder="https://meet.google.com/…" value={form.google_meet_url}
+                data-testid="event-meet-input" onChange={(e) => set({ google_meet_url: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Lien Google Forms</Label>
+              <Input placeholder="https://forms.gle/…" value={form.google_forms_url}
+                data-testid="event-gforms-input" onChange={(e) => set({ google_forms_url: e.target.value })} />
+            </div>
+          </div>
+          <MentionPicker value={form.mentions} onChange={(m) => set({ mentions: m })} testId="event-mentions" />
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={form.is_remote} data-testid="event-remote-checkbox"
+              onCheckedChange={(v) => set({ is_remote: !!v })} />
+            Événement à distance (visio)
+          </label>
+          {form.is_remote && (
+            <div className="space-y-2">
+              <Label>Lien de visioconférence</Label>
+              <Input value={form.visio_url} data-testid="event-visio-input"
+                onChange={(e) => set({ visio_url: e.target.value })} />
+            </div>
+          )}
+          {isAdmin && (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={form.eligible_for_loyalty} data-testid="event-loyalty-checkbox"
+                onCheckedChange={(v) => set({ eligible_for_loyalty: !!v })} />
+              Éligible à la carte d'engagement
+            </label>
+          )}
+          {forms.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Formulaire associé</Label>
+                <Select value={form.form_id || "NONE"}
+                  onValueChange={(v) => set({ form_id: v === "NONE" ? "" : v })}>
+                  <SelectTrigger data-testid="event-form-select"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Aucun</SelectItem>
+                    {forms.map((f) => (
+                      <SelectItem key={f.form_id} value={f.form_id}>{f.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Notification programmée le</Label>
+                <Input type="date" value={form.form_notify_date} data-testid="event-form-notify-input"
+                  onChange={(e) => set({ form_notify_date: e.target.value })} />
+              </div>
+            </div>
+          )}
+        </>
+      ),
+    },
+  ];
 
   return (
     <div data-testid="events-page">
@@ -92,152 +274,20 @@ export default function Events() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="event-create-dialog">
               <DialogHeader><DialogTitle>Nouvel événement</DialogTitle></DialogHeader>
-              <form onSubmit={create} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Titre *</Label>
-                  <Input required value={form.title} data-testid="event-title-input"
-                    onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              {draftAvail && !form.title.trim() && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm"
+                  data-testid="event-draft-restore">
+                  <span className="text-amber-800">Vous aviez commencé un événement — voulez-vous reprendre ?</span>
+                  <span className="flex gap-3">
+                    <button className="font-semibold text-[var(--marine)]" data-testid="event-draft-resume"
+                      onClick={() => { setForm(loadDraft(DRAFT_KEY) || EMPTY); setDraftAvail(false); }}>Reprendre</button>
+                    <button className="text-muted-foreground" data-testid="event-draft-dismiss"
+                      onClick={() => { clearDraft(DRAFT_KEY); setDraftAvail(false); }}>Repartir de zéro</button>
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea rows={3} value={form.description} data-testid="event-description-input"
-                    onChange={(e) => setForm({ ...form, description: e.target.value })} />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Type</Label>
-                    <Select value={form.event_type} onValueChange={(v) => setForm({ ...form, event_type: v })}>
-                      <SelectTrigger data-testid="event-type-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(meta?.event_types || []).map((t) => (
-                          <SelectItem key={t} value={t} data-testid={`event-type-${t}`}>
-                            {label(EVENT_TYPE_LABELS, t, meta?.custom_labels)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Statut</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                      <SelectTrigger data-testid="event-status-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(meta?.event_statuses || []).map((s) => (
-                          <SelectItem key={s} value={s} data-testid={`event-status-${s}`}>
-                            {label(STATUS_LABELS, s)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Date de début *</Label>
-                    <Input type="date" required value={form.start_date} data-testid="event-start-input"
-                      onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Date de fin</Label>
-                    <Input type="date" value={form.end_date} data-testid="event-end-input"
-                      onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lieu</Label>
-                    <Input value={form.location} data-testid="event-location-input"
-                      onChange={(e) => setForm({ ...form, location: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Adresse (carte & météo)</Label>
-                    <Input value={form.address} placeholder="Ex. 12 rue des Prés, 45320 Nargis" data-testid="event-address-input"
-                      onChange={(e) => setForm({ ...form, address: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Capacité</Label>
-                    <Input type="number" min="1" value={form.capacity} data-testid="event-capacity-input"
-                      onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
-                  </div>
-                </div>
-                {isAdmin && (
-                  <div className="space-y-2">
-                    <Label>Visibilité</Label>
-                    <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v })}>
-                      <SelectTrigger data-testid="event-visibility-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(meta?.visibility_modes || []).map((v) => (
-                          <SelectItem key={v} value={v} data-testid={`event-visibility-${v}`}>
-                            {label(VISIBILITY_LABELS, v)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label>Lien Google Maps</Label>
-                  <Input placeholder="https://maps.google.com/…" value={form.google_maps_url}
-                    data-testid="event-maps-input"
-                    onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Lien Google Meet</Label>
-                    <Input placeholder="https://meet.google.com/…" value={form.google_meet_url}
-                      data-testid="event-meet-input"
-                      onChange={(e) => setForm({ ...form, google_meet_url: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lien Google Forms</Label>
-                    <Input placeholder="https://forms.gle/…" value={form.google_forms_url}
-                      data-testid="event-gforms-input"
-                      onChange={(e) => setForm({ ...form, google_forms_url: e.target.value })} />
-                  </div>
-                </div>
-                <MentionPicker value={form.mentions} onChange={(m) => setForm({ ...form, mentions: m })} testId="event-mentions" />
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={form.is_remote} data-testid="event-remote-checkbox"
-                    onCheckedChange={(v) => setForm({ ...form, is_remote: !!v })} />
-                  Événement à distance (visio)
-                </label>
-                {form.is_remote && (
-                  <div className="space-y-2">
-                    <Label>Lien de visioconférence</Label>
-                    <Input value={form.visio_url} data-testid="event-visio-input"
-                      onChange={(e) => setForm({ ...form, visio_url: e.target.value })} />
-                  </div>
-                )}
-                {isAdmin && (
-                  <label className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={form.eligible_for_loyalty} data-testid="event-loyalty-checkbox"
-                      onCheckedChange={(v) => setForm({ ...form, eligible_for_loyalty: !!v })} />
-                    Éligible à la carte d'engagement
-                  </label>
-                )}
-                {forms.length > 0 && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Formulaire associé</Label>
-                      <Select value={form.form_id || "NONE"}
-                        onValueChange={(v) => setForm({ ...form, form_id: v === "NONE" ? "" : v })}>
-                        <SelectTrigger data-testid="event-form-select"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">Aucun</SelectItem>
-                          {forms.map((f) => (
-                            <SelectItem key={f.form_id} value={f.form_id}>{f.title}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Notification programmée le</Label>
-                      <Input type="date" value={form.form_notify_date} data-testid="event-form-notify-input"
-                        onChange={(e) => setForm({ ...form, form_notify_date: e.target.value })} />
-                    </div>
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                    data-testid="event-save-button">Créer l'événement</Button>
-                </DialogFooter>
-              </form>
+              )}
+              <FormWizard steps={steps} onSubmit={create} submitting={submitting} testId="event-wizard"
+                submitLabel="Créer l'événement" />
             </DialogContent>
           </Dialog>
         )} />

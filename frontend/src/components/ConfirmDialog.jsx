@@ -33,7 +33,8 @@ export const ConfirmDialogHost = () => {
         <AlertDialogFooter>
           <AlertDialogCancel data-testid="confirm-dialog-cancel" className="rounded-full">Annuler</AlertDialogCancel>
           <AlertDialogAction data-testid="confirm-dialog-confirm" onClick={() => close(true)}
-            className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]">
+            className={`rounded-full ${state?.destructive
+              ? "bg-red-600 hover:bg-red-700" : "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"}`}>
             {state?.confirmLabel || "Confirmer"}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -54,7 +55,7 @@ export const RowMenu = ({ items, testId = "row-menu", label = "Plus d'actions" }
     <DropdownMenuContent align="end" className="min-w-44">
       {items.filter(Boolean).map((it) => (
         <DropdownMenuItem key={it.label} onSelect={it.onSelect} data-testid={it.testId}
-          className={it.danger ? "text-[var(--status-error)] focus:text-[var(--status-error)]" : ""}>
+          className={it.danger ? "text-red-600 focus:text-red-600" : ""}>
           {it.icon && <it.icon className="mr-2 h-3.5 w-3.5" />} {it.label}
         </DropdownMenuItem>
       ))}

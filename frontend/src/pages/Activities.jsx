@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ACTIVITY_CATEGORY_LABELS, ACTIVITY_TYPE_LABELS, VISIBILITY_LABELS, label }
   from "@/lib/labels";
@@ -19,6 +19,16 @@ import { WeatherWidget } from "@/components/WeatherWidget";
 import { CommentSection } from "@/components/CommentSection";
 import { ParticipationControl } from "@/components/ParticipationControl";
 import { MentionPicker } from "@/components/MentionPicker";
+import { FormWizard } from "@/components/FormWizard";
+import { useAutoSaveDraft, loadDraft, clearDraft } from "@/lib/useDraft";
+
+const DRAFT_KEY = "activity_new";
+const EMPTY = {
+  title: "", description: "", category: "BALADE", type: "COLLECTIVE", date: "", start_time: "",
+  end_time: "", location: "", capacity: "", price_public: "", price_member: "",
+  eligible_for_loyalty: false, loyalty_points: 1, visibility: "MEMBERS", event_id: "",
+  google_maps_url: "", is_remote: false, visio_url: "", google_forms_url: "", mentions: [], form_id: "", form_notify_date: "",
+};
 
 export default function Activities() {
   const { user, can } = useAuth();
@@ -28,14 +38,15 @@ export default function Activities() {
   const [events, setEvents] = useState([]);
   const [filters, setFilters] = useState({ category: "", q: "", upcoming: false });
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    title: "", description: "", category: "BALADE", type: "COLLECTIVE", date: "", start_time: "",
-    end_time: "", location: "", capacity: "", price_public: "", price_member: "",
-    eligible_for_loyalty: false, loyalty_points: 1, visibility: "MEMBERS", event_id: "",
-    google_maps_url: "", is_remote: false, visio_url: "", google_forms_url: "", mentions: [], form_id: "", form_notify_date: "",
-  });
+  const [form, setForm] = useState(EMPTY);
   const [forms, setForms] = useState([]);
   const [commentFor, setCommentFor] = useState(null);
+  const [draftAvail, setDraftAvail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+  useAutoSaveDraft(DRAFT_KEY, form.title.trim() ? form : "");
+  useEffect(() => { if (open) setDraftAvail(!!loadDraft(DRAFT_KEY)); }, [open]);
 
   const load = useCallback(async () => {
     try {
@@ -56,8 +67,8 @@ export default function Activities() {
     if (can("forms.view")) api.get("/forms").then((r) => setForms(r.data.items || [])).catch(() => {});
   }, [can]);
 
-  const create = async (e) => {
-    e.preventDefault();
+  const create = async () => {
+    setSubmitting(true);
     try {
       await api.post("/activities", {
         ...form,
@@ -71,10 +82,14 @@ export default function Activities() {
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success(isAdmin ? "Activité créée" : "Proposition envoyée au Bureau");
+      clearDraft(DRAFT_KEY);
+      setForm(EMPTY);
       setOpen(false);
       load();
     } catch (err) {
       toast.error(apiError(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -87,6 +102,191 @@ export default function Activities() {
       toast.error(apiError(e));
     }
   };
+
+  const steps = [
+    {
+      title: "L'essentiel",
+      valid: !!form.title.trim(),
+      hint: "Ajoutez un titre pour continuer.",
+      content: (
+        <>
+          <div className="space-y-2">
+            <Label>Titre *</Label>
+            <Input value={form.title} data-testid="activity-title-input"
+              onChange={(e) => set({ title: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea rows={3} value={form.description} data-testid="activity-description-input"
+              onChange={(e) => set({ description: e.target.value })} />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Catégorie</Label>
+              <Select value={form.category} onValueChange={(v) => set({ category: v })}>
+                <SelectTrigger data-testid="activity-category-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(meta?.categories || []).map((c) => (
+                    <SelectItem key={c} value={c} data-testid={`activity-category-${c}`}>
+                      {label(ACTIVITY_CATEGORY_LABELS, c, meta?.custom_labels)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={form.type} onValueChange={(v) => set({ type: v })}>
+                <SelectTrigger data-testid="activity-type-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(meta?.types || []).map((t) => (
+                    <SelectItem key={t} value={t} data-testid={`activity-type-${t}`}>
+                      {label(ACTIVITY_TYPE_LABELS, t, meta?.custom_labels)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </>
+      ),
+    },
+    {
+      title: "Quand & où",
+      content: (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Input type="date" value={form.date} data-testid="activity-date-input"
+              onChange={(e) => set({ date: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Lieu</Label>
+            <Input value={form.location} data-testid="activity-location-input"
+              onChange={(e) => set({ location: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Heure de début</Label>
+            <Input type="time" value={form.start_time} data-testid="activity-start-input"
+              onChange={(e) => set({ start_time: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Heure de fin</Label>
+            <Input type="time" value={form.end_time} data-testid="activity-end-input"
+              onChange={(e) => set({ end_time: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Places</Label>
+            <Input type="number" min="1" value={form.capacity} data-testid="activity-capacity-input"
+              onChange={(e) => set({ capacity: e.target.value })} />
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Détails & options",
+      content: (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tarif adhérent (€)</Label>
+              <Input type="number" step="0.5" value={form.price_member} data-testid="activity-price-member-input"
+                onChange={(e) => set({ price_member: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tarif public (€)</Label>
+              <Input type="number" step="0.5" value={form.price_public} data-testid="activity-price-public-input"
+                onChange={(e) => set({ price_public: e.target.value })} />
+            </div>
+            {can("events.view") && (
+              <div className="space-y-2">
+                <Label>Rattacher à un événement</Label>
+                <Select value={form.event_id || "NONE"}
+                  onValueChange={(v) => set({ event_id: v === "NONE" ? "" : v })}>
+                  <SelectTrigger data-testid="activity-event-select"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Aucun</SelectItem>
+                    {events.map((ev) => (
+                      <SelectItem key={ev.event_id} value={ev.event_id} data-testid={`activity-event-${ev.event_id}`}>
+                        {ev.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          {can("loyalty.manage") && (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={form.eligible_for_loyalty} data-testid="activity-loyalty-checkbox"
+                onCheckedChange={(v) => set({ eligible_for_loyalty: !!v })} />
+              Éligible à la carte d'engagement
+            </label>
+          )}
+          <div className="space-y-2">
+            <Label>Lien Google Maps</Label>
+            <Input placeholder="https://maps.google.com/…" value={form.google_maps_url}
+              data-testid="activity-maps-input" onChange={(e) => set({ google_maps_url: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Lien Google Forms</Label>
+            <Input placeholder="https://forms.gle/…" value={form.google_forms_url}
+              data-testid="activity-gforms-input" onChange={(e) => set({ google_forms_url: e.target.value })} />
+          </div>
+          <MentionPicker value={form.mentions} onChange={(m) => set({ mentions: m })} testId="activity-mentions" />
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={form.is_remote} data-testid="activity-remote-checkbox"
+              onCheckedChange={(v) => set({ is_remote: !!v })} />
+            Activité à distance (visio)
+          </label>
+          {form.is_remote && (
+            <div className="space-y-2">
+              <Label>Lien de visioconférence</Label>
+              <Input value={form.visio_url} data-testid="activity-visio-input"
+                onChange={(e) => set({ visio_url: e.target.value })} />
+            </div>
+          )}
+          {forms.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Formulaire associé</Label>
+                <Select value={form.form_id || "NONE"}
+                  onValueChange={(v) => set({ form_id: v === "NONE" ? "" : v })}>
+                  <SelectTrigger data-testid="activity-form-select"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">Aucun</SelectItem>
+                    {forms.map((f) => (
+                      <SelectItem key={f.form_id} value={f.form_id}>{f.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Notification programmée le</Label>
+                <Input type="date" value={form.form_notify_date} data-testid="activity-form-notify-input"
+                  onChange={(e) => set({ form_notify_date: e.target.value })} />
+              </div>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="space-y-2">
+              <Label>Visibilité</Label>
+              <Select value={form.visibility} onValueChange={(v) => set({ visibility: v })}>
+                <SelectTrigger data-testid="activity-visibility-select"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(meta?.visibility_modes || []).map((v) => (
+                    <SelectItem key={v} value={v} data-testid={`activity-visibility-${v}`}>
+                      {label(VISIBILITY_LABELS, v)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </>
+      ),
+    },
+  ];
 
   return (
     <div data-testid="activities-page">
@@ -101,173 +301,20 @@ export default function Activities() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="activity-create-dialog">
               <DialogHeader><DialogTitle>{isAdmin ? "Nouvelle activité" : "Proposer une activité"}</DialogTitle></DialogHeader>
-              <form onSubmit={create} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Titre *</Label>
-                  <Input required value={form.title} data-testid="activity-title-input"
-                    onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              {draftAvail && !form.title.trim() && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm"
+                  data-testid="activity-draft-restore">
+                  <span className="text-amber-800">Vous aviez commencé une activité — voulez-vous reprendre ?</span>
+                  <span className="flex gap-3">
+                    <button className="font-semibold text-[var(--marine)]" data-testid="activity-draft-resume"
+                      onClick={() => { setForm(loadDraft(DRAFT_KEY) || EMPTY); setDraftAvail(false); }}>Reprendre</button>
+                    <button className="text-muted-foreground" data-testid="activity-draft-dismiss"
+                      onClick={() => { clearDraft(DRAFT_KEY); setDraftAvail(false); }}>Repartir de zéro</button>
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea rows={3} value={form.description} data-testid="activity-description-input"
-                    onChange={(e) => setForm({ ...form, description: e.target.value })} />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Catégorie</Label>
-                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                      <SelectTrigger data-testid="activity-category-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(meta?.categories || []).map((c) => (
-                          <SelectItem key={c} value={c} data-testid={`activity-category-${c}`}>
-                            {label(ACTIVITY_CATEGORY_LABELS, c, meta?.custom_labels)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Type</Label>
-                    <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                      <SelectTrigger data-testid="activity-type-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(meta?.types || []).map((t) => (
-                          <SelectItem key={t} value={t} data-testid={`activity-type-${t}`}>
-                            {label(ACTIVITY_TYPE_LABELS, t, meta?.custom_labels)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Date</Label>
-                    <Input type="date" value={form.date} data-testid="activity-date-input"
-                      onChange={(e) => setForm({ ...form, date: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lieu</Label>
-                    <Input value={form.location} data-testid="activity-location-input"
-                      onChange={(e) => setForm({ ...form, location: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Heure de début</Label>
-                    <Input type="time" value={form.start_time} data-testid="activity-start-input"
-                      onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Heure de fin</Label>
-                    <Input type="time" value={form.end_time} data-testid="activity-end-input"
-                      onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Places</Label>
-                    <Input type="number" min="1" value={form.capacity} data-testid="activity-capacity-input"
-                      onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tarif adhérent (€)</Label>
-                    <Input type="number" step="0.5" value={form.price_member} data-testid="activity-price-member-input"
-                      onChange={(e) => setForm({ ...form, price_member: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tarif public (€)</Label>
-                    <Input type="number" step="0.5" value={form.price_public} data-testid="activity-price-public-input"
-                      onChange={(e) => setForm({ ...form, price_public: e.target.value })} />
-                  </div>
-                  {can("events.view") && (
-                    <div className="space-y-2">
-                      <Label>Rattacher à un événement</Label>
-                      <Select value={form.event_id || "NONE"}
-                        onValueChange={(v) => setForm({ ...form, event_id: v === "NONE" ? "" : v })}>
-                        <SelectTrigger data-testid="activity-event-select"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">Aucun</SelectItem>
-                          {events.map((ev) => (
-                            <SelectItem key={ev.event_id} value={ev.event_id} data-testid={`activity-event-${ev.event_id}`}>
-                              {ev.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                </div>
-                {can("loyalty.manage") && (
-                  <label className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={form.eligible_for_loyalty} data-testid="activity-loyalty-checkbox"
-                      onCheckedChange={(v) => setForm({ ...form, eligible_for_loyalty: !!v })} />
-                    Éligible à la carte d'engagement
-                  </label>
-                )}
-                <div className="space-y-2">
-                  <Label>Lien Google Maps</Label>
-                  <Input placeholder="https://maps.google.com/…" value={form.google_maps_url}
-                    data-testid="activity-maps-input"
-                    onChange={(e) => setForm({ ...form, google_maps_url: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Lien Google Forms</Label>
-                  <Input placeholder="https://forms.gle/…" value={form.google_forms_url}
-                    data-testid="activity-gforms-input"
-                    onChange={(e) => setForm({ ...form, google_forms_url: e.target.value })} />
-                </div>
-                <MentionPicker value={form.mentions} onChange={(m) => setForm({ ...form, mentions: m })} testId="activity-mentions" />
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={form.is_remote} data-testid="activity-remote-checkbox"
-                    onCheckedChange={(v) => setForm({ ...form, is_remote: !!v })} />
-                  Activité à distance (visio)
-                </label>
-                {form.is_remote && (
-                  <div className="space-y-2">
-                    <Label>Lien de visioconférence</Label>
-                    <Input value={form.visio_url} data-testid="activity-visio-input"
-                      onChange={(e) => setForm({ ...form, visio_url: e.target.value })} />
-                  </div>
-                )}
-                {forms.length > 0 && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Formulaire associé</Label>
-                      <Select value={form.form_id || "NONE"}
-                        onValueChange={(v) => setForm({ ...form, form_id: v === "NONE" ? "" : v })}>
-                        <SelectTrigger data-testid="activity-form-select"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">Aucun</SelectItem>
-                          {forms.map((f) => (
-                            <SelectItem key={f.form_id} value={f.form_id}>{f.title}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Notification programmée le</Label>
-                      <Input type="date" value={form.form_notify_date} data-testid="activity-form-notify-input"
-                        onChange={(e) => setForm({ ...form, form_notify_date: e.target.value })} />
-                    </div>
-                  </div>
-                )}
-                {isAdmin && (
-                  <div className="space-y-2">
-                    <Label>Visibilité</Label>
-                    <Select value={form.visibility} onValueChange={(v) => setForm({ ...form, visibility: v })}>
-                      <SelectTrigger data-testid="activity-visibility-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(meta?.visibility_modes || []).map((v) => (
-                          <SelectItem key={v} value={v} data-testid={`activity-visibility-${v}`}>
-                            {label(VISIBILITY_LABELS, v)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                    data-testid="activity-save-button">
-                    {isAdmin ? "Créer" : "Envoyer la proposition"}
-                  </Button>
-                </DialogFooter>
-              </form>
+              )}
+              <FormWizard steps={steps} onSubmit={create} submitting={submitting} testId="activity-wizard"
+                submitLabel={isAdmin ? "Créer l'activité" : "Envoyer la proposition"} />
             </DialogContent>
           </Dialog>
         )} />
