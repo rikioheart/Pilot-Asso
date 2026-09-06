@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { useAutoSaveDraft, loadDraft, clearDraft } from "@/lib/useDraft";
 
 const PAGE = 20;
 const VIS_LABELS = { TOUS: "Tous les membres", PROS_BUREAU: "Pros + Bureau" };
@@ -22,6 +23,9 @@ export function CommentSection({ elementType, elementId, testId = "comments" }) 
   const [visibility, setVisibility] = useState("TOUS");
   const [mentionable, setMentionable] = useState([]);
   const [mentions, setMentions] = useState([]);
+  const draftKey = `comment_${elementType}_${elementId}`;
+  const [draft, setDraft] = useState(() => loadDraft(draftKey));
+  useAutoSaveDraft(draftKey, text);
 
   const load = useCallback(async () => {
     try {
@@ -46,6 +50,7 @@ export function CommentSection({ elementType, elementId, testId = "comments" }) 
     try {
       await api.post("/comments", { element_type: elementType, element_id: elementId, text, visibility, mentions });
       setText(""); setMentions([]); setVisibility("TOUS");
+      clearDraft(draftKey); setDraft(null);
       toast.success("Commentaire publié");
       load();
     } catch (e) { toast.error(apiError(e)); }
@@ -64,6 +69,18 @@ export function CommentSection({ elementType, elementId, testId = "comments" }) 
       </h3>
 
       <div className="mt-4 space-y-3">
+        {draft && !text && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm"
+            data-testid={`${testId}-draft-restore`}>
+            <span className="text-amber-800">Vous aviez commencé quelque chose — voulez-vous reprendre ?</span>
+            <span className="flex gap-3">
+              <button className="font-semibold text-[var(--marine)]" data-testid={`${testId}-draft-resume`}
+                onClick={() => { setText(draft); setDraft(null); }}>Reprendre</button>
+              <button className="text-muted-foreground" data-testid={`${testId}-draft-dismiss`}
+                onClick={() => { clearDraft(draftKey); setDraft(null); }}>Repartir de zéro</button>
+            </span>
+          </div>
+        )}
         <Textarea rows={3} value={text} placeholder="Écrire un commentaire…" data-testid={`${testId}-input`}
           onChange={(e) => setText(e.target.value)} />
         {mentionable.length > 0 && (

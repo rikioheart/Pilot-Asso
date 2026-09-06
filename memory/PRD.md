@@ -194,6 +194,15 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - Reste 8F (lots suivants) : langage constructif systématique, morcellement des formulaires >5 champs,
   autosave brouillons, emplacement fixe de l'action principale, retours micro-actions, protection suppression.
 
+### Prompt 8F — Lot C : Sauvegarde automatique des brouillons (05/09/2026, compile OK)
+- Hook réutilisable `lib/useDraft.js` (`useAutoSaveDraft` toutes les 30 s si non vide, `loadDraft`, `clearDraft`,
+  expiration silencieuse à 7 jours, stockage localStorage `vdc_draft_*`).
+- Câblé sur les commentaires longs (`CommentSection`) : bannière douce « Vous aviez commencé quelque chose —
+  voulez-vous reprendre ? » avec Reprendre / Repartir de zéro ; brouillon effacé après publication.
+- Réutilisable pour activité/tâche/article (à câbler lors des lots restants).
+- Reste 8F : langage constructif systématique, morcellement formulaires >5 champs, emplacement fixe action
+  principale, retours micro-actions animés, protection suppression (menu ⋮ + confirmation neutre + traçage).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·
