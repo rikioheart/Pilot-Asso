@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, MapPin, Users, Star, Check, X, MessageSquare, FileText } from "lucide-react";
+import { Plus, MapPin, Users, Star, Check, X, MessageSquare, FileText, RotateCcw } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
@@ -36,7 +37,11 @@ export default function Activities() {
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
   const [events, setEvents] = useState([]);
-  const [filters, setFilters] = useState({ category: "", q: "", upcoming: false });
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState({
+    category: searchParams.get("category") || "", type: searchParams.get("type") || "",
+    q: "", upcoming: false });
+  const [revertOpen, setRevertOpen] = useState(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [forms, setForms] = useState([]);
@@ -117,6 +122,12 @@ export default function Activities() {
       toast.error(apiError(e));
     }
   };
+
+  const canRevert = (a) => isAdmin && a.reviewer_role === "PRO_COORDINATEUR" && a.reviewed_at
+    && (Date.now() - new Date(a.reviewed_at).getTime() < 48 * 3600 * 1000)
+    && ["PLANNED", "REFUSED", "ACTIVE", "FULL"].includes(a.status);
+
+  const shown = filters.type ? items.filter((a) => a.type === filters.type) : items;
 
   const steps = [
     {
@@ -358,14 +369,20 @@ export default function Activities() {
         <Button size="sm" variant={filters.upcoming ? "default" : "outline"} data-testid="activities-upcoming-filter"
           className={`rounded-full ${filters.upcoming ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
           onClick={() => setFilters({ ...filters, upcoming: !filters.upcoming })}>À venir</Button>
+        {filters.type && (
+          <button onClick={() => setFilters({ ...filters, type: "" })} data-testid="activities-type-clear"
+            className="inline-flex items-center gap-1 rounded-full bg-[var(--marine-a8)] px-3 py-1.5 text-sm font-semibold text-[var(--marine)]">
+            {label(ACTIVITY_TYPE_LABELS, filters.type)} <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
-      {items.length === 0 ? (
+      {shown.length === 0 ? (
         <EmptyState testId="activities-empty" module="activities" title="Aucune activité"
           description="Les activités visibles pour votre profil apparaîtront ici." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="activities-list">
-          {items.map((a) => (
+          {shown.map((a) => (
             <div key={a.activity_id} className="flex flex-col rounded-xl border bg-card p-5"
               data-testid={`activity-card-${a.activity_id}`}>
               <div className="flex items-start justify-between gap-2">
@@ -447,6 +464,28 @@ export default function Activities() {
                       data-testid={`activity-refuse-${a.activity_id}`}
                       onClick={() => review(a.activity_id, "REFUSE")}>Refuser</Button>
                   </>
+                )}
+                {canRevert(a) && (
+                  revertOpen === a.activity_id ? (
+                    <>
+                      <span className="self-center text-xs text-muted-foreground">Nouvelle décision :</span>
+                      <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
+                        data-testid={`activity-revert-accept-${a.activity_id}`}
+                        onClick={() => { review(a.activity_id, "ACCEPT"); setRevertOpen(null); }}>Accepter</Button>
+                      <Button size="sm" variant="outline" className="rounded-full"
+                        data-testid={`activity-revert-refuse-${a.activity_id}`}
+                        onClick={() => { review(a.activity_id, "REFUSE"); setRevertOpen(null); }}>Refuser</Button>
+                      <Button size="sm" variant="ghost" className="rounded-full"
+                        data-testid={`activity-revert-cancel-${a.activity_id}`}
+                        onClick={() => setRevertOpen(null)}>Annuler</Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline" className="rounded-full"
+                      data-testid={`activity-revert-${a.activity_id}`} onClick={() => setRevertOpen(a.activity_id)}
+                      title="Le Bureau peut revenir sur la décision d'un coordinateur sous 48 h">
+                      <RotateCcw className="mr-1 h-3.5 w-3.5" /> Revenir sur la décision
+                    </Button>
+                  )
                 )}
               </div>
             </div>

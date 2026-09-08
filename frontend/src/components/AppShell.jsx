@@ -25,11 +25,14 @@ import { Button } from "@/components/ui/button";
 
 const BUREAU_NAV = [
   { label: "Accueil", to: "/admin/dashboard", icon: Home },
+  { label: "Activités", to: "/activities", icon: Sparkle },
+  { label: "Tâches", to: "/tasks", icon: ListChecks },
+  { label: "Validation", to: "/admin/validation", icon: CheckCircle2 },
+  { label: "Membres", to: "/admin/members", icon: Users },
+  { label: "Finances", to: "/finance", icon: Wallet },
   {
     label: "Pilotage", icon: FolderKanban, items: [
       { to: "/projects", label: "Projets", icon: FolderKanban },
-      { to: "/tasks", label: "Tâches", icon: ListChecks },
-      { to: "/admin/validation", label: "Validation", icon: CheckCircle2 },
       { to: "/mindmap", label: "Mindmap", icon: Network },
       { to: "/admin/help", label: "Besoins d'aide", icon: LifeBuoy },
       { to: "/aide", label: "Espace aide", icon: BookOpen },
@@ -39,7 +42,6 @@ const BUREAU_NAV = [
     label: "Vie de l'asso", icon: CalendarDays, items: [
       { to: "/calendar", label: "Calendrier", icon: CalendarDays },
       { to: "/agenda", label: "Agenda partagé", icon: CalendarDays },
-      { to: "/activities", label: "Activités", icon: Sparkle },
       { to: "/events", label: "Événements", icon: PartyPopper },
       { to: "/terrains", label: "Terrains", icon: MapPinned },
       { to: "/admin/engagement", label: "Engagement", icon: Star },
@@ -58,7 +60,6 @@ const BUREAU_NAV = [
   },
   {
     label: "Gestion", icon: Wallet, items: [
-      { to: "/finance", label: "Finances", icon: Wallet },
       { to: "/finance/reimbursements", label: "Remboursements", icon: Receipt },
       { to: "/paiements", label: "Paiements", icon: Wallet },
       { to: "/stock", label: "Stocks", icon: Boxes },
@@ -69,7 +70,6 @@ const BUREAU_NAV = [
   },
   {
     label: "Administration", icon: Settings, items: [
-      { to: "/admin/members", label: "Membres", icon: Users },
       { to: "/dogs", label: "Chiens suivis", icon: Dog },
       { to: "/admin/animation", label: "Animation des membres", icon: HeartHandshake },
       { to: "/my-space", label: "Mon espace & préférences", icon: UserCircle },
@@ -84,11 +84,12 @@ const BUREAU_NAV = [
 
 const PRO_NAV = [
   { label: "Accueil", to: "/pro/dashboard", icon: Home },
+  { label: "Mes tâches", to: "/tasks", icon: ListChecks },
+  { label: "Activités", to: "/activities", icon: Sparkle, permission: "activities.view" },
+  { label: "Participations", to: "/participations", icon: TicketCheck },
   {
-    label: "Mon activité", icon: ListChecks, items: [
-      { to: "/tasks", label: "Mes tâches", icon: ListChecks },
+    label: "Mon activité", icon: FolderKanban, items: [
       { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
-      { to: "/participations", label: "Mes participations", icon: TicketCheck },
       { to: "/dogs", label: "Chiens suivis", icon: Dog },
       { to: "/finance/my-shares", label: "Mes parts & frais", icon: Wallet, permission: "finance.view_own" },
       { to: "/history", label: "Mon historique", icon: History, permission: "audit.view_own" },
@@ -100,7 +101,6 @@ const PRO_NAV = [
     label: "Vie de l'asso", icon: CalendarDays, items: [
       { to: "/calendar", label: "Calendrier", icon: CalendarDays },
       { to: "/agenda", label: "Agenda partagé", icon: CalendarDays },
-      { to: "/activities", label: "Activités", icon: Sparkle, permission: "activities.view" },
       { to: "/events", label: "Événements", icon: PartyPopper, permission: "events.view" },
       { to: "/terrains", label: "Terrains", icon: MapPinned, permission: "terrain.view" },
       { to: "/loyalty/scan", label: "Valider une participation", icon: QrCode, permission: "loyalty.stamp" },
@@ -129,10 +129,12 @@ const PRO_NAV = [
 
 const MEMBER_NAV = [
   { label: "Accueil", to: "/member/dashboard", icon: Home },
+  { label: "Activités", to: "/activities", icon: Sparkle, permission: "activities.view" },
+  { label: "Mon chien", to: "/dogs", icon: Dog },
+  { label: "Ma fidélité", to: "/loyalty", icon: Star, block: "nav.loyalty", permission: "loyalty.view_own" },
   {
-    label: "Participer", icon: Sparkle, items: [
+    label: "Participer", icon: CalendarDays, items: [
       { to: "/calendar", label: "Calendrier", icon: CalendarDays },
-      { to: "/activities", label: "Activités", icon: Sparkle, permission: "activities.view" },
       { to: "/events", label: "Événements", icon: PartyPopper, permission: "events.view" },
       { to: "/participations", label: "Mes participations", icon: TicketCheck },
       { to: "/terrains", label: "Terrains", icon: MapPinned, permission: "terrain.view" },
@@ -141,7 +143,6 @@ const MEMBER_NAV = [
   {
     label: "Mes avantages", icon: Gift, items: [
       { to: "/advantages", block: "nav.advantages", label: "Avantages adhérents", icon: Gift, permission: "advantages.view" },
-      { to: "/loyalty", block: "nav.loyalty", label: "Ma carte d'engagement", icon: Star, permission: "loyalty.view_own" },
       { to: "/contests", block: "nav.contests", label: "Jeux-concours", icon: Trophy, permission: "contests.view" },
       { to: "/advent", block: "nav.advent", label: "Calendrier de l'Avent", icon: Gift, permission: "advent.view" },
     ],
@@ -157,7 +158,6 @@ const MEMBER_NAV = [
   {
     label: "Mon espace", icon: UserCircle, items: [
       { to: "/profile", label: "Mon profil & mes chiens", icon: UserCircle },
-      { to: "/dogs", label: "Suivi de mes chiens", icon: Dog },
       { to: "/my-space", label: "Mon espace & préférences", icon: Settings },
       { to: "/paiements", label: "Mes paiements", icon: Wallet },
       { to: "/tasks", label: "Mes missions", icon: ListChecks, permission: "tasks.view" },
@@ -170,7 +170,7 @@ const MEMBER_NAV = [
   },
 ];
 
-const slug = (label) => label.toLowerCase().normalize("NFD").replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+const slug = (label) => label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 export const AppShell = ({ children }) => {
   const { user, profile, logout, can } = useAuth();
@@ -185,18 +185,19 @@ export const AppShell = ({ children }) => {
 
   const base = user?.role === "ADMIN_BUREAU" ? BUREAU_NAV : user?.role === "PROFESSIONNEL" ? PRO_NAV : MEMBER_NAV;
   const nav = useMemo(() => base
+    .filter((group) => group.items || ((!group.permission || can(group.permission)) && blockVisible(group.block)))
     .map((group) => group.items
       ? { ...group, items: group.items.filter((item) => (!item.permission || can(item.permission)) && blockVisible(item.block)) }
       : group)
     .filter((group) => !group.items || group.items.length > 0), [base, can, blockVisible]);
 
   const activeGroup = nav.find((group) => group.items?.some((item) => location.pathname.startsWith(item.to)));
-  const [expanded, setExpanded] = useState(activeGroup?.label || nav[1]?.label);
+  const [expanded, setExpanded] = useState(activeGroup?.label || nav.find((g) => g.items)?.label);
   const roleLabel = { ADMIN_BUREAU: "Bureau", PROFESSIONNEL: "Professionnel", PARTICULIER: "Adhérent" }[user?.role];
   const mobileItems = useMemo(() => {
-    const home = nav.find((g) => !g.items);
-    const rest = nav.filter((g) => g.items).flatMap((g) => g.items).slice(0, 3);
-    return [home, ...rest].filter(Boolean);
+    const directs = nav.filter((g) => !g.items);
+    const rest = nav.filter((g) => g.items).flatMap((g) => g.items);
+    return [...directs, ...rest].slice(0, 4);
   }, [nav]);
 
   const sidebar = (

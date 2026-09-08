@@ -1,6 +1,8 @@
 // Libellés français partagés pour les nomenclatures activités / événements.
 export const ACTIVITY_CATEGORY_LABELS = {
-  BALADE: "Balade", ATELIER: "Atelier", CLASSE_LECTURE: "Classe de lecture",
+  BALADE: "Balade", ATELIER: "Atelier",
+  EDUCATION: "Éducation", SPORT: "Sport", PHOTO: "Photo", VETERINAIRE: "Vétérinaire",
+  CLASSE_LECTURE: "Classe de lecture",
   JOURNEE_THEME: "Journée à thème", SENSIBILISATION: "Sensibilisation", FORMATION: "Formation",
   RENCONTRE_PRO: "Rencontre professionnelle", PREVENTION: "Prévention", AUTRE: "Autre",
 };

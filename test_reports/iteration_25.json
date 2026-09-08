@@ -1,0 +1,40 @@
+{
+  "summary": "Prompt 10 frontend-only validation on preview URL. Verified reorganized navigation with direct top-level links per role (Bureau/Pro/Particulier), collapsible secondary groups still work, dog-taxonomy shortcuts remap correctly to /activities?category=<X> with category preselected in the filter, /activities?type=COLLECTIVE renders removable chip that filters and clears client-side, /events?type=VISIO|PRO_MEETING URL param pipes into event_type filter, activity creation category dropdown now includes Éducation/Sport/Photo/Vétérinaire, and global search shows 'Tout' + per-group filter chips with click-to-filter behaviour. Found and fixed a critical broken-data-testid bug in the slug helpers (see below). Revert 48h button not exercisable (no coordinator-reviewed activity in seed) and no PROPOSED activity currently, per instructions this is not a failure.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AppShell.jsx / DashboardShortcuts.jsx / GlobalSearch.jsx",
+        "issue": "slug() helpers produced broken data-testids for any label with accented characters (e.g. rendered nav-activite-s, nav-taches->nav-ta-ches, nav-ma-fide-lite, nav-e-ve-nements; shortcut--ducation, shortcut-v-t-rinaire, shortcut-r-union, shortcut-activit-s, shortcut-ma-fid-lit-; search-filter-activite-s / e-ve-nements). Root cause: after normalize('NFD') the combining marks (U+0300–U+036F) were not stripped and were then converted to dashes by the [^a-z]+ regex; DashboardShortcuts didn’t even NFD-normalize. Fixed by stripping combining marks and switching regex to [^a-z0-9]+ then trimming leading/trailing dashes. Verified all expected testids now match the review spec: nav-activites, nav-taches, nav-ma-fidelite, nav-mes-taches, nav-mon-chien, nav-participations, shortcut-education/-sport/-photo/-veterinaire/-collective/-visio/-reunion, search-filter-activites/-evenements/-membres/-projets/-chiens/-professionnels/-stocks/-documents/-guides.",
+        "selector": "AppShell slug + DashboardShortcuts Tile testid + GlobalSearch chip testid",
+        "priority": "HIGH (was blocking automated tests; fixed)"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dialogs (activity create, others)", "issues": ["Radix Dialog console warning: missing Description/aria-describedby on DialogContent (accessibility, non-blocking, pre-existing)."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_25.json"],
+  "action_items": [
+    "None required (slug fix already applied). Optional: add DialogDescription/aria-describedby to remaining Radix Dialogs to silence a11y warnings."
+  ],
+  "critical_code_review_comments": [
+    "slug helpers were duplicated across 3 files with subtly different implementations (AppShell used NFD, DashboardShortcuts did not); consider extracting a single lib/slug.js utility to avoid future drift.",
+    "AppShell nav useMemo lets non-item groups skip the block filter for items that themselves have no permission gating; verify future direct-link entries always set block/permission fields to avoid accidental exposure (Ma fidélité correctly uses block:'nav.loyalty' + permission:'loyalty.view_own').",
+    "Activities.jsx client-side type filter is applied after server fetch; empty state for /activities?type=<X> with no matches shows the full items list style rather than an explanation—may be worth a small helper text near the chip.",
+    "GlobalSearch chip labels include (count) inside the button text; if a group label ever contains parens, the slugged testid still works but the visible label could look odd—minor."
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/AppShell.jsx (slug function)",
+    "/app/frontend/src/components/DashboardShortcuts.jsx (Tile testid slug)",
+    "/app/frontend/src/components/GlobalSearch.jsx (chip testid slug)"
+  ],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "Bureau associationlavoixduchien@gmail.com / VoixDuChien2026! ; Particulier membre1.demo@lavoixduchien.fr / Demo2026! ; Pro pro2.demo@lavoixduchien.fr / Demo2026!",
+  "seed_data_creation": "None. No activities were created; revert flow not exercised because seed has no coordinator-reviewed activity within the 48h window and no PROPOSED activity is present (activity-accept count = 0). Per review_request note, absence of the revert button in seed is not a failure.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Prompt 10 UI validated. Rendered testids after fix (Particulier example): nav-accueil, nav-activites, nav-mon-chien, nav-ma-fidelite, nav-group-participer, nav-calendrier, nav-evenements, nav-mes-participations, nav-group-mes-avantages, nav-group-contenus, nav-group-mon-espace; shortcuts: activites, mon-chien, ma-fidelite, education, collective, sport, photo, veterinaire, visio, reunion. Bureau direct: nav-activites/-taches/-validation/-membres/-finances. Pro direct: nav-mes-taches/-activites/-participations. /activities?category=EDUCATION preselects 'Éducation' in activities-category-filter. /activities?type=COLLECTIVE shows removable chip 'Collective' via activities-type-clear. Global search groups seen for 'demo': Membres, Projets, Chiens, Professionnels, Activités, Événements, Stocks, Documents, Guides. To retest the 48h revert flow, main agent should either seed a coordinator-reviewed activity within 48h or have a coordinator POST /activities/{id}/review shortly before the test run.",
+  "rca of the issue": "Broken data-testids for French/accented labels stemmed from slug() using normalize('NFD') + /[^a-z]+/g without first stripping combining marks (U+0300–U+036F). DashboardShortcuts.Tile omitted NFD entirely so accented base letters themselves were replaced by '-'. Fix: uniform slug that (1) toLowerCase, (2) normalize NFD, (3) replace /[\\u0300-\\u036f]/g with '', (4) replace /[^a-z0-9]+/g with '-', (5) trim leading/trailing '-'. Applied in 3 places; retested end-to-end for all 3 roles."
+}

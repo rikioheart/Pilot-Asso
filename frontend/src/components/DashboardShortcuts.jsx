@@ -6,11 +6,11 @@ import { SectionCard } from "@/components/Ui";
 
 // Raccourcis « activités autour du chien » mappés sur les catégories d'activités existantes.
 const DOG_SHORTCUTS = [
-  { label: "Éducation", icon: GraduationCap, to: "/activities?category=ATELIER" },
-  { label: "Collective", icon: Users, to: "/activities?category=BALADE" },
-  { label: "Sport", icon: Trophy, to: "/activities?category=JOURNEE_THEME" },
-  { label: "Photo", icon: Camera, to: "/activities?category=SENSIBILISATION" },
-  { label: "Vétérinaire", icon: Stethoscope, to: "/activities?category=PREVENTION" },
+  { label: "Éducation", icon: GraduationCap, to: "/activities?category=EDUCATION" },
+  { label: "Collective", icon: Users, to: "/activities?type=COLLECTIVE" },
+  { label: "Sport", icon: Trophy, to: "/activities?category=SPORT" },
+  { label: "Photo", icon: Camera, to: "/activities?category=PHOTO" },
+  { label: "Vétérinaire", icon: Stethoscope, to: "/activities?category=VETERINAIRE" },
   { label: "Visio", icon: Video, to: "/events?type=VISIO" },
   { label: "Réunion", icon: CalendarDays, to: "/events?type=PRO_MEETING" },
 ];
@@ -36,7 +36,7 @@ const ROLE_SHORTCUTS = {
 };
 
 const Tile = ({ item }) => (
-  <Link to={item.to} data-testid={`shortcut-${item.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+  <Link to={item.to} data-testid={`shortcut-${item.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`}
     className="flex flex-col items-center gap-2 rounded-xl border bg-card px-3 py-4 text-center transition-all hover:-translate-y-0.5 hover:border-[var(--bordeaux-a40)] hover:shadow-md">
     <span className="grid h-11 w-11 place-items-center rounded-full bg-[var(--marine-a8)] text-[var(--bordeaux)]">
       <item.icon className="h-5 w-5" />

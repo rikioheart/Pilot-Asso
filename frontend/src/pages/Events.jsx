@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, MapPin, Users, HandHeart, Check, X } from "lucide-react";
 import { api, apiError } from "@/lib/api";
@@ -33,6 +33,11 @@ export default function Events() {
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
   const [filters, setFilters] = useState({ event_type: "", q: "", upcoming: false });
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const t = searchParams.get("type");
+    if (t) setFilters((f) => ({ ...f, event_type: t }));
+  }, [searchParams]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [forms, setForms] = useState([]);

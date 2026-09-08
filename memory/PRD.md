@@ -256,6 +256,19 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   vue animation et description de fonction préexistaient et sont réutilisés. Réorganisation profonde de la barre
   de navigation et filtres avancés de recherche : **différés** (P2) pour éviter les régressions.
 
+### Prompt 9 (suite) — Nav réorganisée, recherche filtrée, retour 48 h, taxonomie chien (08/06/2026, testé 100 % — iteration_25)
+- **Navigation par fréquence** (`AppShell.jsx`) : liens directs de premier niveau par rôle (Bureau : Activités,
+  Tâches, Validation, Membres, Finances ; Pro : Mes tâches, Activités, Participations ; Particulier : Activités,
+  Mon chien, Ma fidélité), modules secondaires regroupés en sections dépliables. Filtrage permission/bloc des
+  liens directs ; barre mobile basée sur les liens directs.
+- **Recherche filtrée** (`GlobalSearch.jsx`) : puces « Tout » + une par groupe de résultats, résultats actionnables.
+- **Retour Bureau 48 h** (`Activities.jsx`) : bouton « Revenir sur la décision » visible pour le Bureau sur les
+  activités validées par un PRO_COORDINATEUR dans les 48 h → rouvre Accepter/Refuser (override géré côté back).
+- **Taxonomie chien** : nouvelles catégories `EDUCATION`, `SPORT`, `PHOTO`, `VETERINAIRE` (`activities.py` +
+  `labels.js`) ; raccourcis « Autour du chien » filtrant exactement via `?category=`/`?type=` (Activities/Events
+  lisent l'URL, puce de type retirable).
+- Fix (agent de test) : `slug()` normalise les accents (NFD) dans AppShell/DashboardShortcuts/GlobalSearch.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·
