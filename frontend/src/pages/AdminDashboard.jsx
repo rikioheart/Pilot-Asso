@@ -15,6 +15,8 @@ import { ExportsPanel } from "@/components/ExportsPanel";
 import { Button } from "@/components/ui/button";
 import { useViewMode } from "@/components/ViewMode";
 import { CockpitModes, MembersMode, ProsMode, ActivitiesMode } from "@/components/CockpitModes";
+import { DashboardShortcuts } from "@/components/DashboardShortcuts";
+import { ExternalTools } from "@/components/ExternalTools";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -57,6 +59,7 @@ export default function AdminDashboard() {
       {mode === "activities" && <ActivitiesMode data={data} />}
 
       {mode === "global" && (<>
+      <div className="mb-6"><DashboardShortcuts /></div>
       <PriorityQueue data={queue} />
 
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
@@ -202,6 +205,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </section>
+      <ExternalTools />
       </>)}
     </div>
   );

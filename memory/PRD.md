@@ -239,6 +239,23 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   données comptables anonymisées ; Bureau notifié dans les deux cas.
 - Backfill : `priority_weight` ajouté aux 212 notifications existantes.
 
+### Prompt 9 — Organisation, navigation & outils (07/06/2026, testé 100 % frontend — iteration_24)
+- **Outils externes** (`tools.py` + `ExternalTools.jsx`) : section « Outils externes » configurée par le Bureau
+  (ajout/retrait, ⋮), visible par tous, présente sur les 3 dashboards et via le FAB (ancre `#outils`).
+- **Liens externes sur tâches & projets** (`tools.py` `/{tasks|projets}/{id}/links` + `ExternalLinks.jsx`) :
+  ajout manuel de plusieurs liens (Drive, Forms, Canva, Rintintin Pro…), affichés dans le contexte, retrait via ⋮,
+  ouverture en nouvel onglet. Intégrés dans `ProjectDetail` (projet + chaque tâche).
+- **Raccourcis dashboard par rôle** (`DashboardShortcuts.jsx`) : « Accès rapides » (Bureau : tâches/projets,
+  activités, membres, finances, animation ; Pro : tâches, activités, projets ; Particulier : activités, chien,
+  fidélité) + « Autour du chien » (7 tuiles : éducation, collective, sport, photo, vétérinaire, visio, réunion)
+  mappées sur les catégories d'activités/événements existantes.
+- **Bouton flottant « + » enrichi par rôle** (`QuickActionsFab.jsx`) : Bureau (valider en attente · mouvement de
+  stock · créer notification · création rapide en panneau latéral) ; Pro (proposer activité · valider présence ·
+  retour de séance) ; Particulier (s'inscrire · carte fidélité · fiche chien) + accès « Outils externes ».
+- Rappel : panneaux latéraux (Sheet/QuickCreatePanel), recherche globale, guides, cotisations par catégorie,
+  vue animation et description de fonction préexistaient et sont réutilisés. Réorganisation profonde de la barre
+  de navigation et filtres avancés de recherche : **différés** (P2) pour éviter les régressions.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { WelcomeBanner } from "@/components/Ui";
 import { BaseHomeBlocks } from "@/components/BaseHomeBlocks";
+import { DashboardShortcuts } from "@/components/DashboardShortcuts";
+import { ExternalTools } from "@/components/ExternalTools";
 import { Button } from "@/components/ui/button";
 
 export default function MemberDashboard() {
@@ -26,7 +28,9 @@ export default function MemberDashboard() {
             onClick={() => navigate("/advantages")}>Voir mes avantages</Button>
         } />
 
+      <div className="mb-6"><DashboardShortcuts /></div>
       <BaseHomeBlocks />
+      <ExternalTools />
     </div>
   );
 }

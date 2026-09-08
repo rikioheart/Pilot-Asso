@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CommentSection } from "@/components/CommentSection";
 import { ParticipationControl } from "@/components/ParticipationControl";
 import { MentionPicker } from "@/components/MentionPicker";
+import { ExternalLinks } from "@/components/ExternalLinks";
 
 const PROJECT_ROLES = ["COORDINATOR", "CONTRIBUTOR", "VOLUNTEER", "EXPERT", "REVIEWER"];
 
@@ -118,6 +119,10 @@ export default function ProjectDetail() {
               </p>
             )}
             {t.proof && <p className="mt-1 text-xs text-muted-foreground">Preuve : {t.proof}</p>}
+            <div className="mt-2">
+              <ExternalLinks kind="tasks" id={t.task_id} links={t.external_links || []} onChange={load}
+                canEdit={canManage || mine} testId={`task-links-${t.task_id}`} />
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {t.is_volunteer_task && !t.assigned_user_id && can("tasks.submit") && (
@@ -332,6 +337,15 @@ export default function ProjectDetail() {
                 </Button>
               </div>
             )}
+          </div>
+
+          <div className="rounded-xl border bg-card p-5" data-testid="project-links">
+            <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Liens externes</h2>
+            <p className="mt-1 mb-3 text-xs text-muted-foreground">
+              Google Drive, Forms, Canva, Rintintin Pro… rattachés à ce projet.
+            </p>
+            <ExternalLinks kind="projects" id={projectId} links={project.external_links || []} onChange={load}
+              canEdit={canManage} testId="project-external-links" />
           </div>
 
           <div className="rounded-xl border bg-card p-5">

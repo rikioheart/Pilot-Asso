@@ -808,8 +808,10 @@ app.include_router(payments_module.router)
 app.include_router(weather_module.router)
 import account as account_module
 import activation as activation_module
+import tools as tools_module
 app.include_router(account_module.router)
 app.include_router(activation_module.router)
+app.include_router(tools_module.router)
 
 app.add_middleware(
     CORSMiddleware,

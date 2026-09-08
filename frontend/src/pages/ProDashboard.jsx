@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { ListChecks, Sparkle, UserCircle, FileText, Link2, MapPin } from "lucide-react";
 import { api } from "@/lib/api";
 import { BaseHomeBlocks } from "@/components/BaseHomeBlocks";
+import { DashboardShortcuts } from "@/components/DashboardShortcuts";
+import { ExternalTools } from "@/components/ExternalTools";
 import { PageHeader, EmptyState, SectionCard, Chip } from "@/components/Ui";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
@@ -61,6 +63,7 @@ export default function ProDashboard() {
         </div>
       )}
 
+      <div className="mb-6"><DashboardShortcuts /></div>
       <BaseHomeBlocks />
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -91,6 +94,7 @@ export default function ProDashboard() {
           )}
         </SectionCard>
       </section>
+      <ExternalTools />
     </div>
   );
 }

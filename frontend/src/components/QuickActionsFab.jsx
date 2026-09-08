@@ -1,32 +1,38 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Zap, X, Dog, PartyPopper, Sparkle, UserCircle, UserPlus, LayoutDashboard, Plus } from "lucide-react";
+import { Zap, X, Dog, PartyPopper, Sparkle, UserCircle, Trophy, ClipboardCheck,
+  Boxes, BellPlus, ListChecks, Wrench } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { QuickCreatePanel } from "@/components/QuickCreatePanel";
 
 const ACTIONS = {
   PARTICULIER: [
-    { label: "Inscrire mon chien à une activité", icon: Dog, to: "/activities" },
-    { label: "Consulter le prochain événement", icon: PartyPopper, to: "/events?next=1" },
+    { label: "M'inscrire à une activité", icon: Dog, to: "/activities" },
+    { label: "Ma carte fidélité", icon: Trophy, to: "/loyalty" },
+    { label: "La fiche de mon chien", icon: PartyPopper, to: "/dogs" },
   ],
   PROFESSIONNEL: [
-    { label: "Créer une activité", icon: Sparkle, to: "/activities?new=1", permission: "activities.propose" },
-    { label: "Accéder à ma fiche", icon: UserCircle, to: "/profile" },
+    { label: "Proposer une activité", icon: Sparkle, to: "/activities?new=1", permission: "activities.propose" },
+    { label: "Valider une présence", icon: ClipboardCheck, to: "/loyalty/scan", permission: "loyalty.stamp" },
+    { label: "Noter un retour de séance", icon: ListChecks, to: "/activities" },
+    { label: "Ma fiche", icon: UserCircle, to: "/profile" },
   ],
   ADMIN_BUREAU: [
-    { label: "Créer un membre", icon: UserPlus, to: "/admin/members?new=1" },
-    { label: "Consulter le cockpit", icon: LayoutDashboard, to: "/admin/dashboard" },
-    { label: "Création rapide", icon: Plus, panel: true },
+    { label: "Valider une action en attente", icon: ClipboardCheck, to: "/admin/validation" },
+    { label: "Saisir un mouvement de stock", icon: Boxes, to: "/stock" },
+    { label: "Créer une notification", icon: BellPlus, to: "/admin/members" },
+    { label: "Création rapide", icon: Zap, panel: true },
   ],
 };
 
-/** Bouton d'action rapide flottant, adapté au rôle connecté. */
+/** Prompt 9 — Bouton d'action rapide flottant, actions urgentes adaptées au rôle. */
 export const QuickActionsFab = () => {
   const { user, can } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState(false);
-  const actions = (ACTIONS[user?.role] || []).filter((a) => !a.permission || can(a.permission));
+  const base = (ACTIONS[user?.role] || []).filter((a) => !a.permission || can(a.permission));
+  const actions = [...base, { label: "Outils externes", icon: Wrench, to: `${user?.role === "ADMIN_BUREAU" ? "/admin/dashboard" : user?.role === "PROFESSIONNEL" ? "/pro/dashboard" : "/member/dashboard"}#outils` }];
   if (actions.length === 0) return null;
 
   return (
@@ -45,7 +51,7 @@ export const QuickActionsFab = () => {
       )}
       <button type="button" onClick={() => setOpen(!open)} data-testid="quick-actions-button"
         aria-label="Actions rapides" aria-expanded={open}
-        className="grid h-13 w-13 h-[52px] w-[52px] place-items-center rounded-full bg-[var(--bordeaux)] text-white shadow-xl transition-colors hover:bg-[var(--bordeaux-dark)]">
+        className="grid h-[52px] w-[52px] place-items-center rounded-full bg-[var(--bordeaux)] text-white shadow-xl transition-colors hover:bg-[var(--bordeaux-dark)]">
         {open ? <X className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
       </button>
       {user?.role === "ADMIN_BUREAU" && <QuickCreatePanel open={panel} onOpenChange={setPanel} />}
