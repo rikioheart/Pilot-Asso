@@ -269,6 +269,19 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   lisent l'URL, puce de type retirable).
 - Fix (agent de test) : `slug()` normalise les accents (NFD) dans AppShell/DashboardShortcuts/GlobalSearch.
 
+### Connexion Google Drive & pagination fidélité (09/06/2026, testé 100 % — iteration_26)
+- **Connexion Google Drive (sans OAuth)** : `tools.py` — `/drive/resources` CRUD (Bureau) pour lier dossiers/
+  documents partagés (collection `drive_resources`), lecture pour tous ; liens Drive spécifiques sur tâches et
+  projets via `/{kind}/{id}/links?channel=drive` stockés dans `drive_links` (distincts des `external_links`).
+  Frontend : `DriveResources.jsx` (config dans AdminSettings + carte lecture dans ProjectDetail), `ExternalLinks`
+  gagne `variant="drive"` (bouton « Ouvrir dans Drive »), liens Drive sur projet + chaque tâche.
+- **Pagination fidélité** : `/loyalty/members` réécrit en **pagination par décalage** (skip/limit, 50 max/page)
+  avec `total`/`pages`, filtres **statut / niveau min. (tampons) / activité récente 30 j appliqués AVANT** la
+  pagination (plus de chargement complet en mémoire). `Engagement.jsx` : barre de filtres + compteur + contrôles
+  Précédent/Suivant « Page X / Y » (affichés dès que pages > 1).
+- Note : route `/projects` protégée pour le Particulier (comportement voulu) — la carte Drive lecture côté membre
+  se vérifie via d'autres pages.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

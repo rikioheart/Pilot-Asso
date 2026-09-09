@@ -620,21 +620,40 @@ async def history(user_id: Optional[str] = None, activity_id: Optional[str] = No
 
 
 @router.get("/loyalty/members")
-async def engagement_members(admin: dict = Depends(require("loyalty.manage"))):
-    """Vue Bureau : tous les Particuliers avec leur total de tampons et leur palier."""
+async def engagement_members(page: int = 1, limit: int = 50, status: Optional[str] = None,
+                             level: Optional[int] = None, recent: bool = False,
+                             admin: dict = Depends(require("loyalty.manage"))):
+    """Vue Bureau paginée (50 max/page) : Particuliers avec total de tampons et palier.
+    Pagination par décalage côté base ; filtres appliqués AVANT la pagination."""
+    limit = min(max(limit, 1), 50)
     rewards = await db.loyalty_rules.find({"kind": "REWARD", "is_active": True}, {"_id": 0}) \
         .sort("threshold", 1).to_list(50)
+    user_query = {"role": ROLE_MEMBER, "status": status or "ACTIVE"}
+    if level or recent:
+        card_q = {}
+        if level:
+            card_q["total_points"] = {"$gte": int(level)}
+        if recent:
+            card_q["updated_at"] = {"$gte": iso(now_utc() - timedelta(days=30))}
+        qualifying = [c["user_id"] async for c in db.loyalty_cards.find(card_q, {"_id": 0, "user_id": 1})]
+        user_query["user_id"] = {"$in": qualifying}
+    total = await db.users.count_documents(user_query)
+    users = await db.users.find(user_query, {"_id": 0, "user_id": 1, "email": 1}) \
+        .sort("created_at", -1).skip((page - 1) * limit).limit(limit).to_list(limit)
     items = []
-    async for u in db.users.find({"role": ROLE_MEMBER, "status": "ACTIVE"},
-                                 {"_id": 0, "user_id": 1, "email": 1}):
-        card = await ensure_card(u["user_id"])
-        total = card["total_points"]
-        next_reward = next((r for r in rewards if (r.get("threshold") or 0) > total), None)
+    for u in users:
+        card = await db.loyalty_cards.find_one({"user_id": u["user_id"]}, {"_id": 0}) \
+            or {"total_points": 0, "card_id": None, "qr_token": None}
+        total_pts = card.get("total_points", 0)
+        next_reward = next((r for r in rewards if (r.get("threshold") or 0) > total_pts), None)
         items.append({"user_id": u["user_id"], "email": u["email"],
                       "display_name": await display_name(u["user_id"]),
-                      "card_id": card["card_id"], "qr_token": card["qr_token"], "total_points": total,
-                      "stamps_count": await db.loyalty_stamps.count_documents({"card_id": card["card_id"]}),
+                      "card_id": card.get("card_id"), "qr_token": card.get("qr_token"),
+                      "total_points": total_pts,
+                      "stamps_count": await db.loyalty_stamps.count_documents({"card_id": card.get("card_id")})
+                      if card.get("card_id") else 0,
                       "next_reward": next_reward,
-                      "progress": round(total / next_reward["threshold"] * 100, 1) if next_reward else 100})
+                      "progress": round(total_pts / next_reward["threshold"] * 100, 1) if next_reward else 100})
     items.sort(key=lambda x: -x["total_points"])
-    return {"items": items, "total": len(items), "rewards": rewards}
+    return {"items": items, "total": total, "page": page, "limit": limit,
+            "pages": max((total + limit - 1) // limit, 1), "rewards": rewards}

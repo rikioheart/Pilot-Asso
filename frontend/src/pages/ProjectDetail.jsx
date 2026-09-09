@@ -18,6 +18,7 @@ import { CommentSection } from "@/components/CommentSection";
 import { ParticipationControl } from "@/components/ParticipationControl";
 import { MentionPicker } from "@/components/MentionPicker";
 import { ExternalLinks } from "@/components/ExternalLinks";
+import { DriveResources } from "@/components/DriveResources";
 
 const PROJECT_ROLES = ["COORDINATOR", "CONTRIBUTOR", "VOLUNTEER", "EXPERT", "REVIEWER"];
 
@@ -122,6 +123,8 @@ export default function ProjectDetail() {
             <div className="mt-2">
               <ExternalLinks kind="tasks" id={t.task_id} links={t.external_links || []} onChange={load}
                 canEdit={canManage || mine} testId={`task-links-${t.task_id}`} />
+              <ExternalLinks kind="tasks" id={t.task_id} links={t.drive_links || []} onChange={load}
+                canEdit={canManage || mine} testId={`task-drive-${t.task_id}`} variant="drive" />
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -346,7 +349,14 @@ export default function ProjectDetail() {
             </p>
             <ExternalLinks kind="projects" id={projectId} links={project.external_links || []} onChange={load}
               canEdit={canManage} testId="project-external-links" />
+            <div className="mt-4 border-t pt-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Liens Google Drive</p>
+              <ExternalLinks kind="projects" id={projectId} links={project.drive_links || []} onChange={load}
+                canEdit={canManage} testId="project-drive-links" variant="drive" />
+            </div>
           </div>
+
+          <DriveResources compact />
 
           <div className="rounded-xl border bg-card p-5">
             <h2 className="font-display text-base md:text-lg font-bold text-[var(--marine)]">Informations</h2>

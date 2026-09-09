@@ -48,14 +48,27 @@ export default function Engagement() {
     } catch (e) { toast.error(apiError(e)); }
   }, [filters]);
 
+  const [mpage, setMpage] = useState(1);
+  const [mpages, setMpages] = useState(1);
+  const [mtotal, setMtotal] = useState(0);
+  const [mfilters, setMfilters] = useState({ status: "ACTIVE", level: "", recent: false });
+
   const loadBase = useCallback(async () => {
-    try {
-      const [r, m] = await Promise.all([api.get("/loyalty/rules"), api.get("/loyalty/members")]);
-      setRules(r.data.items); setMembers(m.data.items);
-    } catch (e) { toast.error(apiError(e)); }
+    try { const r = await api.get("/loyalty/rules"); setRules(r.data.items); }
+    catch (e) { toast.error(apiError(e)); }
   }, []);
 
+  const loadMembers = useCallback(async () => {
+    try {
+      const { data } = await api.get("/loyalty/members", { params: {
+        page: mpage, limit: 50, status: mfilters.status || undefined,
+        level: mfilters.level || undefined, recent: mfilters.recent || undefined } });
+      setMembers(data.items); setMtotal(data.total); setMpages(data.pages);
+    } catch (e) { toast.error(apiError(e)); }
+  }, [mpage, mfilters]);
+
   useEffect(() => { loadBase(); }, [loadBase]);
+  useEffect(() => { loadMembers(); }, [loadMembers]);
   useEffect(() => { loadHistory(); }, [loadHistory]);
   useEffect(() => {
     api.get("/activities/meta").then((r) => setCategories(r.data.categories)).catch(() => {});
@@ -78,20 +91,14 @@ export default function Engagement() {
   const openMember = async (member) => {
     setDetail(member); setDetailData(null); setManual({ points: 1, reason: "", label: "" });
     try {
-      const [card, hist] = await Promise.all([
-        api.get("/loyalty/history", { params: { user_id: member.user_id, limit: 200 } }),
-        api.get("/loyalty/members"),
-      ]);
-      const fresh = (hist.data.items || []).find((m) => m.user_id === member.user_id) || member;
-      setDetailData({ stamps: card.data.items, member: fresh, source_labels: card.data.source_labels });
+      const card = await api.get("/loyalty/history", { params: { user_id: member.user_id, limit: 200 } });
+      setDetailData({ stamps: card.data.items, source_labels: card.data.source_labels });
     } catch (e) { toast.error(apiError(e)); }
   };
 
   const refreshDetail = async (member) => {
-    await loadBase(); await loadHistory();
+    await loadMembers(); await loadHistory();
     const { data } = await api.get("/loyalty/history", { params: { user_id: member.user_id, limit: 200 } });
-    const fresh = await api.get("/loyalty/members");
-    setDetail((fresh.data.items || []).find((m) => m.user_id === member.user_id) || member);
     setDetailData({ stamps: data.items, source_labels: data.source_labels });
   };
 
@@ -128,6 +135,7 @@ export default function Engagement() {
         reason: manual.reason, label: manual.label || null });
       toast.success(`Total recalculé : ${data.total_points} tampon(s)`);
       setManual({ points: 1, reason: "", label: "" });
+      setDetail((d) => ({ ...d, total_points: data.total_points }));
       refreshDetail(detail);
     } catch (e) { toast.error(apiError(e)); }
   };
@@ -180,6 +188,30 @@ export default function Engagement() {
         </TabsList>
 
         <TabsContent value="members">
+          <div className="mb-4 flex flex-wrap items-end gap-3" data-testid="loyalty-members-filters">
+            <div>
+              <Label className="text-xs">Statut</Label>
+              <Select value={mfilters.status} onValueChange={(v) => { setMpage(1); setMfilters({ ...mfilters, status: v }); }}>
+                <SelectTrigger className="w-40" data-testid="loyalty-filter-status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Actifs</SelectItem>
+                  <SelectItem value="INACTIVE">Inactifs</SelectItem>
+                  <SelectItem value="PENDING">En attente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Niveau min. (tampons)</Label>
+              <Input type="number" min="0" className="w-36" value={mfilters.level} data-testid="loyalty-filter-level"
+                onChange={(e) => { setMpage(1); setMfilters({ ...mfilters, level: e.target.value }); }} />
+            </div>
+            <Button size="sm" variant={mfilters.recent ? "default" : "outline"} data-testid="loyalty-filter-recent"
+              className={`rounded-full ${mfilters.recent ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
+              onClick={() => { setMpage(1); setMfilters({ ...mfilters, recent: !mfilters.recent }); }}>
+              Activité récente (30 j)
+            </Button>
+            <span className="text-sm text-muted-foreground" data-testid="loyalty-members-total">{mtotal} membre(s)</span>
+          </div>
           {members.length === 0 ? (
             <EmptyState testId="engagement-members-empty" icon={Star} title="Aucun particulier actif"
               description="Les cartes d'engagement apparaîtront dès qu'un particulier sera actif." />
@@ -206,6 +238,17 @@ export default function Engagement() {
                   </div>
                 </button>
               ))}
+            </div>
+          )}
+          {mpages > 1 && (
+            <div className="mt-5 flex items-center justify-center gap-3" data-testid="loyalty-pagination">
+              <Button size="sm" variant="outline" className="rounded-full" data-testid="loyalty-page-prev"
+                disabled={mpage <= 1} onClick={() => setMpage((p) => Math.max(1, p - 1))}>Précédent</Button>
+              <span className="text-sm font-semibold text-[var(--marine)]" data-testid="loyalty-page-indicator">
+                Page {mpage} / {mpages}
+              </span>
+              <Button size="sm" variant="outline" className="rounded-full" data-testid="loyalty-page-next"
+                disabled={mpage >= mpages} onClick={() => setMpage((p) => Math.min(mpages, p + 1))}>Suivant</Button>
             </div>
           )}
         </TabsContent>

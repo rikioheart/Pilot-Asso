@@ -10,6 +10,7 @@ import { DelegationSettings, OnboardingSettings, BlockVisibilitySettings } from 
 import { WeatherSettings } from "@/components/WeatherSettings";
 import { DogJournalTemplateSettings } from "@/components/DogJournalTemplateSettings";
 import { BiweeklyRecapSettings } from "@/components/BiweeklyRecapSettings";
+import { DriveResources } from "@/components/DriveResources";
 import { useBlockReload } from "@/components/BlockVisibility";
 import { Plus, Trash2, Tags } from "lucide-react";
 import { api, apiError } from "@/lib/api";
@@ -68,6 +69,7 @@ export default function AdminSettings() {
       <WeatherSettings />
       <DogJournalTemplateSettings />
       <BiweeklyRecapSettings />
+      <DriveResources />
 
       <SectionCard title="Catégories et types configurables" icon={Tags} testId="taxonomies-card"
         subtitle="Ajoutez vos propres catégories d'activités, types d'activités ou types d'événements."
