@@ -5,6 +5,7 @@ import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SectionCard, Chip } from "@/components/Ui";
 import { confirmDialog } from "@/components/ConfirmDialog";
+import { isSoundOn, setSoundOn, chime } from "@/lib/sound";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ export const AccountSettings = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteWord, setDeleteWord] = useState("");
   const isBureau = user?.role === "ADMIN_BUREAU";
+  const [soundOn, setSoundOnState] = useState(isSoundOn());
 
   const load = () => api.get("/account/settings").then((r) => {
     setSettings(r.data);
@@ -94,6 +96,19 @@ export const AccountSettings = () => {
 
   return (
     <div className="space-y-6" data-testid="account-settings">
+      <SectionCard title="Sons d'ambiance" icon={Bell} testId="account-sound-card"
+        subtitle="Un son doux et discret sur les moments clés (validation, tâche terminée, badge…). Désactivé par défaut.">
+        <label className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+          <span>
+            <span className="font-semibold text-[var(--marine)]">Activer les sons</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Respecte le silence de votre appareil ; désactivable à tout moment.
+            </span>
+          </span>
+          <Switch checked={soundOn} data-testid="account-sound-switch"
+            onCheckedChange={(v) => { setSoundOn(v); setSoundOnState(v); if (v) chime("success"); }} />
+        </label>
+      </SectionCard>
       {isBureau && (
         <div className="rounded-lg bg-[var(--marine-a8)] px-4 py-3 text-sm text-[var(--marine)]"
           data-testid="account-bureau-note">

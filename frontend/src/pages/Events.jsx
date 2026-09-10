@@ -17,6 +17,7 @@ import { EVENT_TYPE_LABELS, VISIBILITY_LABELS, STATUS_LABELS, label } from "@/li
 import { MentionPicker } from "@/components/MentionPicker";
 import { FormWizard } from "@/components/FormWizard";
 import { useAutoSaveDraft, loadDraft, clearDraft } from "@/lib/useDraft";
+import { chime } from "@/lib/sound";
 
 const DRAFT_KEY = "event_new";
 const EMPTY = {
@@ -78,6 +79,7 @@ export default function Events() {
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success("Événement créé");
+      chime("create");
       clearDraft(DRAFT_KEY);
       setForm(EMPTY);
       setOpen(false);

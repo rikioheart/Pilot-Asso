@@ -4,6 +4,8 @@ import { CalendarDays, Dog as DogIcon, MapPin, Clock, Stethoscope } from "lucide
 import { api } from "@/lib/api";
 import { SectionCard, EmptyState } from "@/components/Ui";
 import { NewsFeed } from "@/components/NewsFeed";
+import { WelcomeMessage } from "@/components/WelcomeMessage";
+import { DogAvatar } from "@/components/DogAvatar";
 import { Button } from "@/components/ui/button";
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) : "");
@@ -18,6 +20,7 @@ export const BaseHomeBlocks = () => {
 
   return (
     <div className="space-y-6" data-testid="home-base-blocks">
+      <WelcomeMessage dogName={dogs[0]?.name} empty={dogs.length === 0 && next.length === 0} />
       <section data-testid="home-news"><NewsFeed /></section>
 
       <section className="grid gap-6 lg:grid-cols-[3fr_2fr]">
@@ -33,8 +36,9 @@ export const BaseHomeBlocks = () => {
             <div className="grid gap-3 sm:grid-cols-2">
               {dogs.map((d) => (
                 <div key={d.dog_id} className="rounded-xl border bg-muted/40 p-4" data-testid={`home-dog-${d.dog_id}`}>
-                  <p className="font-display text-lg font-bold text-[var(--marine)]">{d.name}</p>
-                  <p className="text-xs text-muted-foreground">{d.breed || "Race non renseignée"}</p>
+                  <DogAvatar name={d.name} photo={d.photo} breed={d.breed} birthDate={d.birth_date}
+                    referent={d.referent} size="md" testId={`home-dog-avatar-${d.dog_id}`} />
+                  <p className="mt-1 text-xs text-muted-foreground">{d.breed || "Race non renseignée"}</p>
                   <div className="mt-3 space-y-1.5 text-sm">
                     <p className="flex items-start gap-2"><Stethoscope className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--bordeaux)]" />
                       <span>{d.last_report

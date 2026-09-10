@@ -17,6 +17,7 @@ import { useViewMode } from "@/components/ViewMode";
 import { CockpitModes, MembersMode, ProsMode, ActivitiesMode } from "@/components/CockpitModes";
 import { DashboardShortcuts } from "@/components/DashboardShortcuts";
 import { ExternalTools } from "@/components/ExternalTools";
+import { WelcomeMessage } from "@/components/WelcomeMessage";
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
       {mode === "activities" && <ActivitiesMode data={data} />}
 
       {mode === "global" && (<>
+      <WelcomeMessage testId="admin-welcome-message" />
       <div className="mb-6"><DashboardShortcuts /></div>
       <PriorityQueue data={queue} />
 

@@ -3,6 +3,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { toast } from "sonner";
 import { Camera, Search, CameraOff, Star, CheckCircle2 } from "lucide-react";
 import { api, apiError, isOffline, queueOfflineStamp } from "@/lib/api";
+import { chime } from "@/lib/sound";
 import { useOffline } from "@/components/OfflineMode";
 import { PageHeader, EmptyState } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,7 @@ export default function LoyaltyScan() {
         user_id: member.user_id,
         activity_id: activityId || null, event_id: eventId || null });
       toast.success(`+${data.stamp.points} tampon(s) — total ${data.total_points}`);
+      chime("badge");
       setMember(null);
       setActivityId(""); setEventId("");
       const refreshed = await api.get("/loyalty/history", { params: { limit: 20 } });

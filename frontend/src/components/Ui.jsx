@@ -2,6 +2,7 @@ import { Dog, PawPrint } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { useEmptyMessage } from "@/components/EmptyStates";
+import { DogEmptyArt } from "@/components/DogEmptyArt";
 
 export const PageHeader = ({ title, subtitle, breadcrumb, actions }) => (
   <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -42,9 +43,9 @@ export const EmptyState = ({ title, description, action, icon: Icon = PawPrint, 
       </Link> : null);
   return (
     <div className="rounded-xl border border-dashed bg-card/60 px-6 py-10 text-center" data-testid={testId}>
-      <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--bordeaux-a8)]">
-        <Icon className="h-6 w-6 text-[var(--bordeaux)]" />
-      </span>
+      <div className="mx-auto mb-4 h-24 w-24">
+        <DogEmptyArt module={module} testId={`${testId || "empty"}-art`} />
+      </div>
       <p className="font-display font-bold text-[var(--marine)]">{title}</p>
       {text && <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{text}</p>}
       {cta && <div className="mt-5 flex justify-center">{cta}</div>}

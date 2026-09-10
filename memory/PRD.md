@@ -282,6 +282,24 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - Note : route `/projects` protégée pour le Particulier (comportement voulu) — la carte Drive lecture côté membre
   se vérifie via d'autres pages.
 
+### Prompt 10 — Personnalité vivante & identité canine (10/06/2026)
+- **Lot 1 — Charte étendue & états vides canins** (testé 100 % — iteration_27) : ajout Gris Anthracite (texte
+  clair adouci + `.vdc-surface-alt`), Sable Chaud & Vert Sauge **décoratifs uniquement** (`.vdc-decor-*`,
+  `.vdc-divider`, `.vdc-dot` ; jamais boutons/statuts). Thème sombre (T3) retravaillé (fonds/bordures/muted plus
+  harmonieux, bordeaux adouci). Illustrations SVG légères `DogEmptyArt` (chien attend/joue/dort selon module)
+  intégrées à `EmptyState`.
+- **Lot 2 — Présence du chien** (testé 100 % — iteration_28) : `DogAvatar` (photo ou silhouette + pop-up survol :
+  photo agrandie, race, âge, Pro référent), intégré aux cartes chien du dashboard.
+- **Lot 3 — Messages d'accueil dynamiques** (testé 100 % — iteration_28) : `WelcomeMessage` (bibliothèque FR par
+  défaut, rotation sans répétition consécutive, encouragement si dashboard vide), sur dashboards membre/pro/bureau.
+- **Lot 4 — Son d'ambiance optionnel** (frontend, compile OK) : `lib/sound.js` (Web Audio synthétique, aucun asset,
+  respecte le silence système), **désactivé par défaut**, interrupteur dans « Notifications & compte » + bascule
+  depuis le FAB « + » ; sons câblés sur création d'activité/événement et validation de tampon (badge).
+- **Reste à faire (Lot 5, P1)** : icônes de statut canines sur fiches chiens (galerie Bureau, désactivable
+  utilisateur), effet Ken Burns sur la couverture (respecte prefers-reduced-motion, désactivable), galerie
+  d'activités sur la page publique (mosaïque, défilement au clic). Suivi : gestion Bureau des messages d'accueil,
+  rollout `DogAvatar` aux notifications/commentaires/fil, désactivation par module des illustrations.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

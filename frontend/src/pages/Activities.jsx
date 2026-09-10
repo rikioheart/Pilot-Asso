@@ -22,6 +22,7 @@ import { ParticipationControl } from "@/components/ParticipationControl";
 import { MentionPicker } from "@/components/MentionPicker";
 import { FormWizard } from "@/components/FormWizard";
 import { useAutoSaveDraft, loadDraft, clearDraft } from "@/lib/useDraft";
+import { chime } from "@/lib/sound";
 
 const DRAFT_KEY = "activity_new";
 const EMPTY = {
@@ -87,6 +88,7 @@ export default function Activities() {
         form_id: form.form_id || null, form_notify_date: form.form_notify_date || null,
       });
       toast.success(isAdmin ? "Activité créée" : "Proposition envoyée au Bureau");
+      chime("create");
       clearDraft(DRAFT_KEY);
       setForm(EMPTY);
       setOpen(false);

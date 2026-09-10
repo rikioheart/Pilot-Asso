@@ -2,14 +2,18 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import axios from "axios";
 import { API } from "@/lib/api";
 
+// Nuances décoratives (Prompt 10) : Gris Anthracite (texte/fonds secondaires), Sable Chaud & Vert Sauge (ornements)
+const DECOR_LIGHT = { "--anthracite": "#2b2f36", "--sable": "#e6d2ad", "--sauge": "#93a982" };
+const DECOR_DARK = { "--anthracite": "#c9d0dd", "--sable": "#c9b487", "--sauge": "#8ba579" };
+
 export const THEMES = {
   T1: {
     label: "Clair (défaut)", dark: false,
     vars: { "--bordeaux": "#800020", "--bordeaux-dark": "#63001a", "--marine": "#002060",
       "--surface": "#ffffff", "--surface-alt": "#f4f6f8",
-      "--status-ok": "#1e7f4f", "--status-warn": "#c2701a", "--status-error": "#c2571a" },
-    hsl: { background: "210 20% 98%", foreground: "222 47% 11%", card: "0 0% 100%",
-      "card-foreground": "222 47% 11%", popover: "0 0% 100%", "popover-foreground": "222 47% 11%",
+      "--status-ok": "#1e7f4f", "--status-warn": "#c2701a", "--status-error": "#c2571a", ...DECOR_LIGHT },
+    hsl: { background: "210 20% 98%", foreground: "216 14% 19%", card: "0 0% 100%",
+      "card-foreground": "216 14% 19%", popover: "0 0% 100%", "popover-foreground": "216 14% 19%",
       muted: "210 20% 96%", "muted-foreground": "215 16% 40%", border: "214 32% 91%",
       input: "214 32% 91%", primary: "345 100% 25%", "primary-foreground": "0 0% 100%",
       secondary: "222 100% 19%", ring: "345 100% 25%" },
@@ -18,23 +22,23 @@ export const THEMES = {
     label: "Bordeaux", dark: false,
     vars: { "--bordeaux": "#002060", "--bordeaux-dark": "#001845", "--marine": "#800020",
       "--surface": "#ffffff", "--surface-alt": "#f7ecef",
-      "--status-ok": "#1e7f4f", "--status-warn": "#c2701a", "--status-error": "#c2571a" },
-    hsl: { background: "345 42% 95%", foreground: "222 47% 11%", card: "0 0% 100%",
-      "card-foreground": "222 47% 11%", popover: "0 0% 100%", "popover-foreground": "222 47% 11%",
+      "--status-ok": "#1e7f4f", "--status-warn": "#c2701a", "--status-error": "#c2571a", ...DECOR_LIGHT },
+    hsl: { background: "345 42% 95%", foreground: "216 14% 19%", card: "0 0% 100%",
+      "card-foreground": "216 14% 19%", popover: "0 0% 100%", "popover-foreground": "216 14% 19%",
       muted: "345 26% 92%", "muted-foreground": "215 16% 40%", border: "345 26% 86%",
       input: "345 26% 86%", primary: "222 100% 19%", "primary-foreground": "0 0% 100%",
       secondary: "345 100% 25%", ring: "222 100% 19%" },
   },
   T3: {
     label: "Sombre", dark: true,
-    vars: { "--bordeaux": "#c14b6c", "--bordeaux-dark": "#9a3352", "--marine": "#e8ecf5",
-      "--surface": "#0b1836", "--surface-alt": "#070f24",
-      "--status-ok": "#48c78e", "--status-warn": "#f0a44a", "--status-error": "#f26d6d" },
-    hsl: { background: "222 55% 9%", foreground: "210 40% 96%", card: "222 45% 14%",
-      "card-foreground": "210 40% 96%", popover: "222 45% 14%", "popover-foreground": "210 40% 96%",
-      muted: "222 30% 20%", "muted-foreground": "214 20% 72%", border: "222 25% 26%",
-      input: "222 25% 26%", primary: "340 52% 55%", "primary-foreground": "0 0% 100%",
-      secondary: "210 40% 96%", ring: "340 52% 55%" },
+    vars: { "--bordeaux": "#d06b86", "--bordeaux-dark": "#b04d69", "--marine": "#eaeefb",
+      "--surface": "#141a2e", "--surface-alt": "#0e1424",
+      "--status-ok": "#4fd0a0", "--status-warn": "#f0ad57", "--status-error": "#f07777", ...DECOR_DARK },
+    hsl: { background: "224 32% 10%", foreground: "213 30% 92%", card: "223 27% 15%",
+      "card-foreground": "213 30% 92%", popover: "223 27% 15%", "popover-foreground": "213 30% 92%",
+      muted: "223 20% 21%", "muted-foreground": "214 16% 70%", border: "223 18% 27%",
+      input: "223 18% 27%", primary: "342 55% 62%", "primary-foreground": "0 0% 100%",
+      secondary: "213 30% 92%", ring: "342 55% 62%" },
   },
 };
 export const DEFAULT_THEME_KEY = "T1";

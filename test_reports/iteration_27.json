@@ -1,0 +1,28 @@
+{
+  "summary": "Prompt 10 Lot 1 (visual/theme) frontend verification. Verified: (1) DogEmptyArt SVG renders in EmptyState with correct data-testid, data-pose, inner svg testid; (2) Dark theme T3 applies dark harmonious background (#111622) and does not use pure black, primary bordeaux becomes soft pink (#d06b86), status colors remain green/orange/red; (3) Light theme (Clair) restore works; (4) Sable/Sauge decorative vars only used in DogEmptyArt and CSS ornament helpers, no buttons/status use them. Empty-state art was verified on /my-space (2 EmptyStates: 'space-upcoming-empty-art' + 'space-requests-empty-art', pose=waiting, 96x96 SVGs). No empty state reachable on /partners (all 3 filter tabs populated with demo data) — per user note not a bug.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Dark theme (T3) — body element", "issues": ["document.body computed color returns rgb(51,48,44) in both light and dark (base body color not swapped by theme). Content is still readable because cards/text use var(--marine) and hsl(foreground) which do switch — no visible unreadable text observed. Low priority: consider setting body { color: hsl(var(--foreground)); } for consistency."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: bind body color to hsl(var(--foreground)) so raw body text follows the theme (currently mitigated because components use var(--marine) or hsl(foreground) directly)."
+  ],
+  "critical_code_review_comments": [
+    "DogEmptyArt correctly guards with pose|module fallback → 'waiting'; visual pose distribution is consistent with MODULE_POSE for events/finance/stock/partners.",
+    "Sable/Sauge (decor) confirmed non-functional: only referenced in ThemeProvider (definition) and DogEmptyArt (ornament fill/stroke). No button/status uses them.",
+    "T3 dark palette avoids pure black (#111622 / #141a2e) and uses softened bordeaux (#d06b86) for accessibility — good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100% for reachable scenarios"},
+  "test_credentials": "associationlavoixduchien@gmail.com / VoixDuChien2026! (Bureau) — worked",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Empty-state DogEmptyArt easiest to observe on /my-space (Mon récapitulatif tab) which has 2 guaranteed empty sections for the Bureau demo account. /partners has demo data in every filter tab so its empty state is unreachable. Dark theme switch is on /my-space → 'Affichage & accessibilité' → 'Sombre' card.",
+  "rca of the issue": "n/a — no functional bug"
+}

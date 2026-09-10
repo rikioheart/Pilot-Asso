@@ -1,0 +1,27 @@
+{
+  "summary": "Prompt 10 Lot 2 (DogAvatar + hover popup) and Lot 3 (dynamic WelcomeMessage) verified across the 3 roles on preview URL. Particulier (membre1.demo): 6 home-dog-avatar-<dogId> rendered on 'Mes chiens' section (all silhouettes — no dog photos on demo data, so home-dog-avatar-<id>-silhouette present, home-dog-avatar-<id>-photo absent — expected). Hover on avatar transitions popup (home-dog-avatar-<id>-popup) opacity 0->1 and back to 0 on mouse leave; popup shows dog name + breed ('Nikko [DEMO]' / 'Berger allemand'). welcome-message renders and rotates across 5 loads: 5 messages, 4 unique, all consecutive pairs different (no repeat 2x in a row), and dog name substitution ('votre chien' -> 'Nikko [DEMO]') works. Bureau (/admin/dashboard, Global): admin-welcome-message renders and rotates across reloads ('La patience...' -> 'Chaque balade...' -> 'Un chien heureux...'). Professionnel (pro2.demo): welcome-message renders on /pro/dashboard and rotates on reload; no home-dog-avatar (pro dashboard uses 'Mon chien' empty state art, no dog cards for this pro — no regression). All 3 dashboards load with no runtime/console errors after login; dog cards on member dashboard still show 'Suivi complet' link and upcoming participations; navigation unaffected. Empty encouragement path (dogName + empty) not directly reproducible because membre1 has demo dogs, but WelcomeMessage.jsx pick() logic returns encouragement string first when empty=true, and BaseHomeBlocks passes empty flag when no dogs+participations — code path confirmed by review, non-empty branch verified live and does not crash.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Member/Pro home dashboard", "issues": ["welcome-message banner is rendered mid-page (between 'Autour du chien' block and 'Actualités' block) rather than literally at the very top of the home blocks. Visual placement is coherent with a warm 'quote of the day' aesthetic but does not match the wording 'top of the home blocks' in the spec — worth confirming with the product owner whether intended."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "WelcomeMessage.pick uses sessionStorage 'vdc_welcome_last' with i = (i+1) % LIBRARY.length when i === last: guarantees no back-to-back duplicate within the same session, but two different components mounting on the same page (e.g. WelcomeMessage + admin-welcome-message across tabs) will read/write the same key; acceptable given they don't render simultaneously.",
+    "dogName substitution replaces both 'votre chien' and 'Votre chien' but leaves messages that contain 'son chien' untouched (e.g. 'Observer son chien'). Non-blocking, but personalisation is inconsistent across the 12 library entries.",
+    "DogAvatar wraps content in a <span> and uses inline-flex with nested <span> for the popup — the popup is fine visually, but leaving pointer-events-none on the tooltip means hovering the popup itself (e.g. to read a long referent) starts the fade-out. group-hover pattern currently keeps it open only while the trigger is hovered, which is acceptable for short content.",
+    "No admin/back-office CRUD for the welcome message library (as flagged in the request note — planned for later)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "100% for the reachable Lot 2 + Lot 3 scenarios"},
+  "test_credentials": "membre1.demo@lavoixduchien.fr / Demo2026! ; associationlavoixduchien@gmail.com / VoixDuChien2026! ; pro2.demo@lavoixduchien.fr / Demo2026! (all worked; note aggressive brute-force lockout kicked in when playwright logged out+in 3 accounts back-to-back — had to wait ~45s between logins)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Member demo dogs currently have NO photos so DogAvatar always shows silhouette on this dataset — to test the -photo branch, seed a dog with photo_url. WelcomeMessage rotation state lives in sessionStorage under key 'vdc_welcome_last'; clearing the session or opening a new incognito window resets it. Admin admin-welcome-message only renders in 'Global' mode of /admin/dashboard (not on Membres/Pros/Activités sub-tabs).",
+  "rca of the issue": "n/a — no functional bug"
+}

@@ -4,6 +4,8 @@ import { Zap, X, Dog, PartyPopper, Sparkle, UserCircle, Trophy, ClipboardCheck,
   Boxes, BellPlus, ListChecks, Wrench } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { QuickCreatePanel } from "@/components/QuickCreatePanel";
+import { isSoundOn, setSoundOn } from "@/lib/sound";
+import { Volume2, VolumeX } from "lucide-react";
 
 const ACTIONS = {
   PARTICULIER: [
@@ -31,6 +33,7 @@ export const QuickActionsFab = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState(false);
+  const [sound, setSound] = useState(isSoundOn());
   const base = (ACTIONS[user?.role] || []).filter((a) => !a.permission || can(a.permission));
   const actions = [...base, { label: "Outils externes", icon: Wrench, to: `${user?.role === "ADMIN_BUREAU" ? "/admin/dashboard" : user?.role === "PROFESSIONNEL" ? "/pro/dashboard" : "/member/dashboard"}#outils` }];
   if (actions.length === 0) return null;
@@ -40,6 +43,12 @@ export const QuickActionsFab = () => {
       data-testid="quick-actions-fab">
       {open && (
         <div className="flex flex-col items-end gap-2" data-testid="quick-actions-menu">
+          <button type="button" data-testid="quick-action-sound-toggle"
+            onClick={() => { const v = !sound; setSoundOn(v); setSound(v); }}
+            className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-semibold text-[var(--marine)] shadow-lg transition-colors hover:bg-muted">
+            {sound ? <VolumeX className="h-4 w-4 text-[var(--bordeaux)]" /> : <Volume2 className="h-4 w-4 text-[var(--bordeaux)]" />}
+            {sound ? "Couper le son" : "Activer le son"}
+          </button>
           {actions.map((a) => (
             <button key={a.label} type="button" data-testid={`quick-action-${a.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
               onClick={() => { setOpen(false); a.panel ? setPanel(true) : navigate(a.to); }}

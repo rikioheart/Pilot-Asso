@@ -184,8 +184,24 @@ html[data-motion="reduced"] *::after {
     --marine-a25: color-mix(in srgb, var(--marine) 25%, transparent);
     --marine-a30: color-mix(in srgb, var(--marine) 30%, transparent);
     --marine-a40: color-mix(in srgb, var(--marine) 40%, transparent);
+    --anthracite: #2b2f36;
+    --sable: #e6d2ad;
+    --sauge: #93a982;
 }
 .vdc-sidebar { background: var(--marine) !important; }
+
+/* --- Nuances décoratives (Prompt 10) : Sable Chaud & Vert Sauge, ornements uniquement --- */
+.vdc-anthracite { color: var(--anthracite); }
+.vdc-surface-alt { background: color-mix(in srgb, var(--anthracite) 5%, var(--surface)); }
+.vdc-decor-sable { color: var(--sable); }
+.vdc-decor-sauge { color: var(--sauge); }
+/* Séparateur décoratif : point sable/sauge entre deux éléments */
+.vdc-dot::before { content: "•"; color: var(--sauge); margin: 0 0.5rem; opacity: 0.8; }
+.vdc-divider {
+    height: 1px; border: 0; margin: 1.25rem 0;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sauge) 55%, transparent), transparent);
+}
+.vdc-paw-accent { color: var(--sable); opacity: 0.9; }
 ::selection { background: var(--bordeaux) !important; }
 .vdc-kpi:hover { border-color: var(--bordeaux-a35) !important; }
 
