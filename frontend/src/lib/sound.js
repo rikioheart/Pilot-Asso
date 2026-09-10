@@ -13,8 +13,8 @@ const TONES = {
   badge: [783.99, 1174.66], step: [493.88, 739.99],
 };
 
-export const chime = (type = "success") => {
-  if (!isSoundOn()) return;
+export const chime = (type = "success", force = false) => {
+  if (!force && !isSoundOn()) return;
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;

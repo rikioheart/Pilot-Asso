@@ -7,8 +7,9 @@ export function CoverBanner() {
     api.get("/settings/cover-photo").then((r) => setFileId(r.data.file_id || null)).catch(() => {});
   }, []);
   if (!fileId) return null;
+  const ken = localStorage.getItem("vdc_kenburns") !== "off";
   return (
-    <div className="mb-6 overflow-hidden rounded-2xl border" data-testid="cover-banner">
+    <div className={`mb-6 overflow-hidden rounded-2xl border ${ken ? "vdc-kenburns" : ""}`} data-testid="cover-banner">
       <img src={fileUrl(fileId)} alt="Couverture de l'association"
         className="h-40 w-full object-cover sm:h-56" />
     </div>

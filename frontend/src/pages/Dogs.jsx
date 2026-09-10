@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState, Chip, SectionCard, ProgressBar } from "@/components/Ui";
 import { FileUpload } from "@/components/FileUpload";
 import { DogJournal } from "@/components/DogJournal";
+import { DogStatusBadge } from "@/components/DogStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -150,6 +151,7 @@ export default function Dogs() {
                 <p className="text-xs text-muted-foreground">
                   {dog.breed || "Race non précisée"}{dog.age ? ` · ${dog.age}` : ""}
                 </p>
+                <div className="mt-1.5"><DogStatusBadge status={dog.status} testId={`dog-status-${dog.dog_id}`} /></div>
                 {dog.referent_name && (
                   <Chip tone="marine" testId={`dog-referent-${dog.dog_id}`}>
                     <UserCheck className="h-3 w-3" /> {dog.referent_name}

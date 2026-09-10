@@ -202,6 +202,12 @@ html[data-motion="reduced"] *::after {
     background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sauge) 55%, transparent), transparent);
 }
 .vdc-paw-accent { color: var(--sable); opacity: 0.9; }
+
+/* Effet Ken Burns sur la couverture (Prompt 10) — sobre, respecte prefers-reduced-motion */
+.vdc-kenburns img { animation: vdc-kenburns 28s ease-in-out infinite alternate; transform-origin: 50% 40%; }
+@keyframes vdc-kenburns { from { transform: scale(1); } to { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .vdc-kenburns img { animation: none; } }
+html[data-motion="reduced"] .vdc-kenburns img { animation: none; }
 ::selection { background: var(--bordeaux) !important; }
 .vdc-kpi:hover { border-color: var(--bordeaux-a35) !important; }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, Clock, Plane, Power, Trash2, Save } from "lucide-react";
+import { Bell, Clock, Plane, Power, Trash2, Save, PawPrint, Film, Play } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SectionCard, Chip } from "@/components/Ui";
@@ -27,6 +27,9 @@ export const AccountSettings = () => {
   const [deleteWord, setDeleteWord] = useState("");
   const isBureau = user?.role === "ADMIN_BUREAU";
   const [soundOn, setSoundOnState] = useState(isSoundOn());
+  const [dogIcons, setDogIcons] = useState(localStorage.getItem("vdc_dog_icons") !== "off");
+  const [kenBurns, setKenBurns] = useState(localStorage.getItem("vdc_kenburns") !== "off");
+  const toggleLocal = (key, val, setter) => { localStorage.setItem(key, val ? "on" : "off"); setter(val); };
 
   const load = () => api.get("/account/settings").then((r) => {
     setSettings(r.data);
@@ -108,6 +111,35 @@ export const AccountSettings = () => {
           <Switch checked={soundOn} data-testid="account-sound-switch"
             onCheckedChange={(v) => { setSoundOn(v); setSoundOnState(v); if (v) chime("success"); }} />
         </label>
+        <Button variant="outline" size="sm" className="mt-3 rounded-full" data-testid="account-sound-preview"
+          onClick={() => chime("badge", true)}>
+          <Play className="mr-2 h-3.5 w-3.5" /> Écouter un aperçu
+        </Button>
+      </SectionCard>
+
+      <SectionCard title="Confort visuel" icon={Film} testId="account-visual-card"
+        subtitle="Ajustez les touches animées et les icônes canines selon votre confort.">
+        <label className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+          <span>
+            <span className="font-semibold text-[var(--marine)]">Icônes canines de statut</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Sur les fiches chiens (patte, os…). Désactivez pour revenir aux pastilles simples.
+            </span>
+          </span>
+          <Switch checked={dogIcons} data-testid="account-dogicons-switch"
+            onCheckedChange={(v) => toggleLocal("vdc_dog_icons", v, setDogIcons)} />
+        </label>
+        <label className="mt-3 flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+          <span>
+            <span className="font-semibold text-[var(--marine)]">Effet Ken Burns (couverture)</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Léger zoom animé de la photo de couverture. Respecte le mode « animations réduites ».
+            </span>
+          </span>
+          <Switch checked={kenBurns} data-testid="account-kenburns-switch"
+            onCheckedChange={(v) => toggleLocal("vdc_kenburns", v, setKenBurns)} />
+        </label>
+        <PawPrint className="mt-3 h-4 w-4 vdc-paw-accent" aria-hidden />
       </SectionCard>
       {isBureau && (
         <div className="rounded-lg bg-[var(--marine-a8)] px-4 py-3 text-sm text-[var(--marine)]"

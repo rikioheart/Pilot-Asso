@@ -295,10 +295,16 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Lot 4 — Son d'ambiance optionnel** (frontend, compile OK) : `lib/sound.js` (Web Audio synthétique, aucun asset,
   respecte le silence système), **désactivé par défaut**, interrupteur dans « Notifications & compte » + bascule
   depuis le FAB « + » ; sons câblés sur création d'activité/événement et validation de tampon (badge).
-- **Reste à faire (Lot 5, P1)** : icônes de statut canines sur fiches chiens (galerie Bureau, désactivable
-  utilisateur), effet Ken Burns sur la couverture (respecte prefers-reduced-motion, désactivable), galerie
-  d'activités sur la page publique (mosaïque, défilement au clic). Suivi : gestion Bureau des messages d'accueil,
-  rollout `DogAvatar` aux notifications/commentaires/fil, désactivation par module des illustrations.
+- **Lot 5 — Finitions visuelles** (partiel, testé 100 % — iteration_29) : **icônes canines de statut** sur les
+  fiches chiens (`DogStatusBadge` : patte/os/cercle, vert/orange/gris, toujours avec le texte, désactivable
+  utilisateur → pastille simple) ; **effet Ken Burns** sur la couverture (`.vdc-kenburns`, respecte
+  prefers-reduced-motion / `data-motion="reduced"`, désactivable utilisateur) ; **aperçu son** (`chime(type, force)`)
+  + carte « Confort visuel » dans « Notifications & compte ».
+- **Reste à faire (P1)** : galerie d'activités sur la page publique (mosaïque, défilement au clic, config/ordre
+  Bureau, compression upload) ; galerie d'icônes de statut choisie par le Bureau + toggle Ken Burns au niveau
+  association ; diffusion `DogAvatar` aux notifications/commentaires/fil ; gestion Bureau des messages d'accueil ;
+  désactivation par module des illustrations d'états vides ; mise à jour live des préférences (évènement partagé)
+  au lieu d'un rechargement.
 
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
