@@ -306,6 +306,24 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   désactivation par module des illustrations d'états vides ; mise à jour live des préférences (évènement partagé)
   au lieu d'un rechargement.
 
+### Prompt 11 — IA douce & libellés configurables (10/06/2026)
+- **Fonction 4 — Message d'accueil contextuel** (testé 100 % — iteration_30) : `WelcomeMessage` enrichi (heure →
+  Bonjour/Bon après-midi/Bonsoir, saison, **prénom** via `useAuth().profile.first_name`), varie à chaque session,
+  masqué si préférence désactivée. Sur dashboards membre/pro/bureau.
+- **Centre « IA douce & messages »** (testé 100 %) : carte dans « Notifications & compte » avec 3 interrupteurs
+  (message d'accueil `vdc_ia_welcome`, suggestions carnet `vdc_ia_suggest`, relance douce `vdc_ia_relance`),
+  **activés par défaut**, par utilisateur (localStorage). Couvre l'exigence activable/désactivable des fonctions 2/3/4.
+- **Fonction 1 — Libellés de navigation configurables** (testé 100 % — iteration_31) : `tools.py`
+  `GET/PUT /api/nav-labels` (Bureau) stockés dans `app_settings` (map libellé d'origine → nouveau) ;
+  `lib/useNavLabels.js` (cache + listeners, application immédiate) ; `AppShell` mappe les libellés d'onglets et
+  de catégories ; interface `NavLabelsSettings` dans les Réglages de l'association. Défauts = valeurs actuelles.
+- **Reste à faire (P1)** :
+  - **Fonction 2** — Logique de suggestions dans le carnet (bulle légère ignorable ; à la sauvegarde ou après
+    10 s d'inactivité ; respecte `vdc_ia_suggest`).
+  - **Fonction 3** — Détection de décrochage (>21 j sans connexion malgré activité régulière) + relance douce à la
+    reconnexion, 1×/30 j ; respecte `vdc_ia_relance`. Nécessite suivi `previous_login` côté backend.
+  - Migration éventuelle des préférences IA vers `/account/settings` (sync multi-appareils).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

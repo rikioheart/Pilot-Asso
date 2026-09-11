@@ -1,0 +1,20 @@
+{
+  "summary": "Frontend-only test of configurable nav labels (Prompt 11 - Function 1). All 3 scenarios PASSED: (1) Bureau renamed 'Activités' -> 'Sorties canines' in /admin/settings via nav-labels-settings card; success toast 'Libellés mis à jour — ils s'appliquent immédiatement' displayed; sidebar updated live without full reload. (2) After hard reload, sidebar still shows 'Sorties canines' -> confirms server-side persistence via PUT/GET /api/nav-labels. (3) Clicking the renamed sidebar entry correctly navigates to /activities; other nav entries unaffected; dashboards load. Cleanup: reset via nav-label-reset-Activités + save restored default 'Activités' — app left clean.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100%"},
+  "test_credentials": "Bureau: associationlavoixduchien@gmail.com / VoixDuChien2026!",
+  "seed_data_creation": "None. Label was temporarily set to 'Sorties canines' then reset back to default 'Activités'.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Nav labels feature (Prompt 11 Function 1) verified working end-to-end on frontend. Backend PUT/GET /api/nav-labels confirmed reachable (401 errors seen in console were pre-login only). Functions 2 (journal suggestions) and 3 (re-engagement) were explicitly deferred and not tested.",
+  "rca of the issue": "No issue found."
+}

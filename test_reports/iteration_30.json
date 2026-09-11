@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only verification of Prompt 11 partial: contextual welcome message (time/season/first-name) + IA douce preference center. Tested Particulier (membre1.demo) and Bureau (association) accounts. All 4 requested scenarios pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "WelcomeMessage: iaWelcomeEnabled() is read only at render time and not reactive to storage changes; toggling the switch in the same tab does not hide/show the banner until navigation/reload. This is acceptable per current spec (reload keeps behavior) but worth noting.",
+    "The IA preferences are persisted only in localStorage (per-device), not server-side per-user. If cross-device sync is desired later, migrate to /account/settings."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "Particulier: membre1.demo@lavoixduchien.fr / Demo2026! ; Bureau: associationlavoixduchien@gmail.com / VoixDuChien2026!",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Particulier welcome banner rendered as 'Bonjour Sophie — Aux couleurs de l'automne, la patience apprise avec Nikko [DEMO], vous l'offrez aussi aux autres.' correctly using first_name+greeting+season+library phrase. In /my-space -> 'Notifications & compte' tab, IA card (account-ia-card) with 3 switches was visible; all defaulted ON. Toggling welcome OFF set localStorage vdc_ia_welcome='off' and after reload the welcome-message was ABSENT (count=0) on /member/dashboard. Toggling ON restored it (count=1). Suggest and Relance switches also persist to vdc_ia_suggest/vdc_ia_relance. Bureau /admin/dashboard shows admin-welcome-message with the same contextual pattern (Bonjour Bureau — Aux couleurs de l'automne, ...). No runtime console errors beyond expected 401/403 pre-auth resource fetches.",
+  "rca of the issue": "n/a"
+}

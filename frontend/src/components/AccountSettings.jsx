@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, Clock, Plane, Power, Trash2, Save, PawPrint, Film, Play } from "lucide-react";
+import { Bell, Clock, Plane, Power, Trash2, Save, PawPrint, Film, Play, Sparkles } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SectionCard, Chip } from "@/components/Ui";
@@ -29,6 +29,12 @@ export const AccountSettings = () => {
   const [soundOn, setSoundOnState] = useState(isSoundOn());
   const [dogIcons, setDogIcons] = useState(localStorage.getItem("vdc_dog_icons") !== "off");
   const [kenBurns, setKenBurns] = useState(localStorage.getItem("vdc_kenburns") !== "off");
+  const [ia, setIa] = useState({
+    welcome: localStorage.getItem("vdc_ia_welcome") !== "off",
+    suggest: localStorage.getItem("vdc_ia_suggest") !== "off",
+    relance: localStorage.getItem("vdc_ia_relance") !== "off",
+  });
+  const setIaPref = (key, storeKey, val) => { localStorage.setItem(storeKey, val ? "on" : "off"); setIa((p) => ({ ...p, [key]: val })); };
   const toggleLocal = (key, val, setter) => { localStorage.setItem(key, val ? "on" : "off"); setter(val); };
 
   const load = () => api.get("/account/settings").then((r) => {
@@ -140,6 +146,40 @@ export const AccountSettings = () => {
             onCheckedChange={(v) => toggleLocal("vdc_kenburns", v, setKenBurns)} />
         </label>
         <PawPrint className="mt-3 h-4 w-4 vdc-paw-accent" aria-hidden />
+      </SectionCard>
+
+      <SectionCard title="IA douce & messages" icon={Sparkles} testId="account-ia-card"
+        subtitle="Des aides discrètes, jamais intrusives. Aucun traitement n'a lieu sans votre action.">
+        <label className="flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+          <span>
+            <span className="font-semibold text-[var(--marine)]">Message d'accueil personnalisé</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Un mot chaleureux selon l'heure et la saison, en haut du tableau de bord.
+            </span>
+          </span>
+          <Switch checked={ia.welcome} data-testid="account-ia-welcome-switch"
+            onCheckedChange={(v) => setIaPref("welcome", "vdc_ia_welcome", v)} />
+        </label>
+        <label className="mt-3 flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+          <span>
+            <span className="font-semibold text-[var(--marine)]">Suggestions dans le carnet</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Rappels discrets (champ vide, date, tag) à la sauvegarde ou après une pause.
+            </span>
+          </span>
+          <Switch checked={ia.suggest} data-testid="account-ia-suggest-switch"
+            onCheckedChange={(v) => setIaPref("suggest", "vdc_ia_suggest", v)} />
+        </label>
+        <label className="mt-3 flex items-center justify-between gap-4 rounded-lg border p-3 text-sm">
+          <span>
+            <span className="font-semibold text-[var(--marine)]">Relance douce après une absence</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Un accueil bienveillant si vous revenez après une longue pause.
+            </span>
+          </span>
+          <Switch checked={ia.relance} data-testid="account-ia-relance-switch"
+            onCheckedChange={(v) => setIaPref("relance", "vdc_ia_relance", v)} />
+        </label>
       </SectionCard>
       {isBureau && (
         <div className="rounded-lg bg-[var(--marine-a8)] px-4 py-3 text-sm text-[var(--marine)]"

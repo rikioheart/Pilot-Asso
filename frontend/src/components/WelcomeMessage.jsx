@@ -1,38 +1,47 @@
 import { useMemo } from "react";
 import { PawPrint } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
-// Bibliothèque par défaut — lien humain-chien, encouragement, bienveillance, quotidien.
+export const iaWelcomeEnabled = () => localStorage.getItem("vdc_ia_welcome") !== "off";
+
+// Bibliothèque — lien humain-chien, encouragement, bienveillance, quotidien.
 const LIBRARY = [
-  "Chaque séance avec votre chien est un pas de plus vers la confiance mutuelle.",
-  "La patience que vous apprenez avec votre chien, vous l'offrez aussi aux autres.",
-  "Un petit progrès aujourd'hui vaut mieux qu'une grande attente demain.",
-  "Votre chien ne juge pas vos jours difficiles — il les traverse avec vous.",
-  "Prendre soin d'un chien, c'est réapprendre la douceur du moment présent.",
-  "La constance, pas la perfection : c'est ainsi que grandit le lien.",
-  "Chaque balade est une conversation sans mots avec votre compagnon.",
-  "Observer son chien, c'est déjà commencer à le comprendre.",
-  "Le calme que vous cultivez à la maison rejaillit sur tout le groupe.",
-  "Un chien heureux commence par un humain apaisé — prenez soin de vous aussi.",
-  "Les petites victoires du quotidien construisent de grandes complicités.",
-  "Merci d'être là pour votre chien et pour l'association aujourd'hui.",
+  "chaque séance avec votre chien est un pas de plus vers la confiance mutuelle.",
+  "la patience apprise avec votre chien, vous l'offrez aussi aux autres.",
+  "un petit progrès aujourd'hui vaut mieux qu'une grande attente demain.",
+  "prendre soin d'un chien, c'est réapprendre la douceur du moment présent.",
+  "la constance, pas la perfection : c'est ainsi que grandit le lien.",
+  "chaque balade est une conversation sans mots avec votre compagnon.",
+  "le calme que vous cultivez rejaillit sur tout le groupe.",
+  "merci d'être là pour votre chien et pour l'association aujourd'hui.",
 ];
 
-const KEY = "vdc_welcome_last";
+const greeting = (h) => (h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir");
+const season = (m) => (m <= 1 || m === 11 ? "En cette saison d'hiver, "
+  : m <= 4 ? "Le printemps arrive, "
+    : m <= 7 ? "Profitez de l'été, "
+      : "Aux couleurs de l'automne, ");
 
-const pick = (dogName, empty) => {
-  if (empty && dogName) return `${dogName} attend sa première séance — on commence ?`;
-  const last = Number(sessionStorage.getItem(KEY) ?? -1);
+const build = (firstName, dogName, empty) => {
+  const now = new Date();
+  const hello = firstName ? `${greeting(now.getHours())} ${firstName}` : greeting(now.getHours());
+  if (empty && dogName) return `${hello} — ${dogName} attend sa première séance, on commence ?`;
+  const last = Number(sessionStorage.getItem("vdc_welcome_last") ?? -1);
   let i = Math.floor(Math.random() * LIBRARY.length);
   if (LIBRARY.length > 1 && i === last) i = (i + 1) % LIBRARY.length;
-  sessionStorage.setItem(KEY, String(i));
-  let msg = LIBRARY[i];
-  if (dogName) msg = msg.replace("votre chien", dogName).replace("Votre chien", dogName);
-  return msg;
+  sessionStorage.setItem("vdc_welcome_last", String(i));
+  let phrase = LIBRARY[i];
+  if (dogName) phrase = phrase.replace("votre chien", dogName);
+  const prefix = Math.random() < 0.5 ? season(now.getMonth()) : "";
+  return `${hello} — ${prefix}${phrase}`;
 };
 
-/** Prompt 10 — Message d'accueil chaleureux, différent à chaque connexion (jamais 2× de suite). */
+/** Prompt 10/11 — Message d'accueil contextuel (heure, saison, prénom), différent à chaque session. */
 export const WelcomeMessage = ({ dogName, empty = false, testId = "welcome-message" }) => {
-  const message = useMemo(() => pick(dogName, empty), [dogName, empty]);
+  const { profile } = useAuth();
+  const firstName = profile?.first_name || null;
+  const message = useMemo(() => build(firstName, dogName, empty), [firstName, dogName, empty]);
+  if (!iaWelcomeEnabled()) return null;
   return (
     <div data-testid={testId}
       className="mb-6 flex items-center gap-3 rounded-xl border border-[var(--sable)] bg-[var(--marine-a5)] px-4 py-3">

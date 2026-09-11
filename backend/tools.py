@@ -135,3 +135,20 @@ async def delete_drive(resource_id: str, admin: dict = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Ressource introuvable")
     await log_action(admin, "DELETE", "drive_resources", resource_id)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- Libellés de navigation configurables (Prompt 11)
+@router.get("/nav-labels")
+async def get_nav_labels(user: dict = Depends(active_user)):
+    doc = await db.app_settings.find_one({"key": "nav_labels"}, {"_id": 0}) or {}
+    return {"labels": doc.get("labels", {})}
+
+
+@router.put("/nav-labels")
+async def put_nav_labels(payload: dict, admin: dict = Depends(require_admin)):
+    labels = {str(k): str(v).strip() for k, v in (payload.get("labels") or {}).items() if str(v).strip()}
+    await db.app_settings.update_one({"key": "nav_labels"},
+                                     {"$set": {"key": "nav_labels", "labels": labels,
+                                               "updated_at": iso(now_utc())}}, upsert=True)
+    await log_action(admin, "UPDATE", "nav_labels", "nav_labels", new_value={"count": len(labels)})
+    return {"labels": labels}

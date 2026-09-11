@@ -16,6 +16,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { HelpButton } from "@/components/HelpButton";
 import { QuickActionsFab } from "@/components/QuickActionsFab";
 import { FocusToggle, FocusPomodoro } from "@/components/FocusMode";
+import { useNavLabels } from "@/lib/useNavLabels";
 import { OfflineIndicator } from "@/components/OfflineMode";
 import { useBlockVisibleFn } from "@/components/BlockVisibility";
 import { LogoLockup, Logo } from "@/components/Logo";
@@ -184,12 +185,18 @@ export const AppShell = ({ children }) => {
   const iconFor = (to, fallback) => ICON_LIBRARY[moduleIcons[to]] || fallback;
 
   const base = user?.role === "ADMIN_BUREAU" ? BUREAU_NAV : user?.role === "PROFESSIONNEL" ? PRO_NAV : MEMBER_NAV;
+  const navLabels = useNavLabels();
   const nav = useMemo(() => base
     .filter((group) => group.items || ((!group.permission || can(group.permission)) && blockVisible(group.block)))
-    .map((group) => group.items
-      ? { ...group, items: group.items.filter((item) => (!item.permission || can(item.permission)) && blockVisible(item.block)) }
-      : group)
-    .filter((group) => !group.items || group.items.length > 0), [base, can, blockVisible]);
+    .map((group) => {
+      const glabel = navLabels[group.label] || group.label;
+      return group.items
+        ? { ...group, label: glabel, items: group.items
+            .filter((item) => (!item.permission || can(item.permission)) && blockVisible(item.block))
+            .map((item) => ({ ...item, label: navLabels[item.label] || item.label })) }
+        : { ...group, label: glabel };
+    })
+    .filter((group) => !group.items || group.items.length > 0), [base, can, blockVisible, navLabels]);
 
   const activeGroup = nav.find((group) => group.items?.some((item) => location.pathname.startsWith(item.to)));
   const [expanded, setExpanded] = useState(activeGroup?.label || nav.find((g) => g.items)?.label);
