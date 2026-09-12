@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { NotebookPen, Plus, Trash2, Target, ImagePlus, CheckCircle2, Lock } from "lucide-react";
+import { NotebookPen, Plus, Trash2, Target, ImagePlus, CheckCircle2, Lock, Sparkles, X } from "lucide-react";
 import { api, apiError, fileUrl } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { SectionCard, ProgressBar } from "@/components/Ui";
@@ -16,6 +16,10 @@ export function DogJournal({ dogId, dogName }) {
   const [data, setData] = useState(null);
   const [drafts, setDrafts] = useState({});
   const [obj, setObj] = useState({ label: "", target: 5 });
+  const [suggestion, setSuggestion] = useState(null);
+  const [dismissed, setDismissed] = useState(() => new Set());
+  const idleTimer = useRef(null);
+  useEffect(() => () => clearTimeout(idleTimer.current), []);
 
   const load = useCallback(async () => {
     try { const { data } = await api.get(`/dogs/${dogId}/journal`); setData(data); }
@@ -26,6 +30,37 @@ export function DogJournal({ dogId, dogName }) {
   if (!data) return null;
   const { template, journal, can_write_all, is_owner, is_manager } = data;
   const canWrite = (sid) => can_write_all || (is_owner && (journal.owner_write_sections || []).includes(sid));
+
+  // Prompt 11 F2 — suggestions douces, ignorables, respectant la préférence vdc_ia_suggest.
+  const suggestEnabled = () => localStorage.getItem("vdc_ia_suggest") !== "off";
+  const buildSuggestion = (trigger, text) => {
+    if (!suggestEnabled()) return null;
+    const secs = template.sections || [];
+    const entriesOf = (s) => (journal.entries || {})[s.section_id] || [];
+    const objSec = secs.find((s) => s.kind === "OBJECTIVES");
+    const photoSec = secs.find((s) => s.kind === "PHOTOS");
+    const hasText = secs.some((s) => s.kind === "TEXT" && entriesOf(s).length > 0);
+    const cands = [];
+    if (trigger === "idle" && text && text.trim().length > 0 && text.trim().length < 20)
+      cands.push({ key: "short-note", text: "Quelques précisions rendront ce suivi plus parlant plus tard — notez à votre rythme." });
+    if (objSec && entriesOf(objSec).length === 0 && canWrite(objSec.section_id))
+      cands.push({ key: "obj-empty", text: "Vous pourriez définir un premier objectif (ex. « Rappel ») pour visualiser la progression." });
+    if (photoSec && entriesOf(photoSec).length === 0 && hasText && canWrite(photoSec.section_id))
+      cands.push({ key: "photo-empty", text: "Une photo viendrait joliment illustrer ce moment de suivi." });
+    if (trigger === "save")
+      cands.push({ key: "save-keep-going", text: "Bien noté. Un petit mot à chaque séance rendra la progression facile à relire plus tard." });
+    return cands.find((c) => !dismissed.has(c.key)) || null;
+  };
+  const maybeSuggest = (trigger, text) => { const s = buildSuggestion(trigger, text); if (s) setSuggestion(s); };
+  const onDraftChange = (sid, value) => {
+    setDrafts({ ...drafts, [sid]: value });
+    clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => maybeSuggest("idle", value), 10000);
+  };
+  const dismissSuggestion = () => {
+    if (suggestion) setDismissed((prev) => new Set(prev).add(suggestion.key));
+    setSuggestion(null);
+  };
 
   const act = async (fn, msg) => {
     try { await fn(); if (msg) toast.success(msg); load(); } catch (e) { toast.error(apiError(e)); }
@@ -42,12 +77,15 @@ export function DogJournal({ dogId, dogName }) {
     if (!text) return;
     act(() => api.post(`/dogs/${dogId}/journal/sections/${sid}/entries`, { text }), "Entrée ajoutée");
     setDrafts({ ...drafts, [sid]: "" });
+    clearTimeout(idleTimer.current);
+    maybeSuggest("save");
   };
   const addObjective = (sid) => {
     if (!obj.label.trim()) return toast.error("Nom de l'objectif requis");
     act(() => api.post(`/dogs/${dogId}/journal/sections/${sid}/entries`,
       { label: obj.label, target: Number(obj.target) || 1 }), "Objectif ajouté");
     setObj({ label: "", target: 5 });
+    maybeSuggest("save");
   };
   const bumpObjective = (sid, e, delta) =>
     act(() => api.put(`/dogs/${dogId}/journal/sections/${sid}/objectives/${e.entry_id}/progress`, { delta }));
@@ -161,7 +199,7 @@ export function DogJournal({ dogId, dogName }) {
                       <div className="space-y-2">
                         <Textarea rows={2} value={drafts[s.section_id] || ""} placeholder="Ajouter une note…"
                           data-testid={`journal-text-input-${s.section_id}`}
-                          onChange={(ev) => setDrafts({ ...drafts, [s.section_id]: ev.target.value })} />
+                          onChange={(ev) => onDraftChange(s.section_id, ev.target.value)} />
                         <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
                           data-testid={`journal-text-add-${s.section_id}`} onClick={() => addText(s.section_id)}>
                           <Plus className="mr-1 h-3.5 w-3.5" /> Ajouter
@@ -201,6 +239,17 @@ export function DogJournal({ dogId, dogName }) {
               </div>
             );
           })}
+        </div>
+      )}
+      {suggestion && suggestEnabled() && (
+        <div data-testid="journal-suggestion"
+          className="mt-4 flex items-start gap-2 rounded-xl border border-[var(--sable)] bg-[var(--marine-a5)] px-3 py-2.5 text-sm vdc-pop">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[var(--bordeaux)]" />
+          <p className="flex-1 text-[var(--marine)]">{suggestion.text}</p>
+          <button data-testid="journal-suggestion-dismiss" aria-label="Ignorer" onClick={dismissSuggestion}
+            className="rounded-full p-0.5 text-muted-foreground hover:text-[var(--marine)]">
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
     </SectionCard>

@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { SectionCard, EmptyState } from "@/components/Ui";
 import { NewsFeed } from "@/components/NewsFeed";
 import { WelcomeMessage } from "@/components/WelcomeMessage";
+import { RelanceWelcome } from "@/components/RelanceWelcome";
 import { DogAvatar } from "@/components/DogAvatar";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +21,7 @@ export const BaseHomeBlocks = () => {
 
   return (
     <div className="space-y-6" data-testid="home-base-blocks">
+      <RelanceWelcome />
       <WelcomeMessage dogName={dogs[0]?.name} empty={dogs.length === 0 && next.length === 0} />
       <section data-testid="home-news"><NewsFeed /></section>
 

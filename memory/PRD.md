@@ -317,12 +317,19 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   `GET/PUT /api/nav-labels` (Bureau) stockés dans `app_settings` (map libellé d'origine → nouveau) ;
   `lib/useNavLabels.js` (cache + listeners, application immédiate) ; `AppShell` mappe les libellés d'onglets et
   de catégories ; interface `NavLabelsSettings` dans les Réglages de l'association. Défauts = valeurs actuelles.
+- **Fonction 2 — Suggestions douces dans le carnet** (testé 100 % — iteration_32) : `DogJournal` affiche une
+  bulle légère ignorable (`journal-suggestion`) déclenchée à l'enregistrement d'une entrée **ou après 10 s
+  d'inactivité** de frappe ; suggestions constructives (définir un objectif, ajouter une photo, préciser une
+  note courte, encouragement au suivi régulier). Respecte la préférence `vdc_ia_suggest` ; une suggestion
+  ignorée ne réapparaît pas dans la session.
+- **Fonction 3 — Détection de décrochage & relance douce** (testé 100 % backend curl + frontend iteration_32) :
+  `server.py` `compute_relance()`/`record_login()` — au login (mot de passe **et** Google), si > 21 j sans
+  connexion, compte établi (> 21 j) et pas de relance dans les 30 derniers jours, la réponse renvoie
+  `relance:{days}` ; `previous_login` et `relance_shown_at` tracés. `AuthContext.applySession` stocke la relance
+  en sessionStorage ; `RelanceWelcome` affiche une bannière chaleureuse ignorable **une seule fois** sur les
+  dashboards membre/pro/bureau, respectant `vdc_ia_relance`.
 - **Reste à faire (P1)** :
-  - **Fonction 2** — Logique de suggestions dans le carnet (bulle légère ignorable ; à la sauvegarde ou après
-    10 s d'inactivité ; respecte `vdc_ia_suggest`).
-  - **Fonction 3** — Détection de décrochage (>21 j sans connexion malgré activité régulière) + relance douce à la
-    reconnexion, 1×/30 j ; respecte `vdc_ia_relance`. Nécessite suivi `previous_login` côté backend.
-  - Migration éventuelle des préférences IA vers `/account/settings` (sync multi-appareils).
+  - Migration éventuelle des préférences IA (`vdc_ia_*`) vers `/account/settings` (sync multi-appareils).
 
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·

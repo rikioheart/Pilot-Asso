@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }) => {
 
   const applySession = (data) => {
     if (data.access_token) localStorage.setItem("vdc_token", data.access_token);
+    if (data.relance) sessionStorage.setItem("vdc_relance", JSON.stringify(data.relance));
     setUser(data.user);
   };
 

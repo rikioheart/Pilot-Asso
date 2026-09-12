@@ -153,6 +153,44 @@ async def register(payload: RegisterIn, response: Response):
     return {"user": clean_user(user), "access_token": access}
 
 
+def compute_relance(user: dict):
+    """Prompt 11 F3 — décrochage : > 21 j sans connexion malgré un compte établi, 1×/30 j max."""
+    old_last = user.get("last_login")
+    created = user.get("created_at")
+    if not old_last or not created:
+        return None
+    try:
+        last_dt = datetime.fromisoformat(old_last)
+        created_dt = datetime.fromisoformat(created)
+    except (ValueError, TypeError):
+        return None
+    now = now_utc()
+    if (now - created_dt).days < 21:
+        return None
+    delta = (now - last_dt).days
+    if delta <= 21:
+        return None
+    shown = user.get("relance_shown_at")
+    if shown:
+        try:
+            if (now - datetime.fromisoformat(shown)).days < 30:
+                return None
+        except (ValueError, TypeError):
+            pass
+    return {"days": delta}
+
+
+async def record_login(user: dict):
+    """Met à jour last_login/previous_login et renvoie l'éventuelle relance douce."""
+    relance = compute_relance(user)
+    updates = {"last_login": iso(now_utc()), "previous_login": user.get("last_login")}
+    if relance:
+        updates["relance_shown_at"] = iso(now_utc())
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": updates})
+    user["last_login"] = updates["last_login"]
+    return relance
+
+
 @api.post("/auth/login")
 async def login(payload: LoginIn, request: Request, response: Response):
     email = payload.email.lower()
@@ -171,12 +209,14 @@ async def login(payload: LoginIn, request: Request, response: Response):
     if not user.get("is_active"):
         raise HTTPException(status_code=403, detail="Compte désactivé")
     await db.login_attempts.delete_one({"identifier": ident})
-    await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"last_login": iso(now_utc())}})
+    relance = await record_login(user)
     access = create_access_token(user["user_id"], user["email"])
     set_auth_cookies(response, access, create_refresh_token(user["user_id"]))
     await log_action(user, "LOGIN", "auth", user["user_id"])
-    user["last_login"] = iso(now_utc())
-    return {"user": clean_user(user), "access_token": access}
+    result = {"user": clean_user(user), "access_token": access}
+    if relance:
+        result["relance"] = relance
+    return result
 
 
 @api.post("/auth/session")
@@ -204,10 +244,13 @@ async def google_session(request: Request, response: Response):
         "user_id": user["user_id"], "session_token": session_token,
         "expires_at": iso(now_utc() + timedelta(days=7)), "created_at": iso(now_utc()),
     })
-    await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"last_login": iso(now_utc())}})
+    relance = await record_login(user)
     set_auth_cookies(response, session_token)
     await log_action(user, "LOGIN_GOOGLE", "auth", user["user_id"])
-    return {"user": clean_user(user), "access_token": session_token}
+    result = {"user": clean_user(user), "access_token": session_token}
+    if relance:
+        result["relance"] = relance
+    return result
 
 
 @api.get("/auth/me")

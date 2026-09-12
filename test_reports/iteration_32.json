@@ -1,0 +1,32 @@
+{
+  "summary": "Prompt 11 IA douce — Features 2 (suggestions carnet) & 3 (relance douce) validées côté frontend. Membre1 backdaté en Mongo (created_at -90j, last_login -30j, relance_shown_at supprimé) puis reconnecté : banniere relance-welcome visible avec texte chaleureux « Contente de vous revoir Sophie… Cela fait environ 4 semaines… », lien 'Reprendre en douceur' (relance-welcome-resume) et croix (relance-welcome-dismiss) présents. Reload de la page : banniere non réaffichée (sessionStorage consommée) — OK. Toggle vdc_ia_relance=off avant login : banniere non affichée — OK. Feature 2 : Bureau active le carnet et ouvre la section TEXT 'progression' à Sophie ; côté membre, saisie de <20 caractères puis pause de 10s -> bulle journal-suggestion affichée avec texte doux 'Quelques précisions rendront ce suivi plus parlant plus tard…' + bouton journal-suggestion-dismiss OK. Toggle vdc_ia_suggest=off -> bulle non affichée après enregistrement — OK. Regression : dashboards membre, pro et admin se chargent sans erreur console.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "DogJournal - membre ajoute une note",
+        "issue": "Après un reload de la fiche Nikko (dialog rouvert), l'ajout d'une entrée texte par le propriétaire retourne un toast d'erreur 'Le carnet n'est pas activé pour ce chien'. Reproductible : le premier ajout après activation Bureau réussit, mais une fois la fiche fermée/rouverte, le POST /dogs/{id}/journal/sections/{sid}/entries échoue. Le carnet reste pourtant coché 'Activé par le Bureau'. À vérifier côté backend (peut-être un flag manquant `enabled_by_owner` requis, ou détection is_owner cassée après reload). Non bloquant pour Prompt 11 F2 (les suggestions fonctionnent), mais bug pré-existant potentiel du carnet à investiguer.",
+        "affected_selectors": ["journal-text-add-progression", "journal-active"]
+      }
+    ],
+    "design_issues": []
+  },
+  "critical_code_review_comments": [
+    "DogJournal.buildSuggestion : le trigger 'save' n'a AUCUN candidat déclenchable pour un propriétaire dont une seule section TEXT lui est ouverte : `obj-empty` et `photo-empty` requièrent canWrite(objSec/photoSec) qui renvoie false. Résultat : la promesse 'suggestion à la sauvegarde' du produit n'est effective que si le membre a également accès aux sections OBJECTIVES ou PHOTOS. Le déclenchement idle 10s fonctionne bien. Envisager un candidat 'save' générique doux (ex. 'Bien noté — pensez à ajouter une date/tag la prochaine fois' ou proposer d'ouvrir un objectif) même sans droit d'écriture, ou traiter le cas single-section.",
+    "RelanceWelcome consomme sessionStorage au premier render du composant (useState initializer). Si <RelanceWelcome/> est monté deux fois simultanément (BaseHomeBlocks + AdminDashboard sur des routes distinctes), seule la première instance verra la valeur ; ok en pratique mais fragile en cas de refactor multi-layouts.",
+    "AuthContext.applySession stocke `data.relance` en sessionStorage mais applySession n'est pas invoqué par le flow /auth/me (refresh). Cela signifie que si un utilisateur se reconnecte via cookies déjà valides (pas de POST /auth/login), la banniere n'apparaîtra jamais. Actuel: le seul chemin de déclenchement est login form / google callback. À documenter."
+  ],
+  "test_report_links": ["/app/scripts/backdate_user.py"],
+  "action_items": [
+    "Investiguer le toast 'Le carnet n'est pas activé pour ce chien' après reload de la fiche côté membre (Sophie/Nikko). L'entrée texte échoue au 2e essai malgré 'Activé par le Bureau' coché — probable bug backend/état non lié à Prompt 11.",
+    "Éventuellement enrichir buildSuggestion('save') pour proposer un message doux même sans droit sur OBJECTIVES/PHOTOS (couvre le cas single-section)."
+  ],
+  "updated_files": ["/app/scripts/backdate_user.py (nouveau helper de test)"],
+  "success_rate": { "backend": "n/a (skipped per request)", "frontend": "100% des critères Prompt 11 F2/F3 validés" },
+  "test_credentials": "Admin: associationlavoixduchien@gmail.com/VoixDuChien2026! ; Membre1: membre1.demo@lavoixduchien.fr/Demo2026! ; Pro1: pro1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Backdate en Mongo appliqué à membre1.demo@lavoixduchien.fr via /app/scripts/backdate_user.py (created_at=-90j, last_login=-30j, relance_shown_at unset). Journal Nikko activé par Bureau et section 'progression' ouverte au propriétaire — état laissé tel quel.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Le helper /app/scripts/backdate_user.py permet de rejouer le scénario relance ; l'exécuter avant chaque login membre pour reproduire la banniere. Le journal Nikko a été activé par le Bureau et la section 'progression' ouverte à Sophie — utile pour d'éventuels retests Prompt 11 F2. Le bug d'écriture après reload du carnet est probablement antérieur à Prompt 11 et hors scope de ce test."
+}
