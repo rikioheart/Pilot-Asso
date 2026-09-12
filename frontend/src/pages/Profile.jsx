@@ -40,7 +40,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (user?.status !== "ACTIVE") return;
-    if (user.role === "PARTICULIER") api.get("/dogs").then((r) => setDogs(r.data)).catch(() => {});
+    if (user.role === "PARTICULIER") api.get("/dogs").then((r) => setDogs(Array.isArray(r.data?.items) ? r.data.items : [])).catch(() => {});
     if (isPro) {
       api.get("/professionals/me").then((r) => setPro({
         ...r.data,
@@ -95,7 +95,7 @@ export default function Profile() {
     e.preventDefault();
     try {
       const { data } = await api.post("/dogs", newDog);
-      setDogs([...dogs, data]);
+      setDogs((prev) => [...(Array.isArray(prev) ? prev : []), data]);
       setNewDog({ name: "", breed: "", character: "" });
       toast.success("Chien ajouté");
     } catch (err) {
@@ -321,12 +321,12 @@ export default function Profile() {
               <Plus className="mr-2 h-4 w-4" /> Ajouter mon chien
             </Button>
           </form>
-          {dogs.length === 0 ? (
+          {(Array.isArray(dogs) ? dogs : []).length === 0 ? (
             <EmptyState testId="dogs-empty" title="Aucun chien enregistré"
               description="Renseignez votre chien : ce n'est pas un dossier médical, seulement les informations utiles." />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {dogs.map((d) => (
+              {(Array.isArray(dogs) ? dogs : []).map((d) => (
                 <div key={d.dog_id} className="flex items-start justify-between rounded-xl border bg-card p-4"
                   data-testid={`dog-card-${d.dog_id}`}>
                   <div>

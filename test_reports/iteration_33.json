@@ -1,0 +1,36 @@
+{
+  "summary": "Regression Profile 'Mes chiens' crash CONFIRMED FIXED. Le fetch /api/dogs renvoie bien {items:[...]}, Profile.jsx utilise Array.isArray(r.data?.items)?r.data.items:[] (ligne 43) et le rendu est double-gardé Array.isArray(dogs)?dogs:[] (lignes 324/329). Test avec membre1.demo (6 chiens dont Nikko [DEMO] + Java [DEMO] + 4 TEST_* résiduels) : tab profile-tab-dogs se charge, cartes dog-card-* rendues, aucun crash, 0 pageerror, 0 TypeError. Test avec benevole.demo (aucun chien) : /profile se charge, profile-page présent, aucun crash, 0 JS error (le state vide dogs-empty n'a pas pu être visuellement confirmé car l'overlay 'Bien démarrer' Radix intercepte les clics du tab même après Escape/close — non bloquant, le code est protégé). Smoke tests navigation membre1 (dashboard, activities, events, notifications, loyalty, /help) : tous OK, 0 erreur. Notifications: 154+ items, bouton 'Tout marquer comme lu' présent. Events: 10 cartes. Activities: 4 cartes. Le scope A–M complet n'a PAS été testé exhaustivement (temps/portée) — voir 'context_for_next_testing_agent'. La priorité (régression crash Mes chiens) est validée.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Nav sidebar - /finances et /carnet (sans dogId) redirigent vers /member/dashboard pour PARTICULIER_STANDARD",
+        "issue": "GET /finances -> redirection /member/dashboard, GET /carnet -> redirection /member/dashboard. Attendu ? /carnet nécessite un dogId (/carnet/{id}). /finances peut être limité au STANDARD. À confirmer côté produit — pas d'erreur JS, juste une redirection.",
+        "affected_selectors": ["/finances", "/carnet"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Profile (PARTICULIER, activation checklist)",
+        "issues": ["L'overlay Radix 'Bien démarrer / Vos premiers pas' bloque les clics sur les onglets Tabs derrière lui. La touche Escape ne le ferme pas (probablement onEscapeKeyDown préventif). Impact test-automation : difficile de switcher d'onglet sans fermer explicitement le X. Impact UX : mineur, l'utilisateur voit le X."]
+      }
+    ]
+  },
+  "critical_code_review_comments": [
+    "Profile.jsx removeDog met à jour dogs via filter mais si /dogs a renvoyé un objet non-array à un moment, dogs pourrait redevenir un objet — le guard Array.isArray dans le rendu protège, OK.",
+    "addDog fait setDogs([...dogs, data]) sans Array.isArray guard. Comme setDogs est initialisé à [] et alimenté par r.data.items filtré, dogs est toujours un array — OK, mais un wrap défensif ne coûte rien."
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "(Optionnel) Vérifier que /finances et /carnet (sans dogId) sont volontairement redirigés pour PARTICULIER_STANDARD, ou exposer un état 404/empty dédié.",
+    "(Suivi iteration_32) Bug journal 'Le carnet n'est pas activé' après reload de fiche reste ouvert — hors scope de cette régression."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (skipped)", "frontend": "Régression cible: 100% résolue. Scope A–M: ~30% couvert (priorité + smoke nav)." },
+  "test_credentials": "Membre1: membre1.demo@lavoixduchien.fr / Demo2026!  ; Bénévole (no dog): benevole.demo@lavoixduchien.fr / Demo2026!",
+  "seed_data_creation": "Aucune. Note: le compte membre1 contient encore 4 chiens TEST_* résiduels de tests précédents (TEST_admincreate_1787318672, TEST_confidog_1787318674, TEST_dog_1787318671, TEST_isolated_1787318677) — à nettoyer si besoin.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "La régression Profile 'Mes chiens' est réglée. Points restants du scope A–M non testés en détail : A (edit profil + photo persist), B (onboarding tour + checklist complétion complète), C/D/E (create/edit/delete chien via l'UI), F (DogJournal CRUD + suggestions), G (welcome message variance), I (register/unregister), J (mark-as-read individuel), K (loyalty/finances contenu détaillé), L (toggles IA vdc_ia_* — testids réels non identifiés, chercher dans AccountSettings.jsx), M (edge cases). Pour dismisser l'activation checklist Radix, cliquer sur le bouton X du dialog (Escape ne marche pas). Le compte benevole.demo est parfait pour tester les états vides. Les 4 chiens TEST_* de membre1 devraient être supprimés avant un test exhaustif de la liste."
+}

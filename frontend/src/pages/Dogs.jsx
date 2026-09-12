@@ -38,6 +38,7 @@ export default function Dogs() {
   const [members, setMembers] = useState([]);
   const [pros, setPros] = useState([]);
   const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(NEW_DOG);
   const [note, setNote] = useState("");
   const [report, setReport] = useState({ intervention_type: "EDUCATION", observations: "",
@@ -62,12 +63,27 @@ export default function Dogs() {
     setDetail(data);
   };
 
+  const openEdit = (dog) => {
+    setForm({ name: dog.name || "", breed: dog.breed || "", age: dog.age || "",
+      sex: dog.sex || "MALE", behavior_context: dog.behavior_context || "",
+      behavior_category: dog.behavior_category || "AUTRE", history: dog.history || "",
+      photo_file_id: dog.photo_file_id || null, owner_id: dog.owner_id || "" });
+    setEditId(dog.dog_id);
+    setDetail(null);
+    setOpen(true);
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     try {
-      await api.post("/dogs", { ...form, owner_id: form.owner_id || null });
-      toast.success("Fiche chien créée");
-      setOpen(false); setForm(NEW_DOG); load();
+      if (editId) {
+        await api.put(`/dogs/${editId}`, { ...form });
+        toast.success("Fiche mise à jour");
+      } else {
+        await api.post("/dogs", { ...form, owner_id: form.owner_id || null });
+        toast.success("Fiche chien créée");
+      }
+      setOpen(false); setForm(NEW_DOG); setEditId(null); load();
     } catch (e) { toast.error(apiError(e)); }
   };
 
@@ -167,9 +183,9 @@ export default function Dogs() {
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setForm(NEW_DOG); setEditId(null); } }}>
         <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto" data-testid="dog-dialog">
-          <DialogHeader><DialogTitle>Nouvelle fiche chien</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editId ? "Modifier la fiche chien" : "Nouvelle fiche chien"}</DialogTitle></DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div><Label>Nom du chien</Label>
@@ -225,7 +241,7 @@ export default function Dogs() {
                 onChange={(id) => setForm({ ...form, photo_file_id: id })} /></div>
             <DialogFooter>
               <Button type="submit" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                data-testid="dog-save-button">Créer la fiche</Button>
+                data-testid="dog-save-button">{editId ? "Enregistrer les modifications" : "Créer la fiche"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -246,6 +262,12 @@ export default function Dogs() {
                 <p className="text-sm text-muted-foreground">Propriétaire : {detail.dog.owner_name}</p>
               </DialogHeader>
               <div className="space-y-6">
+                {(detail.is_owner || detail.is_manager) && (
+                  <div>
+                    <Button variant="outline" size="sm" className="rounded-full" data-testid="dog-edit-button"
+                      onClick={() => openEdit(detail.dog)}>Modifier la fiche</Button>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="dog-info-blocks">
                   <InfoBlock label="Race" value={detail.dog.breed || "—"} />
                   <InfoBlock label="Âge" value={detail.dog.age || "—"} />

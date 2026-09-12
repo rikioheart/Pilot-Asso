@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 35 verification of iteration_34 targeted fixes (frontend only). Ran a Playwright pass against pilotage-voix.preview.emergentagent.com as membre1.demo (owner of Java [DEMO] — journal deja active bureau+owner sur section 'objectifs'). Resultats:\n\nFIX 1 — Owner DELETE own journal objective: OK. Sur /dogs > dog-card Java > detail dialog > Carnet de suivi > section 'objectifs', ajout d'un objectif 'TEST_iter35_<ts>' via journal-objective-label/target/add. Le testid journal-del-<entryId> EST bien present dans le DOM pour l'owner sur son propre objectif (jen_35723c870dcd), les boutons journal-objective-inc-<eid> et le -1 séance sont bien ABSENTS (owner ne bump pas la progression). Click delete + Confirmer -> l'objectif disparait immediatement du carnet.\n\nFIX 2 — Dog edit (scope D): OK. dog-edit-button visible dans dog-detail-dialog pour l'owner (membre1). Click ouvre dog-dialog avec titre 'Modifier la fiche chien' et bouton dog-save-button libelle 'Enregistrer les modifications'. Le formulaire est bien pre-rempli (dog-name-input='Java [DEMO]', dog-breed-input='Croisée border collie'). Modification du breed en 'Croisée border collie E7281' -> toast 'Fiche mise à jour' visible -> reload de la page -> la carte dog-card affiche bien le nouveau breed (persistance backend confirmee). Revert applique pour restaurer l'etat initial.\n\nREG 1 — Dog create: OK. dog-create-button ouvre dog-dialog titre 'Nouvelle fiche chien', bouton 'Créer la fiche'. Creation d'un TEST_Reg35_7281 (Labrador) -> apparait dans la grille immediatement.\n\nREG 2 — Profile 'Mes chiens' PARTICULIER: OK. /profile > profile-tab-dogs cliquable, l'onglet rend la liste des chiens (Java [DEMO], Nikko [DEMO], TEST_Reg35_7281) sans crash, sans redirection, avec le formulaire 'Ajouter mon chien' visible et les menu-cards utilisables. Aucun pageerror JS.\n\nBilan: 4/4 items scope = OK. Les 2 fixes principaux (FIX1, FIX2) sont bien effectifs et n'ont introduit aucune regression sur les 2 flows de controle.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Cleanup optionnel: supprimer le chien TEST_Reg35_7281 (dog_8a7686c56dda) laisse en base pour membre1 (le menu contextuel de la carte n'expose pas d'option Supprimer visible côté frontend pour l'owner PARTICULIER, uniquement dog-menu-<id> sans item Supprimer accessible via role=menuitem). A auditer si voulu par produit."
+  ],
+  "critical_code_review_comments": [
+    "DogJournal.jsx L152-165: la condition `(can_write_all || (is_owner && e.by_owner))` couvre bien le rendu du bouton delete pour l'owner sur objectifs; le +1/-1 reste correctement gate sous can_write_all. Coherence identique dans les sections TEXT (L193) et PHOTOS (L220).",
+    "Dogs.jsx openEdit/submit: la logique editId + PUT /dogs/{id} est propre; setDetail(null) avant setOpen(true) evite un empilement de dialogs. Bon reset via onOpenChange.",
+    "Mineur (non introduit par ces fixes, deja present) : la carte /dogs n'expose pas d'option 'Supprimer' user-facing pour PARTICULIER via dog-menu-<id>; a confirmer c'est intentionnel (le delete est reserve manager?)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (4/4 items OK)"},
+  "test_credentials": "membre1.demo@lavoixduchien.fr / Demo2026! (owner de Java [DEMO], Nikko [DEMO])",
+  "seed_data_creation": "TEST_Reg35_7281 (dog_8a7686c56dda) subsiste sous membre1. Objectif 'TEST_iter35_<ts>' cree puis supprime sur Java [DEMO] (nettoye). Aucun autre effet de bord.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Iteration 35 valide les 2 fixes cibles d'iteration_34 (owner-delete-objective + dog-edit) et confirme les 2 regressions (dog-create, profile Mes chiens). Java [DEMO] journal reste active bureau+owner sur section 'objectifs'. Un chien TEST_Reg35_7281 subsiste (nettoyage manuel possible via API backend ou compte admin).",
+  "rca of the issue": "N/A - toutes les corrections d'iteration_34 fonctionnent correctement."
+}

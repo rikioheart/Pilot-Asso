@@ -331,6 +331,23 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Reste à faire (P1)** :
   - Migration éventuelle des préférences IA (`vdc_ia_*`) vers `/account/settings` (sync multi-appareils).
 
+### Correctifs & test exhaustif profils PARTICULIER (12/09/2026, testé 100 % — iterations 33-35)
+- **Correctif crash `Profile.jsx`** : `/api/dogs` renvoie `{items:[...]}` ; `setDogs` lit `r.data.items` et le
+  rendu de la liste des chiens est gardé par `Array.isArray(dogs)?dogs:[]` (plus de crash sur l'onglet
+  « Mes chiens »). `addDog` sécurisé de même.
+- **Carnet — suppression par le propriétaire** (`DogJournal.jsx`) : l'auteur propriétaire peut désormais
+  supprimer **son propre objectif** (bouton `journal-del-*` visible pour `is_owner && by_owner`), aligné sur le
+  backend ; les boutons +1/−1 séance restent réservés au Bureau/Pro.
+- **Édition d'une fiche chien** (`Dogs.jsx`) : bouton « Modifier la fiche » (`dog-edit-button`) dans le détail,
+  réutilise le formulaire (pré-rempli) en mode édition → `PUT /api/dogs/{id}` (nom, race, âge, sexe, photo,
+  catégorie, contexte, historique) ; persistance vérifiée. Création inchangée.
+- **Test exhaustif PARTICULIER (A→M)** : compte/profil, onboarding/activation, CRUD chiens, carnet + suggestions
+  IA, dashboard, navigation par rôle (aucun onglet Pro/Bureau visible), activités/événements (inscription/
+  désinscription), notifications (lu/tout lu), fidélité, préférences IA — tous OK. `/finances` redirige vers le
+  dashboard pour `PARTICULIER_STANDARD` (comportement produit).
+- **Doc** : `test_credentials.md` réaligné sur le seed réel (membre1 = `PARTICULIER_STANDARD`, `membre2.demo`
+  n'existe pas) ; nettoyage des chiens de test `TEST_*` résiduels.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

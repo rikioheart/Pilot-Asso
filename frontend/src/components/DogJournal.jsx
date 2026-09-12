@@ -149,14 +149,16 @@ export function DogJournal({ dogId, dogName }) {
                           <span className="text-xs font-semibold text-[var(--bordeaux)]">{e.done}/{e.target} séances</span>
                         </div>
                         <div className="mt-1"><ProgressBar value={Math.round((e.done / e.target) * 100)} /></div>
-                        {can_write_all && (
+                        {(can_write_all || (is_owner && e.by_owner)) && (
                           <div className="mt-2 flex gap-2">
+                            {can_write_all && (<>
                             <Button size="sm" variant="outline" className="h-7 rounded-full px-2 text-xs"
                               data-testid={`journal-objective-inc-${e.entry_id}`} onClick={() => bumpObjective(s.section_id, e, 1)}>
                               <CheckCircle2 className="mr-1 h-3 w-3" /> +1 séance
                             </Button>
                             <Button size="sm" variant="ghost" className="h-7 rounded-full px-2 text-xs"
                               onClick={() => bumpObjective(s.section_id, e, -1)}>−1</Button>
+                            </>)}
                             <button onClick={() => del(s.section_id, e)} data-testid={`journal-del-${e.entry_id}`}
                               className="ml-auto text-muted-foreground hover:text-[var(--bordeaux)]"><Trash2 className="h-3.5 w-3.5" /></button>
                           </div>
