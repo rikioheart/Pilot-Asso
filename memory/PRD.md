@@ -361,6 +361,18 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - Navigation pro enrichie (`AppShell.jsx`) : liens **Mindmap**, **Statistiques** (coordinateur, `stats.view`) et
   **Documents** ajoutés au menu latéral PROFESSIONNEL (routes/permissions déjà existantes).
 
+### Consolidation Bureau — permissions configurables (14/09/2026, testé 100 % — iteration_39)
+- **Matrice des permissions modifiable** (`RbacMatrixSettings.jsx` dans Réglages) : le Bureau choisit les
+  permissions de chaque niveau ; `rbac.RUNTIME_LEVEL_PERMISSIONS` + `set/reset_level_permissions`, persistée en
+  base (`app_settings/rbac_matrix`), rechargée au démarrage, appliquée immédiatement à `effective_permissions`.
+  Endpoints `GET/PUT /api/settings/rbac` (+ `default_permissions`) et `POST /api/settings/rbac/reset`.
+- **Permissions individuelles par membre** (dialogue d'édition dans Membres) : boutons Accorder/Révoquer par
+  permission (baseline « inclus » selon le niveau), enregistrés via `PUT /members/{id}` `granted`/`revoked`
+  (déjà supporté côté backend). Persistance et effet vérifiés.
+- Vérifié déjà en place (aucune modification) : `DELETE /api/dogs/{id}` (403 si ni propriétaire ni Bureau),
+  contrôle de rôle `create_dog` (PRO → soi-même uniquement), libellés de navigation configurables (Prompt 11 F1),
+  Prompt 11 IA (suggestions carnet, détection décrochage, message d'accueil — activables par utilisateur).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

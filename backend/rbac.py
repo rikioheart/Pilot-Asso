@@ -64,6 +64,22 @@ LEVEL_PERMISSIONS = {
     "REFERENT_BENEVOLE": _REFERENT,
 }
 
+# Matrice effective niveau → permissions. Copie modifiable par le Bureau et persistée en base ;
+# les valeurs du code ci-dessus restent les valeurs par défaut (réinitialisation possible).
+RUNTIME_LEVEL_PERMISSIONS = {k: list(v) for k, v in LEVEL_PERMISSIONS.items()}
+
+
+def set_level_permissions(matrix: dict) -> None:
+    """Applique une matrice niveau→permissions (valeurs filtrées contre ALL_PERMISSIONS)."""
+    for level in RUNTIME_LEVEL_PERMISSIONS:
+        if level in matrix and isinstance(matrix[level], list):
+            RUNTIME_LEVEL_PERMISSIONS[level] = [p for p in matrix[level] if p in ALL_PERMISSIONS]
+
+
+def reset_level_permissions() -> None:
+    for k, v in LEVEL_PERMISSIONS.items():
+        RUNTIME_LEVEL_PERMISSIONS[k] = list(v)
+
 DEFAULT_LEVEL = {
     ROLE_ADMIN: "BUREAU",
     ROLE_PRO: "PRO_STANDARD",
@@ -80,7 +96,7 @@ LEVELS_BY_ROLE = {
 def effective_permissions(user: dict) -> list:
     if user.get("role") == ROLE_ADMIN:
         return list(ALL_PERMISSIONS)
-    perms = set(LEVEL_PERMISSIONS.get(user.get("access_level"), []))
+    perms = set(RUNTIME_LEVEL_PERMISSIONS.get(user.get("access_level"), []))
     overrides = user.get("permission_overrides") or {}
     for p in overrides.get("granted", []):
         if p in ALL_PERMISSIONS:

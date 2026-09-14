@@ -6,7 +6,7 @@ import { PageHeader, EmptyState } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STATUS_STYLE = {
@@ -35,8 +35,13 @@ export default function Members() {
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [collapsed, setCollapsed] = useState({});
+  const [permCatalog, setPermCatalog] = useState(null);
   const status = params.get("status") || "";
   const role = params.get("role") || "";
+
+  useEffect(() => {
+    api.get("/settings/rbac").then((r) => setPermCatalog(r.data)).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -58,15 +63,27 @@ export default function Members() {
   const saveMember = async () => {
     try {
       await api.put(`/members/${editing.user_id}`,
-        { role: editing.newRole, access_level: editing.newLevel });
+        { role: editing.newRole, access_level: editing.newLevel,
+          granted: editing.granted || [], revoked: editing.revoked || [] });
       await api.put(`/members/${editing.user_id}/category`,
         { member_category: editing.newCategory });
-      toast.success("Rôle et catégorie mis à jour");
+      toast.success("Rôle, permissions et catégorie mis à jour");
       setEditing(null);
       load();
     } catch (e) {
       toast.error(apiError(e));
     }
+  };
+
+  const permState = (p) => (editing?.granted?.includes(p) ? "granted"
+    : editing?.revoked?.includes(p) ? "revoked" : "default");
+  const setPermState = (p, state) => {
+    const granted = new Set(editing.granted || []);
+    const revoked = new Set(editing.revoked || []);
+    granted.delete(p); revoked.delete(p);
+    if (state === "granted") granted.add(p);
+    if (state === "revoked") revoked.add(p);
+    setEditing({ ...editing, granted: [...granted], revoked: [...revoked] });
   };
 
   const update = async (userId, payload, message) => {
@@ -186,7 +203,9 @@ export default function Members() {
                       )}
                       <Button size="sm" variant="ghost" data-testid={`member-edit-${m.user_id}`}
                         onClick={() => setEditing({ ...m, newRole: m.role, newLevel: m.access_level,
-                          newCategory: m.profile?.member_category || "PARTICULIER" })}>Rôle</Button>
+                          newCategory: m.profile?.member_category || "PARTICULIER",
+                          granted: m.permission_overrides?.granted || [],
+                          revoked: m.permission_overrides?.revoked || [] })}>Rôle</Button>
                     </div>
                   </td>
                 </tr>
@@ -198,7 +217,10 @@ export default function Members() {
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent data-testid="member-role-dialog">
-          <DialogHeader><DialogTitle>Rôle et niveau — {editing?.profile?.display_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Rôle et niveau — {editing?.profile?.display_name}</DialogTitle>
+            <DialogDescription>Ajustez le rôle, le niveau, la catégorie et les permissions individuelles de ce membre.</DialogDescription>
+          </DialogHeader>
           {editing && (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -240,6 +262,40 @@ export default function Members() {
                   automatiquement dans l'annuaire des professionnels.
                 </p>
               </div>
+
+              {editing.newRole !== "ADMIN_BUREAU" && permCatalog && (
+                <div className="space-y-2" data-testid="member-permissions">
+                  <Label>Permissions individuelles</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Par défaut, les permissions découlent du niveau. Vous pouvez en accorder ou en révoquer
+                    ponctuellement pour ce membre.
+                  </p>
+                  <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg border p-2">
+                    {permCatalog.permissions.map((p) => {
+                      const base = (permCatalog.level_permissions[editing.newLevel] || []).includes(p);
+                      const state = permState(p);
+                      return (
+                        <div key={p} className="flex items-center justify-between gap-2 text-xs"
+                          data-testid={`member-perm-${p}`}>
+                          <span className="font-mono">
+                            {p} {base && <span className="text-emerald-600">· inclus</span>}
+                          </span>
+                          <div className="flex gap-1">
+                            <Button type="button" size="sm" variant={state === "granted" ? "default" : "outline"}
+                              data-testid={`member-perm-grant-${p}`}
+                              className={`h-6 rounded-full px-2 ${state === "granted" ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
+                              onClick={() => setPermState(p, state === "granted" ? "default" : "granted")}>Accorder</Button>
+                            <Button type="button" size="sm" variant={state === "revoked" ? "default" : "outline"}
+                              data-testid={`member-perm-revoke-${p}`}
+                              className={`h-6 rounded-full px-2 ${state === "revoked" ? "bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]" : ""}`}
+                              onClick={() => setPermState(p, state === "revoked" ? "default" : "revoked")}>Révoquer</Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>

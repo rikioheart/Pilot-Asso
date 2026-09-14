@@ -1,0 +1,28 @@
+{
+  "summary": "Iteration 38 verifies Profile > 'Mes chiens' enrichment (dog-birth-input, dog-sex-select, dog-photo-input) + Carnet de suivi toggle for PARTICULIER (membre1.demo) and PROFESSIONNEL PRO_AVANCE (pro3.demo). Backend curl confirms birth_date/sex persist in POST/GET/DELETE for both roles. UI Playwright confirms: (1) all 6 form fields (name/breed/character/birth/sex/photo) visible; (2) creating dog with birth+sex produces dog-card-<id> showing 'Beagle · Mâle · né(e) le 08/03/2022' (pro) and 'Labrador · Femelle · né(e) le 15/06/2021' (membre); (3) persists after full page reload; (4) dog-journal-toggle-<id> reveals dog-journal-wrap-<id> containing DogJournal; 2nd click hides it; (5) journal-enable-owner checkbox present and tickable for both owner roles (bureau-side remains gated — by design); (6) delete flow (dog-menu > dog-delete > Confirmer) shows 'Chien supprimé' toast and removes card; (7) isolation regression: personal PRO dog does NOT appear in /dogs 'Chiens suivis' page. All 4 acceptance items OK.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_pro_personal_dogs.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Profile.jsx keeps growing (~410 lines) with 3 large tab sections; consider splitting each TabsContent into its own component (ProfileInfosTab, ProfileProTab, ProfileDogsTab) for maintainability.",
+    "In addDog, newDog is posted as-is; empty birth_date '' and empty sex '' are sent to backend — backend tolerates it but sending null when empty would be cleaner.",
+    "dog card birth_date rendered via new Date(d.birth_date).toLocaleDateString('fr-FR') — a bare YYYY-MM-DD string is treated as UTC and may shift by a day in some timezones; consider parsing as local date."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "membre1.demo@lavoixduchien.fr / Demo2026! ; pro3.demo@lavoixduchien.fr / Demo2026!",
+  "seed_data_creation": "Created TEST_PARTICULIER_* and TEST_PRO_* dogs during UI flow, all deleted at end (verified via card gone + delete toast). Backend curl also cleaned its two TEST_Backend dogs.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 38 — Profile 'Mes chiens' enrichment + Carnet toggle validated end-to-end for PARTICULIER and PROFESSIONNEL. All acceptance items OK. Onboarding modal was dismissed by clicking 'Plus tard'/'Ignorer' when present. DogJournal double-activation (owner + bureau) is by-design; owner side can be ticked from Profile.",
+  "acceptance_matrix": {
+    "1_enrichment_form_membre1": "OK",
+    "1_enrichment_form_pro3": "OK",
+    "2_carnet_toggle_membre1": "OK",
+    "2_carnet_toggle_pro3": "OK",
+    "3_delete_regression_membre1": "OK",
+    "3_delete_regression_pro3": "OK",
+    "4_isolation_dogs_page_pro3": "OK"
+  }
+}

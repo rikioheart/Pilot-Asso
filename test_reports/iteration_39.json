@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend-only verification of the two new Bureau permission UIs. RBAC matrix card in /admin/settings works end-to-end (level selector, toggle tasks.create, save toast, reset toast, state returns to default). Per-member 'Permissions individuelles' section in /admin/members role dialog works: Accorder stats.view and Révoquer members.view persist after reopening the dialog (emerald/bordeaux button states restored). Cleanup performed: matrix reset to defaults and member overrides cleared. NavLabelsSettings still present on Réglages.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Member role save toast", "issue": "Toast text ('enregistré/succès') not detected in DOM immediately after member-role-save (may have auto-dismissed before capture). Persistence verified independently on reopen, so likely a timing/visibility issue only.", "affected_selectors": ["member-role-save"]}
+    ],
+    "design_issues": [
+      {"screen": "member-role-dialog", "issues": ["Radix DialogContent missing Description/aria-describedby (a11y warning in console)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Optional) Add DialogDescription/aria-describedby to member-role-dialog to silence Radix a11y warning."
+  ],
+  "critical_code_review_comments": [
+    "RbacMatrixSettings.jsx and Members.jsx look clean, use data-testids consistently, and call the /settings/rbac endpoints correctly. No blocking issues."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "test_credentials": "Admin associationlavoixduchien@gmail.com / VoixDuChien2026! (used)",
+  "seed_data_creation": "None. Matrix reset to defaults and member overrides cleared at end of test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Both new Bureau UIs verified OK. Matrix persisted PRO_STANDARD tasks.create then reset. Member override tested on first row of members list (Nadia Fournier — PROFESSIONNEL; task specified PARTICULIER but dialog behavior is identical across roles). Left platform clean."
+}

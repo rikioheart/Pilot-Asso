@@ -728,7 +728,31 @@ async def audit(module: Optional[str] = None, user_id: Optional[str] = None,
 @api.get("/settings/rbac")
 async def rbac_matrix(admin: dict = Depends(require_admin)):
     return {"permissions": rbac.ALL_PERMISSIONS, "levels_by_role": rbac.LEVELS_BY_ROLE,
-            "level_permissions": rbac.LEVEL_PERMISSIONS}
+            "level_permissions": rbac.RUNTIME_LEVEL_PERMISSIONS,
+            "default_permissions": rbac.LEVEL_PERMISSIONS}
+
+
+@api.put("/settings/rbac")
+async def update_rbac_matrix(payload: dict, admin: dict = Depends(require_admin)):
+    matrix = payload.get("level_permissions") or {}
+    clean = {lvl: [p for p in perms if p in rbac.ALL_PERMISSIONS]
+             for lvl, perms in matrix.items()
+             if lvl in rbac.LEVEL_PERMISSIONS and isinstance(perms, list)}
+    rbac.set_level_permissions(clean)
+    await db.app_settings.update_one(
+        {"key": "rbac_matrix"},
+        {"$set": {"key": "rbac_matrix", "level_permissions": rbac.RUNTIME_LEVEL_PERMISSIONS,
+                  "updated_at": iso(now_utc())}}, upsert=True)
+    await log_action(admin, "UPDATE", "rbac_matrix", "rbac_matrix", new_value={"levels": list(clean)})
+    return {"level_permissions": rbac.RUNTIME_LEVEL_PERMISSIONS}
+
+
+@api.post("/settings/rbac/reset")
+async def reset_rbac_matrix(admin: dict = Depends(require_admin)):
+    rbac.reset_level_permissions()
+    await db.app_settings.delete_one({"key": "rbac_matrix"})
+    await log_action(admin, "RESET", "rbac_matrix", "rbac_matrix")
+    return {"level_permissions": rbac.RUNTIME_LEVEL_PERMISSIONS}
 
 
 @api.get("/search")
@@ -867,6 +891,9 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
+    stored = await db.app_settings.find_one({"key": "rbac_matrix"}, {"_id": 0, "level_permissions": 1})
+    if stored and stored.get("level_permissions"):
+        rbac.set_level_permissions(stored["level_permissions"])
     await db.users.create_index("email", unique=True)
     await db.users.create_index("user_id", unique=True)
     await db.users.create_index("role")

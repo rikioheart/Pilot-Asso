@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 
 import { toast } from "sonner";
 import { RowMenu, confirmDialog } from "@/components/ConfirmDialog";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, NotebookPen } from "lucide-react";
 import { api, apiError, fileUrl } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { ProCardQr } from "@/components/ProCardQr";
+import { DogJournal } from "@/components/DogJournal";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,8 @@ export default function Profile() {
   const { user, profile, setProfile } = useAuth();
   const [form, setForm] = useState({});
   const [dogs, setDogs] = useState([]);
-  const [newDog, setNewDog] = useState({ name: "", breed: "", character: "" });
+  const [newDog, setNewDog] = useState({ name: "", breed: "", character: "", birth_date: "", sex: "", photo_file_id: null });
+  const [openJournal, setOpenJournal] = useState(null);
   const [pro, setPro] = useState(null);
   const [categories, setCategories] = useState([]);
 
@@ -98,7 +100,7 @@ export default function Profile() {
     try {
       const { data } = await api.post("/dogs", newDog);
       setDogs((prev) => [...(Array.isArray(prev) ? prev : []), data]);
-      setNewDog({ name: "", breed: "", character: "" });
+      setNewDog({ name: "", breed: "", character: "", birth_date: "", sex: "", photo_file_id: null });
       toast.success("Chien ajouté");
     } catch (err) {
       toast.error(apiError(err));
@@ -319,6 +321,29 @@ export default function Profile() {
                   onChange={(e) => setNewDog({ ...newDog, character: e.target.value })} />
               </div>
             </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Date de naissance</Label>
+                <Input type="date" value={newDog.birth_date} data-testid="dog-birth-input"
+                  onChange={(e) => setNewDog({ ...newDog, birth_date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Sexe</Label>
+                <Select value={newDog.sex} onValueChange={(v) => setNewDog({ ...newDog, sex: v })}>
+                  <SelectTrigger data-testid="dog-sex-select"><SelectValue placeholder="Non précisé" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MALE">Mâle</SelectItem>
+                    <SelectItem value="FEMELLE">Femelle</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Photo</Label>
+                <FileUpload usage="AVATAR" accept="image/*" preview compress label="Ajouter une photo"
+                  testId="dog-photo-input" value={newDog.photo_file_id}
+                  onChange={(id) => setNewDog({ ...newDog, photo_file_id: id })} />
+              </div>
+            </div>
             <Button type="submit" data-testid="dog-add-button" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]">
               <Plus className="mr-2 h-4 w-4" /> Ajouter mon chien
             </Button>
@@ -327,19 +352,40 @@ export default function Profile() {
             <EmptyState testId="dogs-empty" title="Aucun chien enregistré"
               description="Renseignez votre chien : ce n'est pas un dossier médical, seulement les informations utiles." />
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-3">
               {(Array.isArray(dogs) ? dogs : []).map((d) => (
-                <div key={d.dog_id} className="flex items-start justify-between rounded-xl border bg-card p-4"
-                  data-testid={`dog-card-${d.dog_id}`}>
-                  <div>
-                    <p className="font-display font-bold text-[var(--marine)]">{d.name}</p>
-                    <p className="text-xs text-muted-foreground">{d.breed || "Race non précisée"}</p>
-                    {d.character && <p className="mt-2 text-sm">{d.character}</p>}
+                <div key={d.dog_id} className="rounded-xl border bg-card p-4" data-testid={`dog-card-${d.dog_id}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      {d.photo_file_id && (
+                        <img src={fileUrl(d.photo_file_id)} alt="" className="h-14 w-14 shrink-0 rounded-lg border object-cover" />
+                      )}
+                      <div>
+                        <p className="font-display font-bold text-[var(--marine)]">{d.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {d.breed || "Race non précisée"}
+                          {d.sex ? ` · ${d.sex === "MALE" ? "Mâle" : "Femelle"}` : ""}
+                          {d.birth_date ? ` · né(e) le ${new Date(d.birth_date).toLocaleDateString("fr-FR")}` : ""}
+                        </p>
+                        {d.character && <p className="mt-2 text-sm">{d.character}</p>}
+                      </div>
+                    </div>
+                    <RowMenu testId={`dog-menu-${d.dog_id}`} items={[
+                      { label: "Supprimer ce chien", icon: Trash2, danger: true, testId: `dog-delete-${d.dog_id}`,
+                        onSelect: async () => { if (!(await confirmDialog("Supprimer ce chien de votre profil ?"))) return;
+                          removeDog(d.dog_id); } }]} />
                   </div>
-                  <RowMenu testId={`dog-menu-${d.dog_id}`} items={[
-                    { label: "Supprimer ce chien", icon: Trash2, danger: true, testId: `dog-delete-${d.dog_id}`,
-                      onSelect: async () => { if (!(await confirmDialog("Supprimer ce chien de votre profil ?"))) return;
-                        removeDog(d.dog_id); } }]} />
+                  <Button variant="ghost" size="sm" data-testid={`dog-journal-toggle-${d.dog_id}`}
+                    className="mt-3 rounded-full text-[var(--bordeaux)]"
+                    onClick={() => setOpenJournal(openJournal === d.dog_id ? null : d.dog_id)}>
+                    <NotebookPen className="mr-2 h-4 w-4" />
+                    {openJournal === d.dog_id ? "Masquer le carnet de suivi" : "Carnet de suivi"}
+                  </Button>
+                  {openJournal === d.dog_id && (
+                    <div className="mt-4" data-testid={`dog-journal-wrap-${d.dog_id}`}>
+                      <DogJournal dogId={d.dog_id} dogName={d.name} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
