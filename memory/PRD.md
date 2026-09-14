@@ -348,6 +348,19 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Doc** : `test_credentials.md` réaligné sur le seed réel (membre1 = `PARTICULIER_STANDARD`, `membre2.demo`
   n'existe pas) ; nettoyage des chiens de test `TEST_*` résiduels.
 
+### Chiens personnels des professionnels & suppression de fiche (14/09/2026, testé 100 % — iteration_37)
+- **Onglet « Mes chiens » pour les PROFESSIONNEL** (`Profile.jsx`) : identique aux PARTICULIER (liste, création,
+  suppression), indépendant du rôle pro. Le profil récupère ses chiens via `GET /api/dogs?owner_id=<self>`.
+- **Backend `dogs.py`** : `list_dogs` renvoie les chiens **possédés** dès que `owner_id == self` (tous rôles) ;
+  `can_create = True` pour tous ; **nouvelle route `DELETE /api/dogs/{id}`** (propriétaire ou Bureau) avec
+  nettoyage en cascade (carnet, cas, étapes, comptes-rendus, commentaires, notes) — corrige le 404 qui touchait
+  aussi les PARTICULIER.
+- **Isolation** : la page « Chiens suivis » (`/dogs`, référent/équipe) reste **inchangée** — les chiens
+  personnels d'un pro n'y apparaissent pas.
+- Compte de démo **PRO_AVANCE** ajouté au seed (`pro3.demo@lavoixduchien.fr`).
+- Navigation pro enrichie (`AppShell.jsx`) : liens **Mindmap**, **Statistiques** (coordinateur, `stats.view`) et
+  **Documents** ajoutés au menu latéral PROFESSIONNEL (routes/permissions déjà existantes).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

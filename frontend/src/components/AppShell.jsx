@@ -91,6 +91,8 @@ const PRO_NAV = [
   {
     label: "Mon activité", icon: FolderKanban, items: [
       { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
+      { to: "/mindmap", label: "Mindmap", icon: Network, permission: "mindmap.view" },
+      { to: "/statistics", label: "Statistiques", icon: BarChart3, permission: "stats.view" },
       { to: "/dogs", label: "Chiens suivis", icon: Dog },
       { to: "/finance/my-shares", label: "Mes parts & frais", icon: Wallet, permission: "finance.view_own" },
       { to: "/history", label: "Mon historique", icon: History, permission: "audit.view_own" },
@@ -113,6 +115,7 @@ const PRO_NAV = [
       { to: "/formations", block: "nav.formations", label: "Formations & lives", icon: GraduationCap, permission: "formations.view" },
       { to: "/library", block: "nav.library", label: "Bibliothèque", icon: Library, permission: "library.view" },
       { to: "/social", block: "nav.social", label: "Réseaux sociaux", icon: Send, permission: "social.view" },
+      { to: "/documents", label: "Documents", icon: FileText, permission: "documents.view" },
       { to: "/forms", block: "nav.forms", label: "Formulaires", icon: ClipboardList, permission: "forms.view" },
     ],
   },

@@ -109,7 +109,9 @@ async def dogs_meta(user: dict = Depends(active_user)):
 async def list_dogs(owner_id: Optional[str] = None, q: Optional[str] = None,
                     user: dict = Depends(active_user)):
     manager = await is_manager(user)
-    if manager:
+    if owner_id and owner_id == user["user_id"]:
+        query = {"owner_id": user["user_id"], "status": {"$ne": "ARCHIVED"}}
+    elif manager:
         query = {"status": {"$ne": "ARCHIVED"}}
         if owner_id:
             query["owner_id"] = owner_id
@@ -131,7 +133,7 @@ async def list_dogs(owner_id: Optional[str] = None, q: Optional[str] = None,
         dog["problem"] = (case or {}).get("problem")
         dog["photo"] = await file_meta(dog.get("photo_file_id"))
     return {"items": dogs, "total": len(dogs), "is_manager": manager,
-            "can_create": manager or user["role"] != ROLE_PRO}
+            "can_create": True}
 
 
 @router.post("/dogs")
@@ -219,6 +221,29 @@ async def update_dog(dog_id: str, payload: DogUpdate, user: dict = Depends(activ
                      message=f"{dog['name']} ({dog.get('owner_name')}) vous est confié comme référent.",
                      level="INFO", resource_type="dog", resource_id=dog_id, link="/dogs")
     return await db.dogs.find_one({"dog_id": dog_id}, {"_id": 0})
+
+
+@router.delete("/dogs/{dog_id}")
+async def delete_dog(dog_id: str, user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    if not (owner or manager):
+        raise HTTPException(status_code=403,
+                            detail="Seuls le propriétaire et le Bureau peuvent supprimer cette fiche")
+    await db.dogs.delete_one({"dog_id": dog_id})
+    await db.dog_journals.delete_many({"dog_id": dog_id})
+    cases = await db.dog_cases.find({"dog_id": dog_id}, {"_id": 0, "case_id": 1}).to_list(200)
+    case_ids = [c["case_id"] for c in cases]
+    if case_ids:
+        await db.dog_steps.delete_many({"case_id": {"$in": case_ids}})
+    await db.dog_cases.delete_many({"dog_id": dog_id})
+    reports = await db.dog_reports.find({"dog_id": dog_id}, {"_id": 0, "report_id": 1}).to_list(500)
+    report_ids = [r["report_id"] for r in reports]
+    if report_ids:
+        await db.dog_comments.delete_many({"report_id": {"$in": report_ids}})
+    await db.dog_reports.delete_many({"dog_id": dog_id})
+    await db.dog_owner_notes.delete_many({"dog_id": dog_id})
+    await log_action(user, "DELETE", "dogs", dog_id, old_value={"name": dog.get("name")})
+    return {"ok": True}
 
 
 @router.post("/dogs/{dog_id}/owner-notes")

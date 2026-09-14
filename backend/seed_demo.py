@@ -25,6 +25,7 @@ def _day(offset):
 DEMO_USERS = [
     ("pro1.demo@lavoixduchien.fr", "PROFESSIONNEL", "Camille", "Dubreuil [DEMO]", "PRO_STANDARD", "ACTIVE", "Montargis", "45"),
     ("pro2.demo@lavoixduchien.fr", "PROFESSIONNEL", "Julien", "Marchais [DEMO]", "PRO_COORDINATEUR", "ACTIVE", "Sens", "89"),
+    ("pro3.demo@lavoixduchien.fr", "PROFESSIONNEL", "Nadia", "Fournier [DEMO]", "PRO_AVANCE", "ACTIVE", "Orléans", "45"),
     ("membre1.demo@lavoixduchien.fr", "PARTICULIER", "Sophie", "Lenoir [DEMO]", "PARTICULIER_STANDARD", "ACTIVE", "Nargis", "45"),
     ("benevole.demo@lavoixduchien.fr", "PARTICULIER", "Marc", "Vasseur [DEMO]", "BENEVOLE_VALIDE", "ACTIVE", "Fontainebleau", "77"),
     ("attente.demo@lavoixduchien.fr", "PROFESSIONNEL", "Léa", "Bonnet [DEMO]", "PRO_STANDARD", "PENDING", "Évry", "91"),
@@ -63,6 +64,20 @@ DEMO_PRO_DETAILS = {
         "member_advantages": "Bilan postural offert aux adhérents",
         "partnership_status": "ACTIVE", "partnership_percentage": 25.0,
         "contract_status": "SIGNED", "contract_reference": "DEMO-2026-002",
+        "public_visibility": "MEMBERS",
+    },
+    "pro3.demo@lavoixduchien.fr": {
+        "company_name": "Cani-Sport Orléans [DEMO]", "professional_category": "EDUCATEUR_CANIN",
+        "secondary_categories": ["EDUCATEUR_SPORTIF"],
+        "description": "Activités sportives canines et préparation physique (démonstration).",
+        "specialties": ["Canicross", "Agility", "Obé-rythmée"],
+        "services": ["Séances sportives", "Ateliers collectifs"],
+        "service_area": "Orléans et agglomération", "departments": ["45"],
+        "website": "https://example.org/cani-sport-demo", "social_links": {},
+        "phone": "06 00 00 00 03", "email": "pro3.demo@lavoixduchien.fr",
+        "member_advantages": "Première séance sportive à -15 % pour les adhérents",
+        "partnership_status": "ACTIVE", "partnership_percentage": 15.0,
+        "contract_status": "SIGNED", "contract_reference": "DEMO-2026-003",
         "public_visibility": "MEMBERS",
     },
 }

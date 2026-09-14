@@ -40,7 +40,9 @@ export default function Profile() {
 
   useEffect(() => {
     if (user?.status !== "ACTIVE") return;
-    if (user.role === "PARTICULIER") api.get("/dogs").then((r) => setDogs(Array.isArray(r.data?.items) ? r.data.items : [])).catch(() => {});
+    if (user.role === "PARTICULIER" || user.role === "PROFESSIONNEL")
+      api.get("/dogs", { params: { owner_id: user.user_id } })
+        .then((r) => setDogs(Array.isArray(r.data?.items) ? r.data.items : [])).catch(() => {});
     if (isPro) {
       api.get("/professionals/me").then((r) => setPro({
         ...r.data,
@@ -128,7 +130,7 @@ export default function Profile() {
         <TabsList data-testid="profile-tabs" className="flex-wrap">
           <TabsTrigger value="infos" data-testid="profile-tab-infos">Informations</TabsTrigger>
           {isPro && <TabsTrigger value="pro" data-testid="profile-tab-pro">Ma fiche pro</TabsTrigger>}
-          {user?.role === "PARTICULIER" && <TabsTrigger value="dogs" data-testid="profile-tab-dogs">Mes chiens</TabsTrigger>}
+          {(user?.role === "PARTICULIER" || user?.role === "PROFESSIONNEL") && <TabsTrigger value="dogs" data-testid="profile-tab-dogs">Mes chiens</TabsTrigger>}
           <TabsTrigger value="rights" data-testid="profile-tab-rights">Mes droits</TabsTrigger>
         </TabsList>
 
