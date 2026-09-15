@@ -373,6 +373,24 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   contrôle de rôle `create_dog` (PRO → soi-même uniquement), libellés de navigation configurables (Prompt 11 F1),
   Prompt 11 IA (suggestions carnet, détection décrochage, message d'accueil — activables par utilisateur).
 
+### Prompt 12 — Objectifs/progression + Pilotage & correctif coordinateur (14/09/2026, testé 100 % — iter 40-41)
+- **Objectifs et progression** (fiche chien) : collection dédiée `dog_objectives` (intitulé, statut EN_COURS/
+  ATTEINT/ABANDONNE, dates début/atteinte, notes, `status_history`, `session_reports` avec réactions du
+  propriétaire, `owner_notes`). Endpoints `GET/POST /dogs/{id}/objectives`, `PUT .../{oid}`,
+  `POST .../notes` (propriétaire), `POST .../reports` (pro), `POST .../reports/{rid}/react`. Pro rattaché/Bureau
+  éditent ; propriétaire lecture seule + notes + réactions. Composant `DogObjectives.jsx`.
+- **Pilotage** (`Pilotage.jsx`, `/pilotage`) : `GET /api/pilotage` (ADMIN_BUREAU + PRO_COORDINATEUR only).
+  Chiens en suivi actif (statut ≠ ARCHIVED), dernière intervention (reports/steps/séances), mise en évidence
+  > 21 j, badge multi-pros, 3 compteurs (actifs / objectifs en cours / atteints ce mois). Lignes cliquables →
+  `/dogs?open=<id>` (auto-ouverture de la fiche). Lecture seule.
+- **Correctif** : `dog_access()` autorise désormais la LECTURE au PRO_COORDINATEUR (écritures toujours bloquées) ;
+  `Dogs.jsx openDetail` encapsulé dans try/catch (toast FR) — supprime l'overlay « Uncaught runtime errors »
+  lors du clic Pilotage→fiche sur un chien hors équipe.
+- **Test BUREAU/ADMIN** : un seul sous-type existe (`ADMIN_BUREAU`/`BUREAU`). Régression 100 % (29 routes,
+  13 sous-cartes Réglages, membres, matrice RBAC, overrides permissions, RBAC négatif pro1). Points non
+  bloquants : bursts 429 uniquement sous navigation automatisée très rapide (rate-limit ingress, pas applicatif) ;
+  « galerie photo générale » = fonctionnalité dédiée non encore construite (distincte de la Photo de couverture).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

@@ -1,0 +1,33 @@
+{
+  "summary": "Iter41 focused on (1) HIGH-priority FIX RETEST for Pilotage→Fiche as PRO_COORDINATEUR and (2) a broad ADMIN_BUREAU regression pass. FIX PASS: after backend dog_access() now permits PRO_COORDINATEUR reads and frontend Dogs.jsx wraps openDetail in try/catch, pro2.demo can log in, open /pilotage, click pilotage-link-<dogId> on Nikko [DEMO] (not on team), navigate to /dogs?open=<dogId>, and the fiche dialog opens WITHOUT any 'Uncaught runtime errors' overlay. The 'Objectifs et progression' section renders read-only (0 create-form controls, 0 status buttons; can_edit_pro=false, is_owner=false). Backend curl confirms GET /api/dogs/{id} 200, GET /objectives 200, POST /objectives -> 403 with proper French detail. ADMIN_BUREAU regression: welcome message with 'Bonjour, membre du Bureau' + friendly line, Prompt-11 3 IA-douce switches present in /my-space > Notifications & compte (account-ia-welcome-switch / account-ia-suggest-switch / account-ia-relance-switch). All 29 tested BUREAU_NAV routes load without page/error overlays. Réglages page exposes 13 sub-cards (theme, module-icons, cover-photo, public-page, empty-states, block-visibility, delegation, onboarding, weather, biweekly, dog-journal-template, taxonomies, rbac-matrix) plus nav-labels-settings. Members page exposes full row testids incl. member-edit / member-suspend / member-approve / member-reject. Negative RBAC OK: pro1 (PRO_STANDARD) is redirected from /admin/settings, /admin/members and /pilotage back to /pro/dashboard. Two minor console 429 bursts observed on /notifications and /admin/settings (rate-limit polling), no crash.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/notifications, /api/... polled by /admin/settings", "issue": "Several 429 (Too Many Requests) responses observed in the browser console when opening those pages back-to-back (roughly 11 on /notifications, 26 on /admin/settings). No functional failure but suggests aggressive client polling or a too-strict rate limiter."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt12_objectives_pilotage.py"
+  ],
+  "action_items": [
+    "Investigate 429 bursts on /admin/settings and /notifications (client polling vs rate limiter).",
+    "Confirm the 'general photo gallery Google Drive link' review-request item maps to the existing 'Photo de couverture' card, or add a dedicated 'Galerie photos' section if it is a separate feature (no 'Galerie' string found on /admin/settings)."
+  ],
+  "critical_code_review_comments": [
+    "backend/dogs.py::dog_access(): the new PRO_COORDINATEUR read branch is correctly limited to reads because all write endpoints re-check `if not (manager or team)` — good. Consider adding an explicit `read_only` flag returned from dog_access to remove that duplicated check in future refactors.",
+    "frontend/Dogs.jsx openDetail: the try/catch + French toast is the right fix; ensure the same pattern is applied to any other auto-open handler (activities, events) so a 403 does not bubble to the error boundary."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (fix + curl checks pass)", "frontend": "100% on fix retest + 29/29 BUREAU_NAV routes load cleanly"},
+  "test_credentials": "Used credentials from /app/memory/test_credentials.md — ADMIN_BUREAU (associationlavoixduchien@gmail.com / VoixDuChien2026!) and PRO_COORDINATEUR (pro2.demo) and PRO_STANDARD (pro1.demo). There is exactly ONE Bureau/Admin subtype (ADMIN_BUREAU, access_level BUREAU); no other admin account exists in seed.",
+  "seed_data_creation": "No new seed data created in iter41. Attempted a TEST_iter41_task via API but the endpoint requires project_id — no residue created.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Prompt-12 fix is fully validated end-to-end (backend + frontend). Priority-1 bug from iter40 is CLOSED. On next iteration, the two remaining minor points are: (a) the 429 bursts on /admin/settings + /notifications, and (b) clarify if a dedicated 'Galerie photos Google Drive' section is expected on /admin/settings (currently only Photo de couverture card is present with a Google Drive save hint). NavLabels, RBAC matrix, member permission overrides, taxonomies, module icons, theme, empty states, block visibility, delegation, onboarding, weather, biweekly, dog-journal-template all present with expected testids on /admin/settings.",
+  "rca of the issue": "iter40 root cause: dog_access() denied non-team users -> 403 on /api/dogs/{id} for PRO_COORDINATEUR who hit the pilotage link, and Dogs.jsx did not catch the rejection so React error boundary rendered 'Uncaught runtime errors'. Fix applied on both layers: (1) backend/dogs.py adds `coordinator = user.get('access_level') == 'PRO_COORDINATEUR'` to the allowed read set while write endpoints still require manager or team; (2) frontend/Dogs.jsx openDetail is wrapped in try/catch and shows a French toast on error. Verified curl + Playwright end-to-end in iter41."
+}
