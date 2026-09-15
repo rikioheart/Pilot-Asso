@@ -33,6 +33,7 @@ const BUREAU_NAV = [
   { label: "Finances", to: "/finance", icon: Wallet },
   {
     label: "Pilotage", icon: FolderKanban, items: [
+      { to: "/pilotage", label: "Pilotage suivi", icon: BarChart3 },
       { to: "/projects", label: "Projets", icon: FolderKanban },
       { to: "/mindmap", label: "Mindmap", icon: Network },
       { to: "/admin/help", label: "Besoins d'aide", icon: LifeBuoy },
@@ -91,6 +92,7 @@ const PRO_NAV = [
   {
     label: "Mon activité", icon: FolderKanban, items: [
       { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
+      { to: "/pilotage", label: "Pilotage suivi", icon: BarChart3, permission: "stats.view" },
       { to: "/mindmap", label: "Mindmap", icon: Network, permission: "mindmap.view" },
       { to: "/statistics", label: "Statistiques", icon: BarChart3, permission: "stats.view" },
       { to: "/dogs", label: "Chiens suivis", icon: Dog },

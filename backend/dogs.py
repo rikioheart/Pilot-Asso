@@ -1,4 +1,5 @@
 """Suivi des chiens : fiche, professionnel référent, suivi de cas, comptes-rendus coopératifs."""
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,6 +18,33 @@ INTERVENTION_TYPES = ["EDUCATION", "COMPORTEMENT", "VETERINAIRE", "OSTEOPATHIE",
                       "SPORT", "BALADE", "ATELIER", "AUTRE"]
 BEHAVIOR_CATEGORIES = ["SOCIABILISATION", "REACTIVITE", "PEUR", "MARCHE_EN_LAISSE", "RAPPEL",
                        "PROPRETE", "SEPARATION", "AUTRE"]
+OBJECTIVE_STATUSES = ["EN_COURS", "ATTEINT", "ABANDONNE"]
+
+
+class ObjectiveIn(BaseModel):
+    title: str
+    notes: Optional[str] = ""
+    start_date: Optional[str] = None
+
+
+class ObjectiveUpdate(BaseModel):
+    title: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[str] = None
+    achieved_date: Optional[str] = None
+
+
+class ObjectiveNoteIn(BaseModel):
+    message: str
+
+
+class SessionReportIn(BaseModel):
+    text: str
+    date: Optional[str] = None
+
+
+class ReactionIn(BaseModel):
+    message: str
 
 
 class DogIn(BaseModel):
@@ -94,7 +122,8 @@ async def dog_access(dog_id: str, user: dict) -> tuple:
     owner = dog.get("owner_id") == user["user_id"]
     team = user["user_id"] in (dog.get("pro_team_ids") or []) or \
         dog.get("referent_pro_id") == user["user_id"]
-    if not (manager or owner or team):
+    coordinator = user.get("access_level") == "PRO_COORDINATEUR"
+    if not (manager or owner or team or coordinator):
         raise HTTPException(status_code=403, detail="Ce dossier ne vous est pas accessible")
     return dog, owner, team, manager
 
@@ -242,6 +271,7 @@ async def delete_dog(dog_id: str, user: dict = Depends(active_user)):
         await db.dog_comments.delete_many({"report_id": {"$in": report_ids}})
     await db.dog_reports.delete_many({"dog_id": dog_id})
     await db.dog_owner_notes.delete_many({"dog_id": dog_id})
+    await db.dog_objectives.delete_many({"dog_id": dog_id})
     await log_action(user, "DELETE", "dogs", dog_id, old_value={"name": dog.get("name")})
     return {"ok": True}
 
@@ -402,6 +432,190 @@ async def link_dog(dog_id: str, body: dict, user: dict = Depends(active_user)):
         raise HTTPException(status_code=400, detail="Choisissez une activité ou un événement")
     await log_action(user, "LINK", "dogs", dog_id, new_value=body)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Prompt 12 — Objectifs et progression (modèle dédié, indépendant du suivi de cas)
+# ---------------------------------------------------------------------------
+def _today():
+    return iso(now_utc())[:10]
+
+
+async def _get_objective(dog_id: str, objective_id: str):
+    obj = await db.dog_objectives.find_one({"objective_id": objective_id, "dog_id": dog_id}, {"_id": 0})
+    if not obj:
+        raise HTTPException(status_code=404, detail="Objectif introuvable")
+    return obj
+
+
+@router.get("/dogs/{dog_id}/objectives")
+async def list_objectives(dog_id: str, user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    objs = await db.dog_objectives.find({"dog_id": dog_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return {"objectives": objs, "can_edit_pro": bool(manager or team), "is_owner": owner}
+
+
+@router.post("/dogs/{dog_id}/objectives")
+async def create_objective(dog_id: str, payload: ObjectiveIn, user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    if not (manager or team):
+        raise HTTPException(status_code=403,
+                            detail="Seuls les professionnels rattachés définissent les objectifs")
+    now = iso(now_utc())
+    doc = {"objective_id": new_id("obj"), "dog_id": dog_id, "title": payload.title.strip(),
+           "notes": payload.notes or "", "status": "EN_COURS",
+           "start_date": payload.start_date or _today(), "achieved_date": None,
+           "status_history": [{"status": "EN_COURS", "at": now, "by": user["user_id"],
+                               "by_name": await display_name(user["user_id"])}],
+           "session_reports": [], "owner_notes": [],
+           "created_by": user["user_id"], "created_by_name": await display_name(user["user_id"]),
+           "created_at": now, "updated_at": now}
+    await db.dog_objectives.insert_one(dict(doc))
+    await log_action(user, "CREATE", "dogs", dog_id, new_value={"objective": doc["title"][:60]})
+    await notify(dog["owner_id"], type="DOG_OBJECTIVE", title="Un nouvel objectif pour votre chien",
+                 message=f"{dog['name']} : « {doc['title']} » — le travail se met en route.",
+                 level="INFO", resource_type="dog", resource_id=dog_id, link="/dogs")
+    return doc
+
+
+@router.put("/dogs/{dog_id}/objectives/{objective_id}")
+async def update_objective(dog_id: str, objective_id: str, payload: ObjectiveUpdate,
+                           user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    if not (manager or team):
+        raise HTTPException(status_code=403,
+                            detail="Seuls les professionnels rattachés mettent à jour un objectif")
+    obj = await _get_objective(dog_id, objective_id)
+    now = iso(now_utc())
+    updates = {"updated_at": now}
+    if payload.title is not None:
+        updates["title"] = payload.title.strip()
+    if payload.notes is not None:
+        updates["notes"] = payload.notes
+    push = None
+    if payload.status is not None and payload.status != obj["status"]:
+        if payload.status not in OBJECTIVE_STATUSES:
+            raise HTTPException(status_code=400, detail="Statut invalide")
+        updates["status"] = payload.status
+        updates["achieved_date"] = (payload.achieved_date or _today()) if payload.status == "ATTEINT" else None
+        push = {"status_history": {"status": payload.status, "at": now, "by": user["user_id"],
+                                   "by_name": await display_name(user["user_id"])}}
+    elif payload.achieved_date is not None:
+        updates["achieved_date"] = payload.achieved_date
+    ops = {"$set": updates}
+    if push:
+        ops["$push"] = push
+    await db.dog_objectives.update_one({"objective_id": objective_id}, ops)
+    if push:
+        atteint = payload.status == "ATTEINT"
+        await notify(dog["owner_id"], type="DOG_OBJECTIVE", title="Progression d'un objectif",
+                     message=f"{dog['name']} : « {obj['title']} » est "
+                             f"{'atteint, bravo !' if atteint else 'mis à jour.'}",
+                     level="SUCCESS" if atteint else "INFO",
+                     resource_type="dog", resource_id=dog_id, link="/dogs")
+    await log_action(user, "UPDATE", "dogs", dog_id, new_value={"objective": objective_id})
+    return await _get_objective(dog_id, objective_id)
+
+
+@router.post("/dogs/{dog_id}/objectives/{objective_id}/notes")
+async def add_objective_note(dog_id: str, objective_id: str, payload: ObjectiveNoteIn,
+                             user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    if not (owner or manager):
+        raise HTTPException(status_code=403, detail="Cet espace de notes est réservé au propriétaire")
+    await _get_objective(dog_id, objective_id)
+    note = {"note_id": new_id("onote"), "message": payload.message, "author_id": user["user_id"],
+            "author_name": await display_name(user["user_id"]), "created_at": iso(now_utc())}
+    await db.dog_objectives.update_one({"objective_id": objective_id},
+                                       {"$push": {"owner_notes": note}, "$set": {"updated_at": iso(now_utc())}})
+    return note
+
+
+@router.post("/dogs/{dog_id}/objectives/{objective_id}/reports")
+async def add_objective_report(dog_id: str, objective_id: str, payload: SessionReportIn,
+                               user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    if not (manager or team):
+        raise HTTPException(status_code=403,
+                            detail="Seuls les professionnels rédigent un compte-rendu de séance")
+    await _get_objective(dog_id, objective_id)
+    rep = {"report_id": new_id("srep"), "text": payload.text, "date": payload.date or _today(),
+           "author_id": user["user_id"], "author_name": await display_name(user["user_id"]),
+           "created_at": iso(now_utc()), "comments": []}
+    await db.dog_objectives.update_one({"objective_id": objective_id},
+                                       {"$push": {"session_reports": rep}, "$set": {"updated_at": iso(now_utc())}})
+    await notify(dog["owner_id"], type="DOG_SESSION", title="Compte-rendu de séance",
+                 message=f"{dog['name']} : un retour de séance vous a été partagé.",
+                 level="INFO", resource_type="dog", resource_id=dog_id, link="/dogs")
+    return rep
+
+
+@router.post("/dogs/{dog_id}/objectives/{objective_id}/reports/{report_id}/react")
+async def react_objective_report(dog_id: str, objective_id: str, report_id: str, payload: ReactionIn,
+                                 user: dict = Depends(active_user)):
+    dog, owner, team, manager = await dog_access(dog_id, user)
+    if not (owner or team or manager):
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    await _get_objective(dog_id, objective_id)
+    comment = {"comment_id": new_id("react"), "message": payload.message, "author_id": user["user_id"],
+               "author_name": await display_name(user["user_id"]), "created_at": iso(now_utc())}
+    res = await db.dog_objectives.update_one(
+        {"objective_id": objective_id},
+        {"$push": {"session_reports.$[r].comments": comment}, "$set": {"updated_at": iso(now_utc())}},
+        array_filters=[{"r.report_id": report_id}])
+    if not res.modified_count:
+        raise HTTPException(status_code=404, detail="Compte-rendu introuvable")
+    return comment
+
+
+@router.get("/pilotage")
+async def pilotage(user: dict = Depends(active_user)):
+    if not (user.get("role") == ROLE_ADMIN or user.get("access_level") == "PRO_COORDINATEUR"):
+        raise HTTPException(status_code=403,
+                            detail="Vue de pilotage réservée à la coordination et au Bureau")
+    dogs = await db.dogs.find({"status": {"$ne": "ARCHIVED"}}, {"_id": 0}).to_list(1000)
+    today = now_utc().date()
+    month_prefix = iso(now_utc())[:7]
+    rows, obj_en_cours, obj_atteints = [], 0, 0
+    for d in dogs:
+        did = d["dog_id"]
+        last = None
+        rep = await db.dog_reports.find({"dog_id": did}, {"_id": 0, "date": 1}).sort("date", -1).limit(1).to_list(1)
+        if rep:
+            last = rep[0].get("date")
+        step = await db.dog_steps.find({"dog_id": did}, {"_id": 0, "date": 1}).sort("date", -1).limit(1).to_list(1)
+        if step and step[0].get("date") and (not last or step[0]["date"] > last):
+            last = step[0]["date"]
+        objs = await db.dog_objectives.find(
+            {"dog_id": did}, {"_id": 0, "status": 1, "achieved_date": 1, "session_reports": 1}).to_list(200)
+        for o in objs:
+            if o.get("status") == "EN_COURS":
+                obj_en_cours += 1
+            if o.get("status") == "ATTEINT" and (o.get("achieved_date") or "")[:7] == month_prefix:
+                obj_atteints += 1
+            for sr in o.get("session_reports") or []:
+                if sr.get("date") and (not last or sr["date"] > last):
+                    last = sr["date"]
+        days = None
+        if last:
+            try:
+                days = (today - datetime.fromisoformat(last[:10]).date()).days
+            except (ValueError, TypeError):
+                days = None
+        team_ids = list({*(d.get("pro_team_ids") or []),
+                         *([d["referent_pro_id"]] if d.get("referent_pro_id") else [])})
+        rows.append({
+            "dog_id": did, "name": d["name"],
+            "owner_name": d.get("owner_name") or await display_name(d["owner_id"]),
+            "referent_name": await display_name(d["referent_pro_id"]) if d.get("referent_pro_id") else None,
+            "team_names": [await display_name(t) for t in team_ids], "team_count": len(team_ids),
+            "last_intervention": last, "days_since": days,
+            "stale": last is None or (days is not None and days > 21), "shared": len(team_ids) > 1,
+        })
+    rows.sort(key=lambda r: (r["days_since"] if r["days_since"] is not None else 99999), reverse=True)
+    return {"rows": rows,
+            "counters": {"active_dogs": len(dogs), "objectives_en_cours": obj_en_cours,
+                         "objectives_atteints_mois": obj_atteints}}
 
 
 @router.get("/dogs-stats")

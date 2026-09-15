@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState, Chip, SectionCard, ProgressBar } from "@/components/Ui";
 import { FileUpload } from "@/components/FileUpload";
 import { DogJournal } from "@/components/DogJournal";
+import { DogObjectives } from "@/components/DogObjectives";
 import { DogStatusBadge } from "@/components/DogStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,11 +57,17 @@ export default function Dogs() {
       setMembers(r.data.items || []);
       setPros((r.data.items || []).filter((m) => m.role === "PROFESSIONNEL"));
     }).catch(() => {});
+    const openId = new URLSearchParams(window.location.search).get("open");
+    if (openId) openDetail(openId);
   }, [load]);
 
   const openDetail = async (dogId) => {
-    const { data } = await api.get(`/dogs/${dogId}`);
-    setDetail(data);
+    try {
+      const { data } = await api.get(`/dogs/${dogId}`);
+      setDetail(data);
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
 
   const openEdit = (dog) => {
@@ -328,6 +335,8 @@ export default function Dogs() {
                     </div>
                   ))}
                 </SectionCard>
+
+                <DogObjectives dogId={detail.dog.dog_id} />
 
                 <SectionCard title="Comptes-rendus de séances" icon={MessageSquare} testId="dog-reports-card">
                   {detail.reports.length === 0 ? (

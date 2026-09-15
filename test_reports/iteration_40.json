@@ -1,0 +1,42 @@
+{
+  "summary": "Prompt 12 tested end-to-end (backend pytest + frontend Playwright). Feature 1 (Objectifs et progression) works OK for Bureau/PRO rattaché (create + status transitions EN_COURS→ATTEINT with achieved_date + status_history + session reports) and owner side is correctly read-only with working owner-note + reaction. Feature 2 (Pilotage) OK for ADMIN and PRO_COORDINATEUR (page, 3 counters, rows, stale badge markup). RBAC OK: PRO_STANDARD/PRO_AVANCE/PARTICULIER cannot see the sidebar link and hitting /pilotage returns no data (redirected to their respective dashboards). Regression: dog-cases-card + dog-reports-card + dog-objectives-card all render together in fiche. HOWEVER a coordination integration bug found: when PRO_COORDINATEUR clicks a pilotage-link to a dog they are NOT part of the team on (e.g., Nikko), /dogs?open=<id> shows an 'Uncaught runtime errors' overlay because GET /api/dogs/{id} returns 403 (dog_access) and the error is not handled; also /api/dogs list returns 'Aucun chien suivi' so the auto-open finds nothing.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/dogs/{id}", "issue": "PRO_COORDINATEUR is authorized on /api/pilotage but blocked by dog_access for dogs they are not team/referent/owner on. This makes the pilotage-link → /dogs?open=<id> flow effectively unusable for coordinators on dogs where they aren't attached. Consider allowing PRO_COORDINATEUR read access on dog_access() (read-only), consistent with Pilotage supervision scope."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Dogs page (auto-open via ?open=)", "issue": "Uncaught runtime errors overlay when the /api/dogs/{id} auto-open fetch returns 403 (visible when PRO_COORDINATEUR follows a Pilotage link to a dog they aren't team on). Error is a bare AxiosError bubbling up instead of a friendly toast.", "selector": "/dogs?open=<dogId>", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Pilotage → Fiche chien (PRO_COORDINATEUR)", "issue": "pilotage-link navigates correctly (URL contains open=<dogId>) but the fiche does not open because backend 403 + list_dogs filters exclude non-team dogs for ROLE_PRO. Admin path works.", "affected_selectors": ["pilotage-link-<dogId>", "/dogs?open=<dogId>"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prompt12_objectives_pilotage.py",
+    "/app/test_reports/pytest/prompt12.xml"
+  ],
+  "action_items": [
+    "Broaden dog_access() (or add a read-only branch) so PRO_COORDINATEUR can GET /api/dogs/{id} for any active dog, matching the supervision scope of /api/pilotage.",
+    "Optionally, also include coordinator visibility in list_dogs() when user.access_level == 'PRO_COORDINATEUR' so /dogs page (and the ?open= auto-open) has the dog in memory before opening.",
+    "Wrap the /dogs auto-open fetch in try/catch and surface a French toast on error instead of letting AxiosError bubble to the React error boundary (currently produces 'Uncaught runtime errors' overlay)."
+  ],
+  "critical_code_review_comments": [
+    "backend/dogs.py: dog_access() intentionally restricts to owner/team/manager which is fine for edit, but read access for supervision roles is missing — introduce a can_view branch (manager or team or owner or access_level=='PRO_COORDINATEUR') to keep write-guards elsewhere.",
+    "frontend Dogs.jsx auto-open via ?open= must handle rejected axios promises to avoid an unhandled error overlay.",
+    "DogObjectives.jsx: reload() calls api.get inside toast.error path is fine, but consider optimistic UI or fewer full reloads (each status change/note/reaction triggers a full list reload)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_prompt12_objectives_pilotage.py (new)"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "OK for Admin+Owner+Pilotage RBAC; Partial for Pilotage→Fiche flow as PRO_COORDINATEUR"},
+  "test_credentials": "Used all creds from review_request; all logged in successfully.",
+  "seed_data_creation": "Created 1 TEST_UI_rappel objective on Nikko [DEMO] via Admin (then set to ABANDONNE in pytest, but a second one may remain from Playwright test in ATTEINT). Objective titles start with TEST_UI_ — safe to clean up. Session reports (TEST_UI_session, TEST_session_ok), owner notes (TEST_UI_owner_note), reactions (TEST_react, 'bravo') were also added.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest suite /app/backend/tests/test_prompt12_objectives_pilotage.py covers objectives happy path + all pilotage RBAC roles; safe to rerun. Frontend gap to retest after fix: log in as pro2.demo, /pilotage, click first pilotage-link — expect dialog to open on /dogs?open=<id> with no 'Uncaught runtime errors' overlay and no 403 on GET /api/dogs/<id>.",
+  "rca of the issue": "backend/dogs.py::dog_access() denies non-team, non-manager users. PRO_COORDINATEUR listed in /api/pilotage but not part of pro_team_ids/referent_pro_id → 403 on the fiche fetch. Frontend Dogs.jsx does not catch that rejection, so the axios promise rejection bubbles into React and the error boundary renders 'Uncaught runtime errors'. Fix: allow read access in dog_access for coordinator (or wrap fetch error) and include coordinator in list_dogs scope."
+}

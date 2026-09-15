@@ -59,6 +59,7 @@ import MySpace from "@/pages/MySpace";
 import MemberAnimation from "@/pages/MemberAnimation";
 import Payments from "@/pages/Payments";
 import Dogs from "@/pages/Dogs";
+import Pilotage from "@/pages/Pilotage";
 import PublicProCard from "@/pages/PublicProCard";
 import "@/App.css";
 
@@ -152,6 +153,7 @@ function AppRouter() {
       <Route path="/my-space" element={<Protected><MySpace /></Protected>} />
       <Route path="/paiements" element={<Protected><Payments /></Protected>} />
       <Route path="/dogs" element={<Protected><Dogs /></Protected>} />
+      <Route path="/pilotage" element={<Protected permission="stats.view"><Pilotage /></Protected>} />
       <Route path="/admin/animation" element={<Protected adminOnly><MemberAnimation /></Protected>} />
       <Route path="/help" element={<Protected><HelpRequests /></Protected>} />
       <Route path="/aide" element={<Protected><HelpCenter /></Protected>} />
