@@ -391,6 +391,18 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   bloquants : bursts 429 uniquement sous navigation automatisée très rapide (rate-limit ingress, pas applicatif) ;
   « galerie photo générale » = fonctionnalité dédiée non encore construite (distincte de la Photo de couverture).
 
+### Accès rapide QR plein écran + carte pro (14/09/2026, testé 100 % — iteration_42)
+- **Plein écran QR** (`FullscreenQR.jsx`, API Fullscreen + overlay fixe) : carte de fidélité (`/loyalty`,
+  bouton `loyalty-fullscreen-button`, protégé `loyalty.view_own`) et carte de visite pro (`ProCardQr`,
+  bouton `pro-card-qr-fullscreen`) — QR agrandi centré, nom + sous-titre, bouton discret pour quitter.
+- **Accès rapide unifié** (`CardAccessModal.jsx`) dans le FAB (`QuickActionsFab`) et les raccourcis
+  (`DashboardShortcuts`) : « Ma carte » (PARTICULIER → fidélité / plein écran via `/loyalty?fullscreen=1`) et
+  « Ma carte pro » (PROFESSIONNEL → fiche pro / plein écran via `/profile?tab=pro&fullscreen=procard`). Accès
+  existants conservés.
+- **Fiche publique enrichie** (`PublicProCard.jsx`) : site internet + icônes réseaux sociaux (LinkedIn/Facebook/
+  Instagram, sinon Globe), éditables depuis `/profile` (champs `pro-social-*`, `pro-website-input`) ; section
+  masquée si aucun lien.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·

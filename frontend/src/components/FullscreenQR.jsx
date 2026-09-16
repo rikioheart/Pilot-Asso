@@ -10,7 +10,11 @@ export const FullscreenQR = ({ value, title, subtitle, note, onClose }) => {
   useEffect(() => {
     const el = ref.current;
     if (el?.requestFullscreen) el.requestFullscreen().catch(() => {});
-    const onFsChange = () => { if (!document.fullscreenElement) onClose(); };
+    const mountedAt = Date.now();
+    const onFsChange = () => {
+      if (Date.now() - mountedAt < 250) return;
+      if (!document.fullscreenElement) onClose();
+    };
     document.addEventListener("fullscreenchange", onFsChange);
     return () => {
       document.removeEventListener("fullscreenchange", onFsChange);

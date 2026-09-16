@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only validation of the 5 new fullscreen QR / unified card-access / pro social-links features. All 5 features work end-to-end. Verified both PARTICULIER (membre1.demo) and PROFESSIONNEL (pro3.demo) flows, plus the anonymous public card page.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_result": {
+    "F1_loyalty_fullscreen_particulier": "OK — loyalty-fullscreen-button opens fullscreen-qr overlay with fullscreen-qr-code, title 'Sophie Lenoir [DEMO]' via fullscreen-qr-title, and fullscreen-qr-exit closes it.",
+    "F2_procard_fullscreen_professionnel": "OK — pro-card-qr-fullscreen opens fullscreen-qr with title 'Nadia Fournier [DEMO]' and subtitle 'Professionnel'. Exit works.",
+    "F3_unified_particulier": "OK — dashboard shortcut-ma-carte and QuickActionsFab quick-action-ma-carte both open card-access-modal with card-access-loyalty and card-access-loyalty-fullscreen. Direct navigation to /loyalty?fullscreen=1 auto-opens fullscreen overlay as expected.",
+    "F4_unified_professionnel": "OK — dashboard shortcut-ma-carte and FAB quick-action-ma-carte-pro both open card-access-modal with card-access-pro-fiche and card-access-pro-fullscreen. Direct /profile?tab=pro&fullscreen=procard auto-opens ProCardQr fullscreen. Note: 'quick-action-valider-une-presence' not shown for pro3 because that action is permission-gated (loyalty.stamp) — not a regression, expected behavior.",
+    "F5_pro_socials_and_public_card": "OK — pro-social-linkedin/facebook/instagram, pro-website-input and pro-save-button all present. Persistence verified (edited website, saved, reloaded, value persisted, then restored). Public page /carte/{userId} (no auth) shows public-card-website (href=https://example.org/pro3), public-card-socials with public-card-social-linkedin and public-card-social-instagram (facebook absent as pro3 has none set)."
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FullscreenQR listens to fullscreenchange and calls onClose when document.fullscreenElement is null. When requestFullscreen is denied by the browser (no user gesture, e.g. via ?fullscreen= auto-open), no fullscreenchange event fires so the overlay stays visible — verified. Still, if a spurious fullscreenchange were emitted at mount time (some browsers/iframes) it could immediately close the overlay. Consider a small guard (ignore first fullscreenchange within first ~200ms after mount) for robustness."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "PARTICULIER membre1.demo@lavoixduchien.fr / Demo2026! ; PRO pro3.demo@lavoixduchien.fr / Demo2026! (user_id user_4850bf4954e3)",
+  "seed_data_creation": "None (test edit on website field restored to original https://example.org/pro3).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 5 features passed. Pro3 user_id = user_4850bf4954e3. Public card URL: /carte/user_4850bf4954e3. pro3 has linkedin+instagram socials and website set; facebook intentionally empty (used to verify absence of that social icon). The 'Valider une présence' quick-action is permission-gated on loyalty.stamp; pro3 does not have that permission — this is expected."
+}
