@@ -1,16 +1,20 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { Download, ExternalLink, Copy } from "lucide-react";
+import { Download, ExternalLink, Copy, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FullscreenQR } from "@/components/FullscreenQR";
 import { themeColor } from "@/components/ThemeProvider";
 
 export const proCardUrl = (userId) => `${window.location.origin}/carte/${userId}`;
 
 /** QR Code carte de visite numérique d'un professionnel (URL publique, sans connexion). */
-export const ProCardQr = ({ userId, name, testId = "pro-card-qr" }) => {
+export const ProCardQr = ({ userId, name, subtitle, autoFullscreen = false, testId = "pro-card-qr" }) => {
   const ref = useRef(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const url = proCardUrl(userId);
+
+  useEffect(() => { if (autoFullscreen) setFullscreen(true); }, [autoFullscreen]);
 
   const download = () => {
     const svg = ref.current?.querySelector("svg");
@@ -42,6 +46,11 @@ export const ProCardQr = ({ userId, name, testId = "pro-card-qr" }) => {
 
   return (
     <div className="rounded-xl border bg-card p-5" data-testid={testId}>
+      {fullscreen && (
+        <FullscreenQR value={url} title={name} subtitle={subtitle}
+          note="Scannez pour ouvrir ma carte de visite publique."
+          onClose={() => setFullscreen(false)} />
+      )}
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         QR Code carte de visite
       </p>
@@ -58,6 +67,10 @@ export const ProCardQr = ({ userId, name, testId = "pro-card-qr" }) => {
           <Button type="button" size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
             onClick={download} data-testid={`${testId}-download`}>
             <Download className="mr-2 h-3.5 w-3.5" /> Télécharger le QR (PNG)
+          </Button>
+          <Button type="button" size="sm" variant="outline" className="rounded-full"
+            onClick={() => setFullscreen(true)} data-testid={`${testId}-fullscreen`}>
+            <Maximize2 className="mr-2 h-3.5 w-3.5" /> Afficher en plein écran
           </Button>
           <div className="flex gap-2">
             <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={copy}

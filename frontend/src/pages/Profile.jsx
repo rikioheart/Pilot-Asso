@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { toast } from "sonner";
 import { RowMenu, confirmDialog } from "@/components/ConfirmDialog";
@@ -21,6 +21,7 @@ const toList = (value) => (value || "").split(",").map((s) => s.trim()).filter(B
 
 export default function Profile() {
   const { user, profile, setProfile } = useAuth();
+  const [params] = useSearchParams();
   const [form, setForm] = useState({});
   const [dogs, setDogs] = useState([]);
   const [newDog, setNewDog] = useState({ name: "", breed: "", character: "", birth_date: "", sex: "", photo_file_id: null });
@@ -128,7 +129,7 @@ export default function Profile() {
           </Link>
         } />
 
-      <Tabs defaultValue="infos" className="max-w-3xl">
+      <Tabs defaultValue={params.get("tab") === "pro" ? "pro" : "infos"} className="max-w-3xl">
         <TabsList data-testid="profile-tabs" className="flex-wrap">
           <TabsTrigger value="infos" data-testid="profile-tab-infos">Informations</TabsTrigger>
           {isPro && <TabsTrigger value="pro" data-testid="profile-tab-pro">Ma fiche pro</TabsTrigger>}
@@ -248,6 +249,17 @@ export default function Profile() {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  <Label>Réseaux sociaux</Label>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <Input placeholder="LinkedIn" data-testid="pro-social-linkedin" value={pro.social_links?.linkedin || ""}
+                      onChange={(e) => setPro({ ...pro, social_links: { ...(pro.social_links || {}), linkedin: e.target.value } })} />
+                    <Input placeholder="Facebook" data-testid="pro-social-facebook" value={pro.social_links?.facebook || ""}
+                      onChange={(e) => setPro({ ...pro, social_links: { ...(pro.social_links || {}), facebook: e.target.value } })} />
+                    <Input placeholder="Instagram" data-testid="pro-social-instagram" value={pro.social_links?.instagram || ""}
+                      onChange={(e) => setPro({ ...pro, social_links: { ...(pro.social_links || {}), instagram: e.target.value } })} />
+                  </div>
+                </div>
+                <div className="space-y-2">
                   <Label>Description</Label>
                   <Textarea rows={3} value={pro.description || ""} data-testid="pro-description-input"
                     onChange={(e) => setPro({ ...pro, description: e.target.value })} />
@@ -296,7 +308,9 @@ export default function Profile() {
             )}
             {pro && user?.role === "PROFESSIONNEL" && (
               <div className="mt-6">
-                <ProCardQr userId={user.user_id} name={pro.company_name || profile?.display_name} />
+                <ProCardQr userId={user.user_id} name={pro.company_name || profile?.display_name}
+                  subtitle={pro.professional_category ? pro.professional_category.replace(/_/g, " ").toLowerCase() : "Professionnel"}
+                  autoFullscreen={params.get("fullscreen") === "procard"} />
               </div>
             )}
           </TabsContent>

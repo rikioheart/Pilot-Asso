@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { Globe, Mail, MapPin, Phone } from "lucide-react";
+import { Globe, Mail, MapPin, Phone, Linkedin, Facebook, Instagram } from "lucide-react";
 import { API } from "@/lib/api";
 
 const label = (c) => (c || "").replace(/_/g, " ").toLowerCase().replace(/^\w/, (m) => m.toUpperCase());
@@ -77,11 +77,25 @@ export default function PublicProCard() {
             {card.website && <div className="flex items-center gap-3"><Globe className="h-4 w-4 text-[var(--bordeaux)]" />
               <a href={card.website} target="_blank" rel="noopener noreferrer" className="underline break-all"
                 data-testid="public-card-website">{card.website}</a></div>}
-            {socials.map(([k, v]) => (
-              <div key={k} className="flex items-center gap-3"><Globe className="h-4 w-4 text-[var(--marine)]" />
-                <a href={v} target="_blank" rel="noopener noreferrer" className="underline break-all">{k}</a></div>
-            ))}
           </dl>
+
+          {socials.length > 0 && (
+            <div className="mt-6 flex flex-wrap items-center gap-3" data-testid="public-card-socials">
+              {socials.map(([k, v]) => {
+                const key = k.toLowerCase();
+                const Icon = key.includes("linkedin") ? Linkedin
+                  : key.includes("facebook") ? Facebook
+                  : key.includes("instagram") ? Instagram : Globe;
+                return (
+                  <a key={k} href={v} target="_blank" rel="noopener noreferrer" aria-label={k}
+                    data-testid={`public-card-social-${key}`}
+                    className="grid h-10 w-10 place-items-center rounded-full border text-[var(--marine)] transition-colors hover:bg-[var(--marine-a8)] hover:text-[var(--bordeaux)]">
+                    <Icon className="h-5 w-5" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </div>
         <footer className="border-t bg-[#f6f3ee] px-7 py-4 text-center text-xs text-muted-foreground">
           Professionnel membre de l'association <span className="font-semibold text-[var(--marine)]">La Voix du Chien</span>

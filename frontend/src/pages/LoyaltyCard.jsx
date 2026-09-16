@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { Star, RefreshCw, Gift, Download } from "lucide-react";
+import { Star, RefreshCw, Gift, Download, Maximize2 } from "lucide-react";
 import { api, apiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState, Chip, SectionCard } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
+import { FullscreenQR } from "@/components/FullscreenQR";
 import { themeColor } from "@/components/ThemeProvider";
 
 export default function LoyaltyCard() {
+  const { profile } = useAuth();
+  const [params, setParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [recap, setRecap] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const qrRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -26,12 +32,14 @@ export default function LoyaltyCard() {
   useEffect(() => {
     api.get("/loyalty/monthly-recap").then((r) => setRecap(r.data)).catch(() => {});
   }, []);
+  useEffect(() => { if (params.get("fullscreen") === "1" && data) setFullscreen(true); }, [params, data]);
 
   if (data === null) return <p className="text-muted-foreground">Chargement de votre carte…</p>;
   if (data === false) return <EmptyState testId="loyalty-unavailable" title="Carte indisponible"
     description="Votre profil ne dispose pas de carte d'engagement." />;
 
   const { card, stamps, rewards, next_reward, progress, source_labels, badges } = data;
+  const memberName = profile?.display_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim();
 
   const regenerate = async () => {
     try {
@@ -64,6 +72,11 @@ export default function LoyaltyCard() {
 
   return (
     <div data-testid="loyalty-page">
+      {fullscreen && (
+        <FullscreenQR value={card.qr_token} title={memberName} subtitle={`Carte ${card.card_type}`}
+          note="QR anonyme de présence — présentez-le au professionnel."
+          onClose={() => { setFullscreen(false); if (params.get("fullscreen")) { params.delete("fullscreen"); setParams(params, { replace: true }); } }} />
+      )}
       {badges?.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2" data-testid="loyalty-badges">
           <span className="text-sm font-semibold text-[var(--marine)]">Mes badges :</span>
@@ -105,7 +118,12 @@ export default function LoyaltyCard() {
             </div>
           )}
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <Button size="sm" onClick={() => setFullscreen(true)} data-testid="loyalty-fullscreen-button"
+            className="mt-6 w-full rounded-full bg-white/15 text-white hover:bg-white/25">
+            <Maximize2 className="mr-2 h-4 w-4" /> Afficher en plein écran
+          </Button>
+
+          <div className="mt-4 flex flex-wrap gap-3">
             <Button variant="ghost" size="sm" onClick={download} data-testid="loyalty-download-button"
               className="px-0 text-white/70 hover:bg-transparent hover:text-white">
               <Download className="mr-2 h-3.5 w-3.5" /> Télécharger mon QR

@@ -1,21 +1,24 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap, X, Dog, PartyPopper, Sparkle, UserCircle, Trophy, ClipboardCheck,
-  Boxes, BellPlus, ListChecks, Wrench } from "lucide-react";
+  Boxes, BellPlus, ListChecks, Wrench, QrCode } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { QuickCreatePanel } from "@/components/QuickCreatePanel";
+import { CardAccessModal } from "@/components/CardAccessModal";
 import { isSoundOn, setSoundOn } from "@/lib/sound";
 import { Volume2, VolumeX } from "lucide-react";
 
 const ACTIONS = {
   PARTICULIER: [
     { label: "M'inscrire à une activité", icon: Dog, to: "/activities" },
+    { label: "Ma carte", icon: QrCode, card: true },
     { label: "Ma carte fidélité", icon: Trophy, to: "/loyalty" },
     { label: "La fiche de mon chien", icon: PartyPopper, to: "/dogs" },
   ],
   PROFESSIONNEL: [
     { label: "Proposer une activité", icon: Sparkle, to: "/activities?new=1", permission: "activities.propose" },
     { label: "Valider une présence", icon: ClipboardCheck, to: "/loyalty/scan", permission: "loyalty.stamp" },
+    { label: "Ma carte pro", icon: QrCode, card: true },
     { label: "Noter un retour de séance", icon: ListChecks, to: "/activities" },
     { label: "Ma fiche", icon: UserCircle, to: "/profile" },
   ],
@@ -33,6 +36,7 @@ export const QuickActionsFab = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState(false);
+  const [cardModal, setCardModal] = useState(false);
   const [sound, setSound] = useState(isSoundOn());
   const base = (ACTIONS[user?.role] || []).filter((a) => !a.permission || can(a.permission));
   const actions = [...base, { label: "Outils externes", icon: Wrench, to: `${user?.role === "ADMIN_BUREAU" ? "/admin/dashboard" : user?.role === "PROFESSIONNEL" ? "/pro/dashboard" : "/member/dashboard"}#outils` }];
@@ -51,7 +55,7 @@ export const QuickActionsFab = () => {
           </button>
           {actions.map((a) => (
             <button key={a.label} type="button" data-testid={`quick-action-${a.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
-              onClick={() => { setOpen(false); a.panel ? setPanel(true) : navigate(a.to); }}
+              onClick={() => { setOpen(false); a.panel ? setPanel(true) : a.card ? setCardModal(true) : navigate(a.to); }}
               className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-semibold text-[var(--marine)] shadow-lg transition-colors hover:bg-muted">
               <a.icon className="h-4 w-4 text-[var(--bordeaux)]" /> {a.label}
             </button>
@@ -64,6 +68,7 @@ export const QuickActionsFab = () => {
         {open ? <X className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
       </button>
       {user?.role === "ADMIN_BUREAU" && <QuickCreatePanel open={panel} onOpenChange={setPanel} />}
+      <CardAccessModal open={cardModal} onOpenChange={setCardModal} role={user?.role} />
     </div>
   );
 };
