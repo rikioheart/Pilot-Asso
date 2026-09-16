@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { Download, ExternalLink, Copy, Maximize2 } from "lucide-react";
+import { Download, ExternalLink, Copy, Maximize2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FullscreenQR } from "@/components/FullscreenQR";
 import { themeColor } from "@/components/ThemeProvider";
@@ -44,6 +44,15 @@ export const ProCardQr = ({ userId, name, subtitle, autoFullscreen = false, test
     catch { toast.error("Copie impossible"); }
   };
 
+  const share = async () => {
+    const data = { title: name || "Ma carte de visite",
+      text: `Découvrez ma carte de visite — ${name || "La Voix du Chien"}`, url };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else { await navigator.clipboard.writeText(url); toast.success("Lien copié — le partage n'est pas disponible ici"); }
+    } catch { /* partage annulé par l'utilisateur */ }
+  };
+
   return (
     <div className="rounded-xl border bg-card p-5" data-testid={testId}>
       {fullscreen && (
@@ -67,6 +76,10 @@ export const ProCardQr = ({ userId, name, subtitle, autoFullscreen = false, test
           <Button type="button" size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
             onClick={download} data-testid={`${testId}-download`}>
             <Download className="mr-2 h-3.5 w-3.5" /> Télécharger le QR (PNG)
+          </Button>
+          <Button type="button" size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
+            onClick={share} data-testid={`${testId}-share`}>
+            <Share2 className="mr-2 h-3.5 w-3.5" /> Partager
           </Button>
           <Button type="button" size="sm" variant="outline" className="rounded-full"
             onClick={() => setFullscreen(true)} data-testid={`${testId}-fullscreen`}>

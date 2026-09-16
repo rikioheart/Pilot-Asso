@@ -403,6 +403,12 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
   Instagram, sinon Globe), éditables depuis `/profile` (champs `pro-social-*`, `pro-website-input`) ; section
   masquée si aucun lien.
 
+### Partage carte pro + QR fidélité haute lisibilité (16/09/2026, vérifié screenshot)
+- **Bouton « Partager »** (`ProCardQr.jsx`, `pro-card-qr-share`) : Web Share API native (fiche publique
+  `/carte/{userId}`), repli copie-lien si l'API n'est pas disponible.
+- **Plein écran haute lisibilité** (`FullscreenQR.jsx`) : fond noir pur, QR noir/blanc contraste maximal
+  (level H) + astuce « augmentez la luminosité » — scan plus fiable en extérieur.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·
