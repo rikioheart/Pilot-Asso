@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only validation of TÂCHE 1 (regroupement d'actions via RowMenu ⋮ + Annuler secondaire plein + FAB réduit), TÂCHE 2 (accès /pilotage restreint à ADMIN_BUREAU ou access_level=PRO_COORDINATEUR), et TÂCHE 3 (lien 'Découvrir l'association' sur /login). Testé en desktop 1920x800 avec admin, pro3 (PRO_AVANCE), pro1 (PROFESSIONNEL standard) et membre1 (PARTICULIER_STANDARD). Tout OK.",
+  "results_per_item": {
+    "T3_discover_link_login": "OK — data-testid='discover-association-link' visible sous le formulaire, href=https://www.lavoixduchien.fr, target=_blank, https:// confirmé.",
+    "T2_pilotage_admin": "OK — 'Pilotage suivi' présent dans la nav du groupe Pilotage; /pilotage rend data-testid='pilotage-page'.",
+    "T2_pilotage_pro3_blocked": "OK — pas de lien 'Pilotage suivi' dans la nav pro3 (PRO_AVANCE); accès direct /pilotage → redirigé vers /pro/dashboard, aucune data-testid='pilotage-page' rendue. Coeur du correctif validé.",
+    "T1_members": "OK — 1 seule action primaire par ligne (Valider/Réactiver/Rôle selon statut). Menu ⋮ data-testid='member-menu-<uid>' présent avec items conditionnels (member-reject-*/member-suspend-*/member-edit-*). Bouton Rôle primaire (member-edit-<uid>) ouvre data-testid='member-role-dialog'. Bouton member-role-cancel = variant='secondary' (classes: bg-secondary text-secondary-foreground) — bouton plein secondaire ✓. Clique ferme le dialogue.",
+    "T1_activities": "OK — 9 activity-menu-* trouvés, ⋮ ouvre le menu Radix, item 'Discussion' (activity-comments-*) ouvre bien un [role=dialog]. Inscription/désinscription reste primaire par carte.",
+    "T1_events": "OK — 6 event-menu-* présents; menu contient event-volunteer-* et event-detail-*. Le clic sur 'Voir les détails' navigue vers /events/<id>.",
+    "T1_tasks": "OK — 3 task-menu-* sur premier projet; menu regroupe task-comment-*, task-help-*, task-history-*, task-delete-* (admin). Comment ouvre un [role=dialog].",
+    "T1_fab_admin": "OK — 4 actions (Valider action en attente, Saisir mouvement de stock, Créer une notification, Création rapide) + toggle 'Activer le son'. Aucun lien 'Outils externes' dans le FAB (vérifié dans ACTIONS.ADMIN_BUREAU).",
+    "T1_fab_pro1": "OK — 4 actions PROFESSIONNEL: Proposer une activité, Valider une présence, Ma carte pro, Noter un retour de séance. Le code confirme absence de 'Ma fiche' et 'Outils externes' dans ACTIONS.PROFESSIONNEL.",
+    "T1_fab_membre1": "OK — 3 actions PARTICULIER (M'inscrire à une activité, Ma carte, La fiche de mon chien). Pas de 'Outils externes'."
+  },
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Members.jsx: le testid `member-edit-${user_id}` est réutilisé à la fois pour le bouton primaire 'Rôle' (statut ACTIVE) et pour l'item de menu 'Rôle et permissions' (statut PENDING/SUSPENDED). Bien qu'ils soient mutuellement exclusifs par branche de statut, préférer testids distincts (ex: member-edit-menu-<uid>) évite toute ambiguïté pour les tests automatisés.",
+    "QuickActionsFab.jsx: `data-testid` d'action utilise slugify sur label — un renommage du libellé casserait les tests. OK mais à documenter.",
+    "Members.jsx: le RowMenu ⋮ est masqué (menuItems.length===0) pour les membres ACTIVE non-admin? Non: 'Suspendre' apparaît. Correct."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (3/3 tâches)"},
+  "test_credentials": "associationlavoixduchien@gmail.com/VoixDuChien2026! ; pro3.demo@lavoixduchien.fr/Demo2026! ; pro1.demo@lavoixduchien.fr/Demo2026! ; membre1.demo@lavoixduchien.fr/Demo2026!",
+  "seed_data_creation": "Aucune. Aucun changement de données (dialogue Rôle fermé via Annuler, membres inchangés).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "T1/T2/T3 all green. RowMenu (⋮) trigger Radix DropdownMenu — attendre 300-500ms après clic trigger avant de cliquer un item. Pour Members: pour ouvrir role-dialog sur un membre ACTIVE, cliquer directement sur le bouton primaire 'Rôle' (data-testid=member-edit-<uid>), pas via le menu (le menu contient 'Suspendre' seulement pour ACTIVE non-admin).",
+  "rca of the issue": "N/A — aucun bug applicatif détecté sur cette itération."
+}

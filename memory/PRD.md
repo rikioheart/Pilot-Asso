@@ -420,6 +420,12 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Tokens Tailwind** (`tailwind.config.js`) : `spacing` card/section/field/list, `lineHeight.content` (1.7),
   `fontSize.label` (0.875rem). `SectionCard` applique `p-card` + `text-label` + `leading-content`.
 
+### Cohérence des actions, accès Pilotage & lien site public (18/09/2026, testé 100 % frontend — iteration_44)
+- **Charge cognitive des actions réduite** (ton constructif, aucune fonctionnalité modifiée) : une seule action primaire par ligne, le reste dans un menu `⋮` réutilisant `RowMenu` (shadcn DropdownMenu) — appliqué à Membres (Valider/Réactiver/Rôle + menu Refuser/Suspendre/Rôle), Activités (inscription primaire + menu Discussion/Accepter/Refuser/Revenir), Événements (inscription primaire + menu Être bénévole/Voir les détails), Tâches de projet (1 action contextuelle Valider/Terminer/Commencer/Je m'en occupe + menu Commenter/Aide/Historique/Supprimer). Bouton **Annuler** du dialogue Membres passé en **bouton plein secondaire** (`variant="secondary"`).
+- **QuickActionsFab épuré** : création rapide en accès direct + 4 actions max par rôle, doublons avec la nav retirés (plus de « Outils externes » ni « Ma fiche »).
+- **Accès Pilotage aligné front↔back** : le lien nav et la route `/pilotage` ne s'affichent/n'autorisent que si `role === ADMIN_BUREAU` **ou** `access_level === PRO_COORDINATEUR` (flag `coordinatorOnly` en nav, prop `coordinatorOrAdmin` sur `Protected`) — suppression de la dépendance à `stats.view` pour ce cas (les autres usages de `stats.view` inchangés). Corrige le 403 pour un PRO_AVANCE à qui le Bureau aurait accordé `stats.view`.
+- **Lien « Découvrir l'association » sur /login** : champ `website_url` configurable par le Bureau dans les Réglages (`PublicPageSettings`, endpoint existant `PUT /settings/public-page`, normalisé en `https://`), exposé publiquement par `GET /api/public/page` ; lien discret affiché sous le formulaire uniquement si l'URL est renseignée (ouverture en nouvel onglet).
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·
