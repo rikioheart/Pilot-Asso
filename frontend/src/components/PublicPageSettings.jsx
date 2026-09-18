@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Globe, ExternalLink, Copy } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { SectionCard } from "@/components/Ui";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 
 const TOGGLES = [["enabled", "Page publique active"], ["show_events", "Afficher l'agenda public"],
   ["show_pros", "Afficher les professionnels (QR carte de visite)"], ["show_gallery", "Afficher la galerie d'activités"]];
+
+const plainLength = (html) => (html || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim().length;
 
 export function PublicPageSettings() {
   const [cfg, setCfg] = useState(null);
@@ -41,6 +44,25 @@ export function PublicPageSettings() {
           onChange={(e) => setCfg({ ...cfg, intro: e.target.value })} placeholder="Texte de présentation" />
         <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
           data-testid="public-intro-save" onClick={() => save({ intro: cfg.intro })}>Enregistrer le texte</Button>
+      </div>
+      <div className="mt-4 space-y-2">
+        <label className="text-sm font-medium text-[var(--marine)]">Texte panneau de connexion</label>
+        <p className="text-xs text-muted-foreground">
+          Affiché sur le panneau bordeaux de la page de connexion. 300 caractères maximum.
+          Laissez vide pour conserver le texte par défaut.
+        </p>
+        <RichTextEditor value={cfg.login_panel_text || ""} testId="public-login-panel-editor"
+          placeholder="Un mot d'accueil pour vos membres…"
+          onChange={(html) => setCfg({ ...cfg, login_panel_text: html })} />
+        <p className={`text-xs ${plainLength(cfg.login_panel_text) > 300 ? "text-[var(--bordeaux)] font-semibold" : "text-muted-foreground"}`}
+          data-testid="public-login-panel-count">
+          {plainLength(cfg.login_panel_text)} / 300 caractères
+        </p>
+        <Button size="sm" variant="outline" className="rounded-full"
+          data-testid="public-login-panel-save" disabled={plainLength(cfg.login_panel_text) > 300}
+          onClick={() => save({ login_panel_text: cfg.login_panel_text })}>
+          Enregistrer le texte du panneau
+        </Button>
       </div>
       <div className="mt-4 space-y-2">
         <label className="text-sm font-medium text-[var(--marine)]">Site internet de l'association</label>

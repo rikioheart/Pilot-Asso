@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dog, LogIn, Mail, ShieldCheck, Globe } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { sanitizeHtml } from "@/components/RichTextEditor";
 import { toast } from "sonner";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -18,6 +19,7 @@ export default function Login() {
   const { applySession, refresh } = useAuth();
   const [busy, setBusy] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
+  const [panelText, setPanelText] = useState("");
   const [login, setLogin] = useState({ email: "", password: "" });
   const [reg, setReg] = useState({
     email: "", password: "", first_name: "", last_name: "",
@@ -71,7 +73,10 @@ export default function Login() {
   };
 
   useEffect(() => {
-    api.get("/public/page").then((r) => setWebsiteUrl(r.data?.website_url || "")).catch(() => {});
+    api.get("/public/page").then((r) => {
+      setWebsiteUrl(r.data?.website_url || "");
+      setPanelText(r.data?.login_panel_text || "");
+    }).catch(() => {});
   }, []);
 
   return (
@@ -88,9 +93,15 @@ export default function Login() {
           <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-[1.05]">
             Le cockpit de notre association.
           </h1>
-          <p className="mt-6 text-base text-white/70">
-            Nous savons où nous allons, chacun peut contribuer à son niveau, et chaque petit progrès compte.
-          </p>
+          {panelText ? (
+            <div className="mt-6 login-panel-rich text-base text-white/75 [&_a]:underline [&_strong]:text-white"
+              data-testid="login-panel-text"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(panelText) }} />
+          ) : (
+            <p className="mt-6 text-base text-white/70" data-testid="login-panel-text">
+              Nous savons où nous allons, chacun peut contribuer à son niveau, et chaque petit progrès compte.
+            </p>
+          )}
           <div className="mt-10 h-px w-24 bg-[var(--bordeaux)]" />
           <p className="mt-6 text-sm text-white/50">
             Action → Preuve → Validation → Historique → Progression
