@@ -54,7 +54,7 @@ export const EmptyState = ({ title, description, action, icon: Icon = PawPrint, 
 };
 
 export const SectionCard = ({ title, subtitle, icon: Icon, actions, children, testId, className = "", secondary = false }) => (
-  <section className={`rounded-xl border bg-card p-5 ${className}`} data-testid={testId}
+  <section className={`rounded-xl border bg-card p-card ${className}`} data-testid={testId}
     data-focus-secondary={secondary ? "true" : undefined}>
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
@@ -63,8 +63,8 @@ export const SectionCard = ({ title, subtitle, icon: Icon, actions, children, te
       </div>
       {actions}
     </div>
-    {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
-    <div className="mt-4">{children}</div>
+    {subtitle && <p className="mt-1 text-label text-muted-foreground">{subtitle}</p>}
+    <div className="mt-4 leading-content">{children}</div>
   </section>
 );
 

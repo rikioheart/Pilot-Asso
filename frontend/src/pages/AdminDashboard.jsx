@@ -17,6 +17,7 @@ import { useViewMode } from "@/components/ViewMode";
 import { CockpitModes, MembersMode, ProsMode, ActivitiesMode } from "@/components/CockpitModes";
 import { DashboardShortcuts } from "@/components/DashboardShortcuts";
 import { ExternalTools } from "@/components/ExternalTools";
+import { SecondaryPanel } from "@/components/SecondaryPanel";
 import { WelcomeMessage } from "@/components/WelcomeMessage";
 import { RelanceWelcome } from "@/components/RelanceWelcome";
 
@@ -209,7 +210,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </section>
-      <ExternalTools />
+      <SecondaryPanel><ExternalTools /></SecondaryPanel>
       </>)}
     </div>
   );

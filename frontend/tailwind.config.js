@@ -12,6 +12,18 @@ module.exports = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
       },
+      spacing: {
+        card: '1.5rem',
+        section: '2rem',
+        field: '1.25rem',
+        list: '0.75rem'
+      },
+      lineHeight: {
+        content: '1.7'
+      },
+      fontSize: {
+        label: ['0.875rem', { lineHeight: '1.25rem' }]
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

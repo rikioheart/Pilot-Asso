@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { BaseHomeBlocks } from "@/components/BaseHomeBlocks";
 import { DashboardShortcuts } from "@/components/DashboardShortcuts";
 import { ExternalTools } from "@/components/ExternalTools";
+import { SecondaryPanel } from "@/components/SecondaryPanel";
 import { PageHeader, EmptyState, SectionCard, Chip } from "@/components/Ui";
 import { StatusBadge, DeadlineChip } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ export default function ProDashboard() {
           )}
         </SectionCard>
       </section>
-      <ExternalTools />
+      <SecondaryPanel><ExternalTools /></SecondaryPanel>
     </div>
   );
 }

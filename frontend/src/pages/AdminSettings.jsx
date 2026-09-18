@@ -13,6 +13,7 @@ import { BiweeklyRecapSettings } from "@/components/BiweeklyRecapSettings";
 import { DriveResources } from "@/components/DriveResources";
 import { NavLabelsSettings } from "@/components/NavLabelsSettings";
 import { RbacMatrixSettings } from "@/components/RbacMatrixSettings";
+import { DashboardBlocksSettings } from "@/components/DashboardBlocksSettings";
 import { useBlockReload } from "@/components/BlockVisibility";
 import { Plus, Trash2, Tags } from "lucide-react";
 import { api, apiError } from "@/lib/api";
@@ -73,6 +74,7 @@ export default function AdminSettings() {
       <BiweeklyRecapSettings />
       <DriveResources />
       <NavLabelsSettings />
+      <DashboardBlocksSettings />
       <RbacMatrixSettings />
 
       <SectionCard title="Catégories et types configurables" icon={Tags} testId="taxonomies-card"

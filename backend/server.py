@@ -844,6 +844,37 @@ async def root():
     return {"message": "API La Voix du Chien", "phase": 2}
 
 
+@api.get("/dashboard/layout")
+async def dashboard_layout(user: dict = Depends(active_user)):
+    cfg = await db.app_settings.find_one({"key": "dashboard_secondary"}, {"_id": 0}) or {}
+    defaults = cfg.get("roles") or {}
+    default_open = defaults.get(user.get("role"), True)
+    up = (user.get("preferences") or {}).get("dashboard_secondary_open")
+    return {"secondary_open": default_open if up is None else bool(up), "default_open": default_open}
+
+
+@api.put("/account/dashboard")
+async def set_dashboard_pref(payload: dict, user: dict = Depends(active_user)):
+    await db.users.update_one({"user_id": user["user_id"]},
+                              {"$set": {"preferences.dashboard_secondary_open": bool(payload.get("secondary_open"))}})
+    return {"ok": True}
+
+
+@api.get("/settings/dashboard")
+async def get_dashboard_settings(admin: dict = Depends(require_admin)):
+    cfg = await db.app_settings.find_one({"key": "dashboard_secondary"}, {"_id": 0}) or {}
+    return {"roles": cfg.get("roles") or {"PARTICULIER": True, "PROFESSIONNEL": True,
+                                          "PRO_COORDINATEUR": True, "ADMIN_BUREAU": True}}
+
+
+@api.put("/settings/dashboard")
+async def put_dashboard_settings(payload: dict, admin: dict = Depends(require_admin)):
+    roles = {k: bool(v) for k, v in (payload.get("roles") or {}).items()}
+    await db.app_settings.update_one({"key": "dashboard_secondary"},
+                                     {"$set": {"key": "dashboard_secondary", "roles": roles}}, upsert=True)
+    return {"roles": roles}
+
+
 app.include_router(api)
 app.include_router(projects_module.router)
 app.include_router(professionals_module.router)

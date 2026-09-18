@@ -5,6 +5,7 @@ import { WelcomeBanner } from "@/components/Ui";
 import { BaseHomeBlocks } from "@/components/BaseHomeBlocks";
 import { DashboardShortcuts } from "@/components/DashboardShortcuts";
 import { ExternalTools } from "@/components/ExternalTools";
+import { SecondaryPanel } from "@/components/SecondaryPanel";
 import { Button } from "@/components/ui/button";
 
 export default function MemberDashboard() {
@@ -30,7 +31,7 @@ export default function MemberDashboard() {
 
       <div className="mb-6"><DashboardShortcuts /></div>
       <BaseHomeBlocks />
-      <ExternalTools />
+      <SecondaryPanel><ExternalTools /></SecondaryPanel>
     </div>
   );
 }
