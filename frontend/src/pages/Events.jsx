@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, MapPin, Users, HandHeart, Check, X } from "lucide-react";
+import { Plus, MapPin, Users, HandHeart, Check, X, ArrowRight } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
+import { RowMenu } from "@/components/ConfirmDialog";
 import { StatusBadge } from "@/components/Badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ const EMPTY = {
 
 export default function Events() {
   const { user, can } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role === "ADMIN_BUREAU";
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -349,7 +351,7 @@ export default function Events() {
                   {e.activities_count > 0 && ` · ${e.activities_count} activité(s)`}
                 </p>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {e.is_registered ? (
                   <Button size="sm" variant="outline" className="rounded-full" data-testid={`event-unregister-${e.event_id}`}
                     onClick={async () => {
@@ -362,21 +364,17 @@ export default function Events() {
                     <X className="mr-1 h-3.5 w-3.5" /> Me désinscrire
                   </Button>
                 ) : (
-                  <>
-                    <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
-                      data-testid={`event-register-${e.event_id}`} onClick={() => register(e.event_id, "PARTICIPANT")}>
-                      <Check className="mr-1 h-3.5 w-3.5" /> M'inscrire
-                    </Button>
-                    <Button size="sm" variant="outline" className="rounded-full"
-                      data-testid={`event-volunteer-${e.event_id}`} onClick={() => register(e.event_id, "VOLUNTEER")}>
-                      <HandHeart className="mr-1 h-3.5 w-3.5" /> Aider
-                    </Button>
-                  </>
+                  <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
+                    data-testid={`event-register-${e.event_id}`} onClick={() => register(e.event_id, "PARTICIPANT")}>
+                    <Check className="mr-1 h-3.5 w-3.5" /> M'inscrire
+                  </Button>
                 )}
-                <Link to={`/events/${e.event_id}`} data-testid={`event-detail-${e.event_id}`}
-                  className="rounded-full border px-4 py-1.5 text-sm font-semibold text-[var(--marine)] transition-colors hover:bg-muted">
-                  Détails
-                </Link>
+                <RowMenu testId={`event-menu-${e.event_id}`} items={[
+                  !e.is_registered && { label: "Être bénévole", icon: HandHeart, testId: `event-volunteer-${e.event_id}`,
+                    onSelect: () => register(e.event_id, "VOLUNTEER") },
+                  { label: "Voir les détails", icon: ArrowRight, testId: `event-detail-${e.event_id}`,
+                    onSelect: () => navigate(`/events/${e.event_id}`) },
+                ].filter(Boolean)} />
               </div>
             </div>
           ))}

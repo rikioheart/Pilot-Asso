@@ -4,6 +4,7 @@ import { Globe, ExternalLink, Copy } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { SectionCard } from "@/components/Ui";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 
@@ -40,6 +41,19 @@ export function PublicPageSettings() {
           onChange={(e) => setCfg({ ...cfg, intro: e.target.value })} placeholder="Texte de présentation" />
         <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
           data-testid="public-intro-save" onClick={() => save({ intro: cfg.intro })}>Enregistrer le texte</Button>
+      </div>
+      <div className="mt-4 space-y-2">
+        <label className="text-sm font-medium text-[var(--marine)]">Site internet de l'association</label>
+        <p className="text-xs text-muted-foreground">
+          Affiché comme lien discret « Découvrir l'association » sous le formulaire de connexion.
+        </p>
+        <Input value={cfg.website_url || ""} data-testid="public-website-input"
+          placeholder="https://www.exemple.fr"
+          onChange={(e) => setCfg({ ...cfg, website_url: e.target.value })} />
+        <Button size="sm" variant="outline" className="rounded-full"
+          data-testid="public-website-save" onClick={() => save({ website_url: cfg.website_url })}>
+          Enregistrer l'adresse
+        </Button>
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg bg-muted/50 p-3 text-sm" data-testid="public-link">
         <span className="truncate text-[var(--marine)]">{url}</span>

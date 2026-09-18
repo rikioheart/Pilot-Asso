@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { UserCog, PauseCircle, X } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { PageHeader, EmptyState } from "@/components/Ui";
+import { RowMenu } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,6 +99,11 @@ export default function Members() {
     }
   };
 
+  const openRole = (m) => setEditing({ ...m, newRole: m.role, newLevel: m.access_level,
+    newCategory: m.profile?.member_category || "PARTICULIER",
+    granted: m.permission_overrides?.granted || [],
+    revoked: m.permission_overrides?.revoked || [] });
+
   return (
     <div data-testid="members-page">
       <PageHeader breadcrumb="Bureau" title="Membres"
@@ -182,30 +189,34 @@ export default function Members() {
                     {new Date(m.created_at).toLocaleDateString("fr-FR")}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex flex-wrap justify-end gap-2">
+                    <div className="flex items-center justify-end gap-2">
                       {m.status === "PENDING" && (
-                        <>
-                          <Button size="sm" data-testid={`member-approve-${m.user_id}`}
-                            className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                            onClick={() => update(m.user_id, { status: "ACTIVE" }, "Adhésion validée")}>Valider</Button>
-                          <Button size="sm" variant="outline" data-testid={`member-reject-${m.user_id}`}
-                            className="rounded-full"
-                            onClick={() => update(m.user_id, { status: "REJECTED" }, "Demande refusée")}>Refuser</Button>
-                        </>
-                      )}
-                      {m.status === "ACTIVE" && m.role !== "ADMIN_BUREAU" && (
-                        <Button size="sm" variant="outline" data-testid={`member-suspend-${m.user_id}`} className="rounded-full"
-                          onClick={() => update(m.user_id, { status: "SUSPENDED" }, "Membre suspendu")}>Suspendre</Button>
+                        <Button size="sm" data-testid={`member-approve-${m.user_id}`}
+                          className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
+                          onClick={() => update(m.user_id, { status: "ACTIVE" }, "Adhésion validée")}>Valider</Button>
                       )}
                       {m.status === "SUSPENDED" && (
-                        <Button size="sm" variant="outline" data-testid={`member-reactivate-${m.user_id}`} className="rounded-full"
+                        <Button size="sm" data-testid={`member-reactivate-${m.user_id}`}
+                          className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
                           onClick={() => update(m.user_id, { status: "ACTIVE" }, "Membre réactivé")}>Réactiver</Button>
                       )}
-                      <Button size="sm" variant="ghost" data-testid={`member-edit-${m.user_id}`}
-                        onClick={() => setEditing({ ...m, newRole: m.role, newLevel: m.access_level,
-                          newCategory: m.profile?.member_category || "PARTICULIER",
-                          granted: m.permission_overrides?.granted || [],
-                          revoked: m.permission_overrides?.revoked || [] })}>Rôle</Button>
+                      {!["PENDING", "SUSPENDED"].includes(m.status) && (
+                        <Button size="sm" variant="outline" className="rounded-full" data-testid={`member-edit-${m.user_id}`}
+                          onClick={() => openRole(m)}>Rôle</Button>
+                      )}
+                      {(() => {
+                        const menuItems = [
+                          m.status === "PENDING" && { label: "Refuser la demande", icon: X, danger: true,
+                            testId: `member-reject-${m.user_id}`,
+                            onSelect: () => update(m.user_id, { status: "REJECTED" }, "Demande refusée") },
+                          m.status === "ACTIVE" && m.role !== "ADMIN_BUREAU" && { label: "Suspendre le membre", icon: PauseCircle,
+                            testId: `member-suspend-${m.user_id}`,
+                            onSelect: () => update(m.user_id, { status: "SUSPENDED" }, "Membre suspendu") },
+                          (m.status === "PENDING" || m.status === "SUSPENDED") && { label: "Rôle et permissions", icon: UserCog,
+                            testId: `member-edit-${m.user_id}`, onSelect: () => openRole(m) },
+                        ].filter(Boolean);
+                        return menuItems.length ? <RowMenu testId={`member-menu-${m.user_id}`} items={menuItems} /> : null;
+                      })()}
                     </div>
                   </td>
                 </tr>
@@ -299,7 +310,7 @@ export default function Members() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} data-testid="member-role-cancel">Annuler</Button>
+            <Button variant="secondary" onClick={() => setEditing(null)} data-testid="member-role-cancel">Annuler</Button>
             <Button data-testid="member-role-save" className="bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
               onClick={saveMember}>
               Enregistrer

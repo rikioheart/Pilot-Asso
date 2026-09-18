@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Zap, X, Dog, PartyPopper, Sparkle, UserCircle, Trophy, ClipboardCheck,
-  Boxes, BellPlus, ListChecks, Wrench, QrCode } from "lucide-react";
+import { Zap, X, Dog, PartyPopper, Sparkle, ClipboardCheck,
+  Boxes, BellPlus, ListChecks, QrCode } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { QuickCreatePanel } from "@/components/QuickCreatePanel";
 import { CardAccessModal } from "@/components/CardAccessModal";
@@ -12,7 +12,6 @@ const ACTIONS = {
   PARTICULIER: [
     { label: "M'inscrire à une activité", icon: Dog, to: "/activities" },
     { label: "Ma carte", icon: QrCode, card: true },
-    { label: "Ma carte fidélité", icon: Trophy, to: "/loyalty" },
     { label: "La fiche de mon chien", icon: PartyPopper, to: "/dogs" },
   ],
   PROFESSIONNEL: [
@@ -20,7 +19,6 @@ const ACTIONS = {
     { label: "Valider une présence", icon: ClipboardCheck, to: "/loyalty/scan", permission: "loyalty.stamp" },
     { label: "Ma carte pro", icon: QrCode, card: true },
     { label: "Noter un retour de séance", icon: ListChecks, to: "/activities" },
-    { label: "Ma fiche", icon: UserCircle, to: "/profile" },
   ],
   ADMIN_BUREAU: [
     { label: "Valider une action en attente", icon: ClipboardCheck, to: "/admin/validation" },
@@ -38,8 +36,7 @@ export const QuickActionsFab = () => {
   const [panel, setPanel] = useState(false);
   const [cardModal, setCardModal] = useState(false);
   const [sound, setSound] = useState(isSoundOn());
-  const base = (ACTIONS[user?.role] || []).filter((a) => !a.permission || can(a.permission));
-  const actions = [...base, { label: "Outils externes", icon: Wrench, to: `${user?.role === "ADMIN_BUREAU" ? "/admin/dashboard" : user?.role === "PROFESSIONNEL" ? "/pro/dashboard" : "/member/dashboard"}#outils` }];
+  const actions = (ACTIONS[user?.role] || []).filter((a) => !a.permission || can(a.permission));
   if (actions.length === 0) return null;
 
   return (

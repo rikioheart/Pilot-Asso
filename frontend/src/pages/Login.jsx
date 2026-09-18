@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Dog, LogIn, Mail, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Dog, LogIn, Mail, ShieldCheck, Globe } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 import { api, apiError } from "@/lib/api";
@@ -17,6 +17,7 @@ const ROLES = [
 export default function Login() {
   const { applySession, refresh } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [login, setLogin] = useState({ email: "", password: "" });
   const [reg, setReg] = useState({
     email: "", password: "", first_name: "", last_name: "",
@@ -68,6 +69,10 @@ export default function Login() {
     const redirectUrl = window.location.origin + "/";
     window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
+
+  useEffect(() => {
+    api.get("/public/page").then((r) => setWebsiteUrl(r.data?.website_url || "")).catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr]">
@@ -199,6 +204,15 @@ export default function Login() {
               </form>
             </TabsContent>
           </Tabs>
+
+          {websiteUrl && (
+            <div className="mt-8 text-center">
+              <a href={websiteUrl} target="_blank" rel="noreferrer" data-testid="discover-association-link"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-[var(--bordeaux)]">
+                <Globe className="h-3.5 w-3.5" /> Découvrir l'association
+              </a>
+            </div>
+          )}
         </div>
       </main>
     </div>

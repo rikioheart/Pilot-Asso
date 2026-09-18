@@ -75,12 +75,14 @@ const Loading = () => (
   </div>
 );
 
-const Protected = ({ children, adminOnly = false, permission = null }) => {
+const Protected = ({ children, adminOnly = false, permission = null, coordinatorOrAdmin = false }) => {
   const { user, loading, can } = useAuth();
   if (loading) return <Loading />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.status !== "ACTIVE") return <PendingScreen />;
   if (adminOnly && user.role !== "ADMIN_BUREAU") return <Navigate to={HOME_BY_ROLE[user.role]} replace />;
+  if (coordinatorOrAdmin && !(user.role === "ADMIN_BUREAU" || user.access_level === "PRO_COORDINATEUR"))
+    return <Navigate to={HOME_BY_ROLE[user.role]} replace />;
   if (permission && !can(permission)) return <Navigate to={HOME_BY_ROLE[user.role]} replace />;
   return <AppShell>{children}</AppShell>;
 };
@@ -153,7 +155,7 @@ function AppRouter() {
       <Route path="/my-space" element={<Protected><MySpace /></Protected>} />
       <Route path="/paiements" element={<Protected><Payments /></Protected>} />
       <Route path="/dogs" element={<Protected><Dogs /></Protected>} />
-      <Route path="/pilotage" element={<Protected permission="stats.view"><Pilotage /></Protected>} />
+      <Route path="/pilotage" element={<Protected coordinatorOrAdmin><Pilotage /></Protected>} />
       <Route path="/admin/animation" element={<Protected adminOnly><MemberAnimation /></Protected>} />
       <Route path="/help" element={<Protected><HelpRequests /></Protected>} />
       <Route path="/aide" element={<Protected><HelpCenter /></Protected>} />

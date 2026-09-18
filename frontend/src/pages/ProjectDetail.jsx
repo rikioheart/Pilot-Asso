@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { RowMenu, confirmDialog } from "@/components/ConfirmDialog";
-import { ArrowLeft, Plus, Send, CheckCircle2, MessageSquare, LifeBuoy, Trash2, UserPlus, History } from "lucide-react";
+import { ArrowLeft, Plus, Send, CheckCircle2, MessageSquare, LifeBuoy, Trash2, UserPlus, History, HandHeart, PlayCircle } from "lucide-react";
 import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader, EmptyState } from "@/components/Ui";
@@ -127,48 +127,60 @@ export default function ProjectDetail() {
                 canEdit={canManage || mine} testId={`task-drive-${t.task_id}`} variant="drive" />
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {t.is_volunteer_task && !t.assigned_user_id && can("tasks.submit") && (
-              <Button size="sm" variant="outline" className="rounded-full" data-testid={`task-claim-${t.task_id}`}
-                onClick={() => act(() => api.post(`/tasks/${t.task_id}/claim`), "Tâche prise en charge")}>
-                Je m'en occupe
-              </Button>
-            )}
-            {mine && ["TODO", "WAITING", "BLOCKED"].includes(t.status) && (
-              <Button size="sm" variant="outline" className="rounded-full" data-testid={`task-start-${t.task_id}`}
-                onClick={() => act(() => api.put(`/tasks/${t.task_id}`, { status: "IN_PROGRESS" }), "Tâche démarrée")}>
-                Commencer
-              </Button>
-            )}
-            {mine && !["COMPLETED", "PENDING_VALIDATION", "ARCHIVED"].includes(t.status) && (
-              <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                data-testid={`task-submit-${t.task_id}`} onClick={() => setDialog({ type: "submit", task: t })}>
-                <Send className="mr-1 h-3.5 w-3.5" /> Terminer
-              </Button>
-            )}
-            {can("tasks.validate") && t.status === "PENDING_VALIDATION" && (
-              <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
-                data-testid={`task-validate-${t.task_id}`} onClick={() => setDialog({ type: "validate", task: t })}>
-                <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Valider
-              </Button>
-            )}
-            <Button size="sm" variant="ghost" data-testid={`task-comment-${t.task_id}`}
-              onClick={() => setDialog({ type: "comment", task: t })}>
-              <MessageSquare className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="ghost" data-testid={`task-help-${t.task_id}`}
-              onClick={() => setDialog({ type: "help", task: t })}>
-              <LifeBuoy className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="ghost" data-testid={`task-history-${t.task_id}`} onClick={() => openHistory(t.task_id)}>
-              <History className="h-3.5 w-3.5" />
-            </Button>
-            {isAdmin && (
-              <RowMenu testId={`task-menu-${t.task_id}`} items={[
-                { label: "Supprimer la tâche", icon: Trash2, danger: true, testId: `task-delete-${t.task_id}`,
+          <div className="flex flex-wrap items-center gap-2">
+            {(() => {
+              const canClaim = t.is_volunteer_task && !t.assigned_user_id && can("tasks.submit");
+              const canStart = mine && ["TODO", "WAITING", "BLOCKED"].includes(t.status);
+              const canSubmit = mine && !["COMPLETED", "PENDING_VALIDATION", "ARCHIVED"].includes(t.status);
+              const canValidate = can("tasks.validate") && t.status === "PENDING_VALIDATION";
+              const primaryKey = canValidate ? "validate" : canStart ? "start" : canSubmit ? "submit" : canClaim ? "claim" : null;
+              const menuItems = [
+                canClaim && primaryKey !== "claim" && { label: "Je m'en occupe", icon: HandHeart, testId: `task-claim-${t.task_id}`,
+                  onSelect: () => act(() => api.post(`/tasks/${t.task_id}/claim`), "Tâche prise en charge") },
+                canStart && primaryKey !== "start" && { label: "Commencer la tâche", icon: PlayCircle, testId: `task-start-${t.task_id}`,
+                  onSelect: () => act(() => api.put(`/tasks/${t.task_id}`, { status: "IN_PROGRESS" }), "Tâche démarrée") },
+                canSubmit && primaryKey !== "submit" && { label: "Terminer et soumettre", icon: Send, testId: `task-submit-${t.task_id}`,
+                  onSelect: () => setDialog({ type: "submit", task: t }) },
+                { label: "Commenter", icon: MessageSquare, testId: `task-comment-${t.task_id}`,
+                  onSelect: () => setDialog({ type: "comment", task: t }) },
+                { label: "Besoin d'aide", icon: LifeBuoy, testId: `task-help-${t.task_id}`,
+                  onSelect: () => setDialog({ type: "help", task: t }) },
+                { label: "Historique", icon: History, testId: `task-history-${t.task_id}`,
+                  onSelect: () => openHistory(t.task_id) },
+                isAdmin && { label: "Supprimer la tâche", icon: Trash2, danger: true, testId: `task-delete-${t.task_id}`,
                   onSelect: async () => { if (!(await confirmDialog("Supprimer cette tâche ?"))) return;
-                    act(() => api.delete(`/tasks/${t.task_id}`), "Tâche supprimée"); } }]} />
-            )}
+                    act(() => api.delete(`/tasks/${t.task_id}`), "Tâche supprimée"); } },
+              ].filter(Boolean);
+              return (
+                <>
+                  {primaryKey === "validate" && (
+                    <Button size="sm" className="rounded-full bg-[var(--marine)] hover:bg-[#001740]"
+                      data-testid={`task-validate-${t.task_id}`} onClick={() => setDialog({ type: "validate", task: t })}>
+                      <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Valider
+                    </Button>
+                  )}
+                  {primaryKey === "submit" && (
+                    <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
+                      data-testid={`task-submit-${t.task_id}`} onClick={() => setDialog({ type: "submit", task: t })}>
+                      <Send className="mr-1 h-3.5 w-3.5" /> Terminer
+                    </Button>
+                  )}
+                  {primaryKey === "start" && (
+                    <Button size="sm" variant="outline" className="rounded-full" data-testid={`task-start-${t.task_id}`}
+                      onClick={() => act(() => api.put(`/tasks/${t.task_id}`, { status: "IN_PROGRESS" }), "Tâche démarrée")}>
+                      Commencer
+                    </Button>
+                  )}
+                  {primaryKey === "claim" && (
+                    <Button size="sm" variant="outline" className="rounded-full" data-testid={`task-claim-${t.task_id}`}
+                      onClick={() => act(() => api.post(`/tasks/${t.task_id}/claim`), "Tâche prise en charge")}>
+                      Je m'en occupe
+                    </Button>
+                  )}
+                  <RowMenu testId={`task-menu-${t.task_id}`} items={menuItems} />
+                </>
+              );
+            })()}
           </div>
           <div className="mt-2"><ParticipationControl elementType="task" elementId={t.task_id} testId={`task-rsvp-${t.task_id}`} /></div>
         </div>

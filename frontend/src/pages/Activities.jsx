@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ACTIVITY_CATEGORY_LABELS, ACTIVITY_TYPE_LABELS, VISIBILITY_LABELS, label }
   from "@/lib/labels";
 import { MapEmbed } from "@/components/MapEmbed";
+import { RowMenu } from "@/components/ConfirmDialog";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { CommentSection } from "@/components/CommentSection";
 import { ParticipationControl } from "@/components/ParticipationControl";
@@ -439,11 +440,7 @@ export default function Activities() {
                 </div>
               )}
               <div className="mt-4"><ParticipationControl elementType="activity" elementId={a.activity_id} testId={`activity-rsvp-${a.activity_id}`} /></div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button size="sm" variant="ghost" className="rounded-full" data-testid={`activity-comments-${a.activity_id}`}
-                  onClick={() => setCommentFor(a)}>
-                  <MessageSquare className="mr-1 h-3.5 w-3.5" /> Discussion
-                </Button>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {a.is_registered ? (
                   <Button size="sm" variant="outline" className="rounded-full" data-testid={`activity-unregister-${a.activity_id}`}
                     onClick={() => act(() => api.delete(`/activities/${a.activity_id}/register`), "Inscription annulée")}>
@@ -457,37 +454,30 @@ export default function Activities() {
                     <Check className="mr-1 h-3.5 w-3.5" /> M'inscrire
                   </Button>
                 )}
-                {can("activities.validate") && a.status === "PROPOSED" && (
+                {revertOpen === a.activity_id ? (
                   <>
+                    <span className="self-center text-xs text-muted-foreground">Nouvelle décision :</span>
                     <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                      data-testid={`activity-accept-${a.activity_id}`}
-                      onClick={() => review(a.activity_id, "ACCEPT")}>Accepter</Button>
+                      data-testid={`activity-revert-accept-${a.activity_id}`}
+                      onClick={() => { review(a.activity_id, "ACCEPT"); setRevertOpen(null); }}>Accepter</Button>
                     <Button size="sm" variant="outline" className="rounded-full"
-                      data-testid={`activity-refuse-${a.activity_id}`}
-                      onClick={() => review(a.activity_id, "REFUSE")}>Refuser</Button>
+                      data-testid={`activity-revert-refuse-${a.activity_id}`}
+                      onClick={() => { review(a.activity_id, "REFUSE"); setRevertOpen(null); }}>Refuser</Button>
+                    <Button size="sm" variant="ghost" className="rounded-full"
+                      data-testid={`activity-revert-cancel-${a.activity_id}`}
+                      onClick={() => setRevertOpen(null)}>Annuler</Button>
                   </>
-                )}
-                {canRevert(a) && (
-                  revertOpen === a.activity_id ? (
-                    <>
-                      <span className="self-center text-xs text-muted-foreground">Nouvelle décision :</span>
-                      <Button size="sm" className="rounded-full bg-[var(--bordeaux)] hover:bg-[var(--bordeaux-dark)]"
-                        data-testid={`activity-revert-accept-${a.activity_id}`}
-                        onClick={() => { review(a.activity_id, "ACCEPT"); setRevertOpen(null); }}>Accepter</Button>
-                      <Button size="sm" variant="outline" className="rounded-full"
-                        data-testid={`activity-revert-refuse-${a.activity_id}`}
-                        onClick={() => { review(a.activity_id, "REFUSE"); setRevertOpen(null); }}>Refuser</Button>
-                      <Button size="sm" variant="ghost" className="rounded-full"
-                        data-testid={`activity-revert-cancel-${a.activity_id}`}
-                        onClick={() => setRevertOpen(null)}>Annuler</Button>
-                    </>
-                  ) : (
-                    <Button size="sm" variant="outline" className="rounded-full"
-                      data-testid={`activity-revert-${a.activity_id}`} onClick={() => setRevertOpen(a.activity_id)}
-                      title="Le Bureau peut revenir sur la décision d'un coordinateur sous 48 h">
-                      <RotateCcw className="mr-1 h-3.5 w-3.5" /> Revenir sur la décision
-                    </Button>
-                  )
+                ) : (
+                  <RowMenu testId={`activity-menu-${a.activity_id}`} items={[
+                    { label: "Discussion", icon: MessageSquare, testId: `activity-comments-${a.activity_id}`,
+                      onSelect: () => setCommentFor(a) },
+                    can("activities.validate") && a.status === "PROPOSED" && { label: "Accepter la proposition", icon: Check,
+                      testId: `activity-accept-${a.activity_id}`, onSelect: () => review(a.activity_id, "ACCEPT") },
+                    can("activities.validate") && a.status === "PROPOSED" && { label: "Refuser la proposition", icon: X, danger: true,
+                      testId: `activity-refuse-${a.activity_id}`, onSelect: () => review(a.activity_id, "REFUSE") },
+                    canRevert(a) && { label: "Revenir sur la décision", icon: RotateCcw,
+                      testId: `activity-revert-${a.activity_id}`, onSelect: () => setRevertOpen(a.activity_id) },
+                  ].filter(Boolean)} />
                 )}
               </div>
             </div>

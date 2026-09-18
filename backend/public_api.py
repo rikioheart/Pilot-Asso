@@ -8,6 +8,7 @@ router = APIRouter(prefix="/api")
 
 DEFAULT_PUBLIC = {
     "enabled": True, "show_events": True, "show_pros": True, "show_gallery": True,
+    "website_url": "",
     "intro": "Bienvenue à La Voix du Chien — l'association qui accompagne chiens et humains, "
              "avec bienveillance et sans jugement.",
 }
@@ -24,6 +25,11 @@ async def update_public_page(payload: dict, admin: dict = Depends(require_admin)
                if k in payload}
     if "intro" in allowed:
         allowed["intro"] = str(allowed["intro"])[:600]
+    if "website_url" in payload:
+        url = str(payload["website_url"] or "").strip()[:300]
+        if url and not url.startswith(("http://", "https://")):
+            url = "https://" + url
+        allowed["website_url"] = url
     await set_setting("public_page", allowed, admin)
     return await get_setting("public_page", DEFAULT_PUBLIC)
 
@@ -31,8 +37,9 @@ async def update_public_page(payload: dict, admin: dict = Depends(require_admin)
 @router.get("/public/page")
 async def public_page():
     cfg = await get_setting("public_page", DEFAULT_PUBLIC)
+    website_url = cfg.get("website_url") or ""
     if not cfg.get("enabled"):
-        return {"enabled": False}
+        return {"enabled": False, "website_url": website_url}
     today = iso(now_utc())[:10]
     events, pros, activities = [], [], []
     if cfg.get("show_events"):
@@ -53,4 +60,5 @@ async def public_page():
                                  ).sort("date", -1).limit(8)
         activities = await cur.to_list(8)
     return {"enabled": True, "config": cfg, "association_name": "La Voix du Chien",
+            "website_url": website_url,
             "events": events, "pros": pros, "activities": activities}

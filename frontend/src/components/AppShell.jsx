@@ -92,7 +92,7 @@ const PRO_NAV = [
   {
     label: "Mon activité", icon: FolderKanban, items: [
       { to: "/projects", label: "Projets", icon: FolderKanban, permission: "projects.view" },
-      { to: "/pilotage", label: "Pilotage suivi", icon: BarChart3, permission: "stats.view" },
+      { to: "/pilotage", label: "Pilotage suivi", icon: BarChart3, coordinatorOnly: true },
       { to: "/mindmap", label: "Mindmap", icon: Network, permission: "mindmap.view" },
       { to: "/statistics", label: "Statistiques", icon: BarChart3, permission: "stats.view" },
       { to: "/dogs", label: "Chiens suivis", icon: Dog },
@@ -197,11 +197,12 @@ export const AppShell = ({ children }) => {
       const glabel = navLabels[group.label] || group.label;
       return group.items
         ? { ...group, label: glabel, items: group.items
-            .filter((item) => (!item.permission || can(item.permission)) && blockVisible(item.block))
+            .filter((item) => (!item.permission || can(item.permission)) && blockVisible(item.block)
+              && (!item.coordinatorOnly || user?.role === "ADMIN_BUREAU" || user?.access_level === "PRO_COORDINATEUR"))
             .map((item) => ({ ...item, label: navLabels[item.label] || item.label })) }
         : { ...group, label: glabel };
     })
-    .filter((group) => !group.items || group.items.length > 0), [base, can, blockVisible, navLabels]);
+    .filter((group) => !group.items || group.items.length > 0), [base, can, blockVisible, navLabels, user]);
 
   const activeGroup = nav.find((group) => group.items?.some((item) => location.pathname.startsWith(item.to)));
   const [expanded, setExpanded] = useState(activeGroup?.label || nav.find((g) => g.items)?.label);
