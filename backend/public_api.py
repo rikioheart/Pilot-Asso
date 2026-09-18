@@ -8,7 +8,7 @@ router = APIRouter(prefix="/api")
 
 DEFAULT_PUBLIC = {
     "enabled": True, "show_events": True, "show_pros": True, "show_gallery": True,
-    "website_url": "", "login_panel_text": "",
+    "website_url": "", "login_panel_text": "", "login_panel_title": "",
     "intro": "Bienvenue à La Voix du Chien — l'association qui accompagne chiens et humains, "
              "avec bienveillance et sans jugement.",
 }
@@ -32,6 +32,8 @@ async def update_public_page(payload: dict, admin: dict = Depends(require_admin)
         allowed["website_url"] = url
     if "login_panel_text" in payload:
         allowed["login_panel_text"] = str(payload["login_panel_text"] or "")[:5000]
+    if "login_panel_title" in payload:
+        allowed["login_panel_title"] = str(payload["login_panel_title"] or "").strip()[:150]
     await set_setting("public_page", allowed, admin)
     return await get_setting("public_page", DEFAULT_PUBLIC)
 
@@ -41,8 +43,10 @@ async def public_page():
     cfg = await get_setting("public_page", DEFAULT_PUBLIC)
     website_url = cfg.get("website_url") or ""
     login_panel_text = cfg.get("login_panel_text") or ""
+    login_panel_title = cfg.get("login_panel_title") or ""
     if not cfg.get("enabled"):
-        return {"enabled": False, "website_url": website_url, "login_panel_text": login_panel_text}
+        return {"enabled": False, "website_url": website_url,
+                "login_panel_text": login_panel_text, "login_panel_title": login_panel_title}
     today = iso(now_utc())[:10]
     events, pros, activities = [], [], []
     if cfg.get("show_events"):
@@ -64,4 +68,5 @@ async def public_page():
         activities = await cur.to_list(8)
     return {"enabled": True, "config": cfg, "association_name": "La Voix du Chien",
             "website_url": website_url, "login_panel_text": login_panel_text,
+            "login_panel_title": login_panel_title,
             "events": events, "pros": pros, "activities": activities}

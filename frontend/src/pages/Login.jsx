@@ -20,6 +20,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [panelText, setPanelText] = useState("");
+  const [panelTitle, setPanelTitle] = useState("");
   const [login, setLogin] = useState({ email: "", password: "" });
   const [reg, setReg] = useState({
     email: "", password: "", first_name: "", last_name: "",
@@ -76,6 +77,7 @@ export default function Login() {
     api.get("/public/page").then((r) => {
       setWebsiteUrl(r.data?.website_url || "");
       setPanelText(r.data?.login_panel_text || "");
+      setPanelTitle(r.data?.login_panel_title || "");
     }).catch(() => {});
   }, []);
 
@@ -90,8 +92,9 @@ export default function Login() {
           </div>
         </div>
         <div className="max-w-md vdc-reveal">
-          <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-[1.05]">
-            Le cockpit de notre association.
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold leading-[1.05]"
+            data-testid="login-panel-title">
+            {panelTitle || "Le cockpit de notre association."}
           </h1>
           {panelText ? (
             <div className="mt-6 login-panel-rich text-base text-white/75 [&_a]:underline [&_strong]:text-white"

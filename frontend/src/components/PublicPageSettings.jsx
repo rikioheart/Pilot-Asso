@@ -46,6 +46,19 @@ export function PublicPageSettings() {
           data-testid="public-intro-save" onClick={() => save({ intro: cfg.intro })}>Enregistrer le texte</Button>
       </div>
       <div className="mt-4 space-y-2">
+        <label className="text-sm font-medium text-[var(--marine)]">Titre du panneau de connexion</label>
+        <p className="text-xs text-muted-foreground">
+          Grand titre affiché sur le panneau bordeaux. Laissez vide pour « Le cockpit de notre association. »
+        </p>
+        <Input value={cfg.login_panel_title || ""} data-testid="public-login-title-input"
+          maxLength={150} placeholder="Le cockpit de notre association."
+          onChange={(e) => setCfg({ ...cfg, login_panel_title: e.target.value })} />
+        <Button size="sm" variant="outline" className="rounded-full"
+          data-testid="public-login-title-save" onClick={() => save({ login_panel_title: cfg.login_panel_title })}>
+          Enregistrer le titre
+        </Button>
+      </div>
+      <div className="mt-4 space-y-2">
         <label className="text-sm font-medium text-[var(--marine)]">Texte panneau de connexion</label>
         <p className="text-xs text-muted-foreground">
           Affiché sur le panneau bordeaux de la page de connexion. 300 caractères maximum.
