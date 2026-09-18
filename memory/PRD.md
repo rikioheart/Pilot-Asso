@@ -409,6 +409,17 @@ suivi de cas et comptes-rendus de séances avec visibilité au cas par cas.
 - **Plein écran haute lisibilité** (`FullscreenQR.jsx`) : fond noir pur, QR noir/blanc contraste maximal
   (level H) + astuce « augmentez la luminosité » — scan plus fiable en extérieur.
 
+### Tableau de bord hiérarchisé + tokens d'espacement (18/09/2026, testé 100 % — iteration_43)
+- **Restructuration dashboards uniquement** : blocs prioritaires au chargement, informations secondaires
+  (ExternalTools) repliées dans un panneau `SecondaryPanel` (« Informations complémentaires », `dashboard-secondary`).
+  Composants existants réutilisés ; aucun code de bloc supprimé.
+- **Persistance** : `GET /api/dashboard/layout` (défaut par rôle + préférence utilisateur), `PUT /api/account/dashboard`
+  (préférence perso en base `preferences.dashboard_secondary_open`), `GET/PUT /api/settings/dashboard`
+  (Bureau, défauts par rôle dans `app_settings/dashboard_secondary`). Endpoints placés AVANT `include_router`.
+- **Config Bureau** : carte `DashboardBlocksSettings` dans Réglages (switch par rôle). Non-admins → 403.
+- **Tokens Tailwind** (`tailwind.config.js`) : `spacing` card/section/field/list, `lineHeight.content` (1.7),
+  `fontSize.label` (0.875rem). `SectionCard` applique `p-card` + `text-label` + `leading-content`.
+
 ## Architecture backend
 `server.py` · `deps.py` · `rbac.py` · `storage.py` · `content.py` · `community.py` · `finance.py` ·
 `comments.py` (commentaires unifiés) · `payments.py` (paiements manuels + bascule 21 j) · `weather.py` (OpenWeatherMap) ·
